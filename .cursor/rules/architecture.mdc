@@ -1,0 +1,752 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Rust Clean Architecture Coding Guidelines
+
+## Project Structure Overview
+
+```
+src/
+├── frameworks_and_drivers/      # External frameworks and infrastructure layer
+│   ├── di/                      # Dependency Injection container
+│   ├── database/                # Database connection and configuration
+│   └── persistence/             # Data persistence implementation
+│       ├── entities/            # Database-specific entity representations
+│       └── repositories_impl/   # Repository implementations
+├── interface_adapters/          # Interface adapters layer
+│   └── products/               # Product-related adapters
+│       ├── controllers/         # HTTP controllers/handlers
+│       ├── presenters/          # Response formatting and presentation
+│       └── requests/            # Request DTOs and validation
+├── application/                 # Application use cases layer
+│   ├── use_cases/              # Use case implementations
+│   ├── commands/               # Command handlers (write operations)
+│   ├── queries/                # Query handlers (read operations)
+│   └── repositories/           # Repository interfaces/traits
+├── domain/                     # Core business logic and entities
+│   └── models/                 # Domain models/entities
+├── error.rs                    # Global error handling
+└── main.rs                     # Application entry point
+```
+
+## General Architecture Rules
+
+1. **Dependency Direction**: Dependencies should point inward following Clean Architecture principles:
+   - frameworks_and_drivers → interface_adapters → application → domain
+   - interface_adapters → application → domain
+
+2. **Domain Independence**: The domain layer must not depend on any other layer.
+
+3. **Interface Segregation**: Define interfaces in the layer that requires them (application layer), implement them in outer layers (frameworks_and_drivers).
+
+## Layer-Specific Guidelines
+
+### Domain Layer (`src/domain/`)
+
+- Contains business entities and pure business logic.
+- Must be independent of other layers and frameworks.
+- Should expose error types specific to domain concerns.
+- Located in `src/domain/models/`
+
+```rust
+// GOOD: Domain model with business logic
+pub struct Product {
+    id: ProductId,
+    name: String,
+    price: Decimal,
+    stock: u32,
+}
+
+impl Product {
+    pub fn purchase(&mut self, quantity: u32) -> Result<(), DomainError> {
+        if self.stock < quantity {
+            return Err(DomainError::InsufficientStock);
+        }
+        self.stock -= quantity;
+        Ok(())
+    }
+}
+
+// BAD: Domain model with infrastructure concerns
+pub struct Product {
+    id: i64,  // Database-specific type
+    name: String,
+    price: f64,  // Using primitive for domain concept
+    stock: i32,
+}
+```
+
+### Application Layer (`src/application/`)
+
+- Contains application business rules and orchestration logic.
+- Divided into use_cases, commands, queries, and repositories following CQRS pattern.
+
+#### Repository Interfaces (`src/application/repositories/`)
+
+- Define repository traits that the application layer needs.
+- Use domain types, not infrastructure types.
+
+```rust
+// GOOD: Clean repository interface
+#[async_trait]
+pub trait ProductRepository {
+    async fn find_by_id(&self, id: &ProductId) -> Result<Option<Product>, RepositoryError>;
+    async fn save(&self, product: &Product) -> Result<(), RepositoryError>;
+    async fn find_all(&self) -> Result<Vec<Product>, RepositoryError>;
+}
+
+// BAD: Repository with infrastructure concerns
+pub trait ProductRepository {
+    fn find_by_id(&self, id: &i64) -> Result<Option<Product>, SqliteError>;
+    // Leaking SQL-specific error type and using database primitive types
+}
+```
+
+#### Use Cases (`src/application/use_cases/`)
+
+- Orchestrate domain objects and repositories to fulfill specific business scenarios.
+- Each use case should have a single responsibility.
+
+```rust
+// GOOD: Use case with clear responsibility
+pub struct GetProductUseCase<R: ProductRepository> {
+    repository: Arc<R>,
+}
+
+impl<R: ProductRepository> GetProductUseCase<R> {
+    pub async fn execute(&self, product_id: ProductId) -> Result<Product, ApplicationError> {
+        self.repository
+            .find_by_id(&product_id)
+            .await?
+            .ok_or(ApplicationError::ProductNotFound)
+    }
+}
+```
+
+#### Commands & Queries (`src/application/commands/`, `src/application/queries/`)
+
+- Commands modify state and return minimal information.
+- Queries retrieve data and don't modify state.
+
+```rust
+// GOOD: Command for state modification
+pub struct BuyProductCommand {
+    pub product_id: ProductId,
+    pub quantity: u32,
+}
+
+// GOOD: Query for data retrieval
+pub struct GetProductQuery {
+    pub product_id: ProductId,
+}
+```
+
+### Interface Adapters Layer (`src/interface_adapters/`)
+
+- Handles conversion between external formats and application layer.
+- Contains controllers, presenters, and request DTOs.
+
+#### Controllers (`src/interface_adapters/products/controllers/`)
+
+- Handle HTTP requests and delegate to use cases.
+- Convert HTTP requests to domain types.
+
+```rust
+pub async fn get_product(
+    Path(product_id): Path<String>,
+    State(container): State<Arc<Container>>,
+) -> impl IntoResponse {
+    // Convert request parameters to domain types
+    let product_id = match ProductId::from_string(&product_id) {
+        Ok(id) => id,
+        Err(_) => return (StatusCode::BAD_REQUEST, "Invalid product ID").into_response(),
+    };
+    
+    // Delegate to use case
+    match container.get_product_use_case.execute(product_id).await {
+        Ok(product) => Json(ProductPresenter::present(product)).into_response(),
+        Err(ApplicationError::ProductNotFound) => 
+            (StatusCode::NOT_FOUND, "Product not found").into_response(),
+        Err(_) => 
+            (StatusCode::INTERNAL_SERVER_ERROR, "Server error").into_response(),
+    }
+}
+```
+
+#### Presenters (`src/interface_adapters/products/presenters/`)
+
+- Format domain objects for external consumption.
+- Handle serialization and response formatting.
+
+```rust
+// GOOD: Presenter with clear responsibility
+#[derive(Serialize)]
+pub struct ProductResponse {
+    pub id: String,
+    pub name: String,
+    pub price: String,
+    pub stock: u32,
+}
+
+impl ProductPresenter {
+    pub fn present(product: Product) -> ProductResponse {
+        ProductResponse {
+            id: product.id().to_string(),
+            name: product.name().clone(),
+            price: product.price().to_string(),
+            stock: product.stock(),
+        }
+    }
+}
+```
+
+#### Requests (`src/interface_adapters/products/requests/`)
+
+- Define request DTOs and validation logic.
+- Convert external input to internal commands/queries.
+
+```rust
+// GOOD: Request DTO with validation
+#[derive(Deserialize)]
+pub struct BuyProductRequest {
+    pub quantity: u32,
+}
+
+impl BuyProductRequest {
+    pub fn to_command(&self, product_id: ProductId) -> BuyProductCommand {
+        BuyProductCommand {
+            product_id,
+            quantity: self.quantity,
+        }
+    }
+}
+```
+
+### Frameworks and Drivers Layer (`src/frameworks_and_drivers/`)
+
+- Implements interfaces defined by inner layers.
+- Contains concrete implementations of repositories, external services, etc.
+
+#### Database Configuration (`src/frameworks_and_drivers/database/`)
+
+- Handle database connection, migrations, and seeding.
+- Keep database-specific logic isolated.
+
+#### Persistence Implementation (`src/frameworks_and_drivers/persistence/`)
+
+- **Entities** (`entities/`): Database-specific entity representations
+- **Repository Implementations** (`repositories_impl/`): Concrete repository implementations
+
+```rust
+// Database entity
+#[derive(FromRow)]
+pub struct ProductEntity {
+    pub id: i64,
+    pub name: String,
+    pub price: String,
+    pub stock: i64,
+}
+
+// Repository implementation with proper error handling
+pub struct SqliteProductRepository {
+    pool: SqlitePool,
+}
+
+impl ProductRepository for SqliteProductRepository {
+    async fn find_by_id(&self, id: &ProductId) -> Result<Option<Product>, RepositoryError> {
+        let entity = sqlx::query_as::<_, ProductEntity>(
+            "SELECT id, name, price, stock FROM products WHERE id = ?"
+        )
+        .bind(id.value())
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| RepositoryError::DatabaseError(e.to_string()))?;
+        
+        Ok(entity.map(Product::try_from).transpose()?)
+    }
+}
+```
+
+#### Dependency Injection (`src/frameworks_and_drivers/di/`)
+
+- Wire up interfaces with concrete implementations.
+- Should be as close to the application entry point as possible.
+
+```rust
+pub struct Container {
+    pub get_product_use_case: Arc<GetProductUseCase<SqliteProductRepository>>,
+    pub buy_product_use_case: Arc<BuyProductUseCase<SqliteProductRepository>>,
+    pub get_all_products_use_case: Arc<GetAllProductsUseCase<SqliteProductRepository>>,
+}
+
+impl Container {
+    pub fn new(db_pool: SqlitePool) -> Self {
+        let product_repository = Arc::new(SqliteProductRepository::new(db_pool));
+        
+        Self {
+            get_product_use_case: Arc::new(GetProductUseCase::new(product_repository.clone())),
+            buy_product_use_case: Arc::new(BuyProductUseCase::new(product_repository.clone())),
+            get_all_products_use_case: Arc::new(GetAllProductsUseCase::new(product_repository)),
+        }
+    }
+}
+```
+
+## Error Handling Strategy
+
+- **Domain Errors** (`src/domain/error.rs`): Business rule violations
+- **Application Errors** (`src/application/error.rs`): Application-level errors
+- **Global Errors** (`src/error.rs`): System-wide error handling
+
+```rust
+// GOOD: Layered error handling
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationError {
+    #[error("Product not found")]
+    ProductNotFound,
+    
+    #[error("Repository error: {0}")]
+    Repository(#[from] RepositoryError),
+    
+    #[error("Domain error: {0}")]
+    Domain(#[from] DomainError),
+}
+```
+
+## SOLID Principles Application
+
+### 1. Single Responsibility Principle
+
+- Each module, struct, and function should have only one reason to change.
+- Separate concerns into different modules and layers.
+
+```rust
+// GOOD: Single responsibility
+pub mod product_validation {
+    pub fn validate_price(price: &Decimal) -> bool { /* ... */ }
+    pub fn validate_stock(stock: &u32) -> bool { /* ... */ }
+}
+
+pub mod product_service {
+    pub fn calculate_total_price(product: &Product, quantity: u32) -> Decimal { /* ... */ }
+}
+
+// BAD: Mixed responsibilities
+pub mod product {
+    pub fn validate_price(price: &Decimal) -> bool { /* ... */ }
+    pub fn calculate_total_price(product: &Product, quantity: u32) -> Decimal { /* ... */ }
+    // Mixing validation and business logic concerns
+}
+```
+
+### 2. Open/Closed Principle
+
+- Software entities should be open for extension but closed for modification.
+- Use traits and generic programming.
+
+```rust
+// GOOD: Open for extension through traits
+pub trait PriceCalculator {
+    fn calculate(&self, product: &Product, quantity: u32) -> Decimal;
+}
+
+pub struct StandardPriceCalculator;
+pub struct DiscountPriceCalculator {
+    discount_rate: Decimal,
+}
+
+impl PriceCalculator for StandardPriceCalculator {
+    fn calculate(&self, product: &Product, quantity: u32) -> Decimal {
+        product.price() * Decimal::from(quantity)
+    }
+}
+
+impl PriceCalculator for DiscountPriceCalculator {
+    fn calculate(&self, product: &Product, quantity: u32) -> Decimal {
+        let base_price = product.price() * Decimal::from(quantity);
+        base_price * (Decimal::ONE - self.discount_rate)
+    }
+}
+
+// Usage allows adding new calculators without changing existing code
+pub struct PurchaseService<C: PriceCalculator> {
+    calculator: C,
+}
+```
+
+### 3. Liskov Substitution Principle
+
+- Subtypes must be substitutable for their base types.
+- Ensure trait implementations follow the contract.
+
+```rust
+// GOOD: Proper trait implementation following contract
+pub trait ProductStorage {
+    // Contract: Returns None if product doesn't exist
+    async fn get_product(&self, id: &ProductId) -> Result<Option<Product>, StorageError>;
+}
+
+impl ProductStorage for DatabaseStorage {
+    async fn get_product(&self, id: &ProductId) -> Result<Option<Product>, StorageError> {
+        // Correctly returns None for non-existent products
+        Ok(self.query_product(id).await?)
+    }
+}
+
+// BAD: Violating contract
+impl ProductStorage for BrokenStorage {
+    async fn get_product(&self, id: &ProductId) -> Result<Option<Product>, StorageError> {
+        // Incorrectly throws error for non-existent products
+        let product = self.find_product(id).await?;
+        if product.is_none() {
+            return Err(StorageError::ProductNotFound);  // Violates contract
+        }
+        Ok(product)
+    }
+}
+```
+
+### 4. Interface Segregation Principle
+
+- Clients should not be forced to depend on methods they do not use.
+- Create specific, focused traits.
+
+```rust
+// GOOD: Segregated interfaces
+pub trait ProductReader {
+    async fn find_by_id(&self, id: &ProductId) -> Result<Option<Product>, RepositoryError>;
+    async fn find_all(&self) -> Result<Vec<Product>, RepositoryError>;
+}
+
+pub trait ProductWriter {
+    async fn save(&self, product: &Product) -> Result<(), RepositoryError>;
+    async fn delete(&self, id: &ProductId) -> Result<(), RepositoryError>;
+}
+
+// Services can depend on only what they need
+pub struct ProductQueryService<R: ProductReader> {
+    repository: R,
+}
+
+// BAD: Monolithic interface forcing unnecessary dependencies
+pub trait ProductRepository {
+    async fn find_by_id(&self, id: &ProductId) -> Result<Option<Product>, RepositoryError>;
+    async fn find_all(&self) -> Result<Vec<Product>, RepositoryError>;
+    async fn save(&self, product: &Product) -> Result<(), RepositoryError>;
+    async fn delete(&self, id: &ProductId) -> Result<(), RepositoryError>;
+    async fn perform_maintenance(&self) -> Result<(), RepositoryError>;  // Not needed by most clients
+}
+```
+
+### 5. Dependency Inversion Principle
+
+- High-level modules should not depend on low-level modules; both should depend on abstractions.
+- Abstractions should not depend on details; details should depend on abstractions.
+
+```rust
+// GOOD: Depending on abstractions
+pub struct ProductService<R: ProductRepository> {
+    repository: R,
+}
+
+// Can be used with any implementation of ProductRepository
+let service = ProductService::new(MockProductRepository::new());
+let service = ProductService::new(SqliteProductRepository::new(db_pool));
+
+// BAD: Depending on concrete implementation
+pub struct ProductService {
+    repository: SqliteProductRepository,  // Directly depends on SQLite implementation
+}
+```
+
+## DRY (Don't Repeat Yourself) Guidelines
+
+1. **Extract Common Functionality**:
+   - Use traits for common behavior.
+   - Create utility functions for repeated operations.
+
+```rust
+// GOOD: Reusable pagination logic
+pub struct PaginationParams {
+    pub page: u32,
+    pub per_page: u32,
+}
+
+impl PaginationParams {
+    pub fn offset(&self) -> u32 {
+        (self.page - 1) * self.per_page
+    }
+    
+    pub fn limit(&self) -> u32 {
+        self.per_page
+    }
+}
+
+// Can be used across different repositories
+#[async_trait]
+pub trait PaginatedRepository<T> {
+    async fn find_paginated(&self, params: &PaginationParams) -> Result<Vec<T>, RepositoryError>;
+    async fn count(&self) -> Result<u64, RepositoryError>;
+}
+```
+
+2. **Macros for Repetitive Patterns**:
+   - Use Rust macros to eliminate boilerplate code.
+
+```rust
+// GOOD: Macro for repository error mapping
+macro_rules! map_db_error {
+    ($result:expr) => {
+        match $result {
+            Ok(value) => Ok(value),
+            Err(err) => {
+                if let Some(db_err) = err.downcast_ref::<sqlx::Error>() {
+                    match db_err {
+                        sqlx::Error::RowNotFound => Err(RepositoryError::NotFound),
+                        sqlx::Error::Database(db_err) if db_err.constraint().is_some() => {
+                            Err(RepositoryError::Constraint(db_err.constraint().unwrap().to_string()))
+                        }
+                        _ => Err(RepositoryError::Database(err.to_string())),
+                    }
+                } else {
+                    Err(RepositoryError::Unknown(err.to_string()))
+                }
+            }
+        }
+    };
+}
+```
+
+3. **Shared Error Handling**:
+   - Create standardized error types that can be reused.
+
+```rust
+// GOOD: Shared error type with mapping capabilities
+#[derive(Debug, thiserror::Error)]
+pub enum ApplicationError {
+    #[error("Entity not found")]
+    NotFound,
+    
+    #[error("Validation error: {0}")]
+    Validation(String),
+    
+    #[error("Repository error: {0}")]
+    Repository(#[from] RepositoryError),
+    
+    #[error("Domain error: {0}")]
+    Domain(#[from] DomainError),
+}
+```
+
+## Code Commenting Guidelines
+
+### 1. Document Public Interfaces
+
+All public functions, structs, and traits should have documentation comments:
+
+```rust
+/// Represents a product in the system
+///
+/// A product is an item that can be purchased by customers.
+/// It contains information about pricing, stock levels, and identification.
+pub struct Product {
+    // Fields...
+}
+
+impl Product {
+    /// Creates a new product with the given data
+    ///
+    /// # Arguments
+    /// * `name` - Product name (must not be empty)
+    /// * `price` - Product price (must be positive)
+    /// * `stock` - Initial stock quantity
+    ///
+    /// # Returns
+    /// A new Product instance or error if validation fails
+    ///
+    /// # Errors
+    /// Returns `DomainError::ValidationError` if name is empty or price is negative
+    pub fn new(name: String, price: Decimal, stock: u32) -> Result<Self, DomainError> {
+        // Implementation...
+    }
+}
+```
+
+### 2. Document Complex Logic
+
+Add explanatory comments for complex business rules or algorithms:
+
+```rust
+fn calculate_discount(product: &Product, quantity: u32) -> Decimal {
+    let base_price = product.price() * Decimal::from(quantity);
+    
+    // Apply volume discount based on quantity purchased
+    // Volume discount follows a tiered structure:
+    // - 10-20 items: 5% discount
+    // - 21-50 items: 10% discount
+    // - 51+ items: 15% discount
+    let discount_percentage = if quantity >= 51 {
+        Decimal::from_str("0.15").unwrap()
+    } else if quantity >= 21 {
+        Decimal::from_str("0.10").unwrap()
+    } else if quantity >= 10 {
+        Decimal::from_str("0.05").unwrap()
+    } else {
+        Decimal::ZERO
+    };
+    
+    base_price * discount_percentage
+}
+```
+
+### 3. TODO/FIXME Comments
+
+Use standardized TODO/FIXME comments for work in progress:
+
+```rust
+// TODO(github-username): Implement caching to improve performance
+async fn fetch_product_data(id: &ProductId) -> Result<ProductData, ServiceError> {
+    // Current implementation without caching
+}
+
+// FIXME: This approach can lead to race conditions under high concurrent load
+async fn process_purchase(purchase: Purchase) -> Result<(), PurchaseError> {
+    // Current implementation
+}
+```
+
+### 4. Module-Level Documentation
+
+Document each module with a top-level comment explaining its purpose:
+
+```rust
+//! Product domain module
+//!
+//! This module contains the core domain entities and business logic
+//! related to products in the system. It defines the Product entity,
+//! associated value objects (ProductId, Price), and domain services
+//! for product-related operations.
+
+mod product;
+mod product_id;
+mod price;
+mod product_service;
+
+pub use product::Product;
+pub use product_id::ProductId;
+pub use price::Price;
+pub use product_service::ProductService;
+```
+
+### 5. Test Documentation
+
+Document test intentions clearly:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    /// Tests that product purchase fails when requested quantity exceeds stock
+    #[tokio::test]
+    async fn cannot_purchase_more_than_available_stock() {
+        // Test implementation
+    }
+    
+    /// Tests that product price validation properly rejects negative values
+    #[test]
+    fn price_validation_rejects_negative_values() {
+        // Test implementation
+    }
+}
+```
+
+## Code Organization Best Practices
+
+1. **Module Structure**: Follow the established folder hierarchy strictly.
+2. **Naming Conventions**: Use descriptive names that indicate the layer and purpose.
+3. **Import Organization**: Import from inner layers to outer layers only.
+4. **Error Propagation**: Use proper error mapping between layers.
+5. **Async/Await**: Use async traits and implementations for I/O operations.
+
+## Testing Strategy
+
+- **Unit Tests**: Test individual components in isolation.
+- **Integration Tests**: Test layer interactions (`tests/` directory).
+- **Mock Implementations**: Create mock repositories for testing use cases.
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockall::predicate::*;
+    use mockall::mock;
+    
+    mock! {
+        ProductRepo {}
+        
+        #[async_trait]
+        impl ProductRepository for ProductRepo {
+            async fn find_by_id(&self, id: &ProductId) -> Result<Option<Product>, RepositoryError>;
+            async fn save(&self, product: &Product) -> Result<(), RepositoryError>;
+            async fn find_all(&self) -> Result<Vec<Product>, RepositoryError>;
+        }
+    }
+    
+    /// Tests that product purchase fails when insufficient stock
+    #[tokio::test]
+    async fn cannot_purchase_more_than_available_stock() {
+        let mut mock_repo = MockProductRepo::new();
+        let product = Product::new("Test Product".to_string(), Decimal::from(100), 5).unwrap();
+        
+        mock_repo
+            .expect_find_by_id()
+            .returning(move |_| Ok(Some(product.clone())));
+        
+        let use_case = BuyProductUseCase::new(Arc::new(mock_repo));
+        let command = BuyProductCommand {
+            product_id: ProductId::new(),
+            quantity: 10, // More than available stock (5)
+        };
+        
+        let result = use_case.execute(command).await;
+        assert!(result.is_err());
+    }
+}
+```
+
+## Rust-Specific Best Practices
+
+1. **Type Safety**: Use newtype pattern for domain concepts
+2. **Error Handling**: Use proper error types with thiserror
+3. **Immutability**: Prefer immutable data where possible
+4. **Ownership**: Follow Rust's ownership rules for clear resource management
+5. **Async**: Use async/await for I/O operations consistently
+
+```rust
+// GOOD: Newtype pattern for type safety
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProductId(Uuid);
+
+impl ProductId {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+    
+    pub fn value(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+// GOOD: Domain-specific error types
+#[derive(Debug, thiserror::Error)]
+pub enum DomainError {
+    #[error("Insufficient stock: requested {requested}, available {available}")]
+    InsufficientStock { requested: u32, available: u32 },
+    
+    #[error("Invalid price: {0}")]
+    InvalidPrice(String),
+}
+```

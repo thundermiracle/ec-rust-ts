@@ -1,0 +1,18 @@
+[package]
+name = "axum-mini-template"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+axum = "0.8.3"
+tokio = { version = "1.44.2", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8.5", features = ["runtime-tokio", "sqlite", "macros", "tls-rustls", "chrono"] }
+chrono = "0.4"
+async-trait = "0.1"
+clap = { version = "4.5.37", features = ["derive"] }
+
+[dev-dependencies]
+httpc-test = "0.1.10"

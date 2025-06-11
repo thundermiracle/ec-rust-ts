@@ -1,0 +1,21 @@
+default_job = "run"
+env.CARGO_TERM_COLOR = "always"
+
+[jobs.dev]
+command = [
+    "cargo",
+    "run",
+    # put launch parameters for your program behind a `--` separator
+]
+watch = ["src"]
+default_watch = false
+need_stdout = true
+allow_warnings = true
+background = false
+on_change_strategy = "kill_then_restart"
+
+[jobs.http-test]
+command = ["cargo", "test", "-q", "quick_dev", "--", "--nocapture"]
+watch = ["tests"]
+default_watch = false
+need_stdout = true

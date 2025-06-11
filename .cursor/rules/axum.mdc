@@ -1,0 +1,19 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+
+# Axum tweaks
+
+- Use {} instead of : to express path query parameter
+
+```rust
+// Good: wrap query parameter in {}
+Router::new()
+  .route("/products/{id}", get(get_product))
+
+// Bad: use : to express path query parameter
+Router::new()
+    .route("/products/:id", get(get_product))
+```

@@ -1,0 +1,11 @@
+---
+description: 
+globs: Cargo.toml
+alwaysApply: false
+---
+
+# Package rule
+
+- Check the latest version on web first before adding packages
+- You CANNOT modify the version of packages, unless I told you do so
+- Don't use packages which are not updated for over 1 year, unless I told you do so
