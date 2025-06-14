@@ -1,3 +1,9 @@
 mod product_presenter;
 
-pub use product_presenter::ProductPresenter; 
+pub use product_presenter::{
+    ProductPresenter,
+    CategoryInfo,
+    ProductImage,
+    ColorInfo,
+    TagInfo
+}; 

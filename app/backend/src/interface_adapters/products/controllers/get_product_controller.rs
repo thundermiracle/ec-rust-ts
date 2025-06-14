@@ -19,6 +19,7 @@ impl GetProductController {
     }
 
     /// GET /products/{id} - 商品詳細取得処理
+    /// 統合されたリッチな商品情報を返す
     async fn handle(
         State(container): State<Arc<Container>>,
         Path(id): Path<u32>

@@ -6,7 +6,7 @@ use axum::Router;
 use std::sync::Arc;
 use crate::frameworks_and_drivers::Container;
 
-pub use controllers::{GetProductsController, GetProductController, BuyProductController};
+pub use controllers::{GetProductsController, GetProductController, BuyProductController, CategoriesController, ColorsController};
 pub use requests::BuyProductRequest;
 pub use presenters::ProductPresenter;
 
@@ -17,4 +17,6 @@ pub fn routes() -> Router<Arc<Container>> {
         .merge(GetProductsController::routes())
         .merge(GetProductController::routes())
         .merge(BuyProductController::routes())
+        .merge(CategoriesController::routes())
+        .merge(ColorsController::routes())
 } 
