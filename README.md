@@ -117,7 +117,7 @@ pnpm backend:build
 
 ## 📖 Documentation
 
-For detailed architecture information, see the [backend documentation](./app/backend/ARCHITECTURE.md).
+For detailed architecture information, see the [backend documentation](./app/backend/docs/ARCHITECTURE.md).
 
 ## 📄 License
 
