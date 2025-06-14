@@ -14,9 +14,9 @@ impl From<Product> for GetProductQuery {
     fn from(product: Product) -> GetProductQuery {
         GetProductQuery {
             id: product.id,
-            name: product.name,
-            price: product.price,
-            description: product.description,
+            name: product.name.clone(),
+            price: product.price(), // method call for Money compatibility
+            description: product.description.clone(),
             quantity: product.quantity,
         }
     }

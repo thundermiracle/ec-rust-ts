@@ -62,13 +62,15 @@ async fn main() -> anyhow::Result<()> {
         },
         Commands::Seed => {
             println!("Seeding database...");
-            frameworks_and_drivers::database::seed::seed_database().await?;
+            frameworks_and_drivers::database::run_seeds().await?;
+            frameworks_and_drivers::database::seed_sample_products().await?;
             println!("Database seeded successfully!");
         },
         Commands::Reset => {
             println!("Resetting database...");
             frameworks_and_drivers::database::clear::clear_database().await?;
-            frameworks_and_drivers::database::seed::seed_database().await?;
+            frameworks_and_drivers::database::run_seeds().await?;
+            frameworks_and_drivers::database::seed_sample_products().await?;
             println!("Database reset successfully!");
         }
     }

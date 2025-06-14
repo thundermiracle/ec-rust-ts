@@ -1,7 +1,7 @@
 use sqlx::Row;
 use chrono::Utc;
 
-use crate::domain::models::Product;
+use crate::domain::models::{Product, Money};
 use crate::frameworks_and_drivers::database::db::get_db;
 use crate::frameworks_and_drivers::persistence::entities::ProductEntity;
 use crate::application::repositories::ProductRepository;
@@ -19,10 +19,10 @@ impl SqliteProductRepository {
         Product::new(
             entity.id,
             entity.name,
-            entity.price,
             entity.description,
             entity.quantity,
-        )
+            Money::from_yen(entity.price),
+        ).expect("Invalid product data from database")
     }
 }
 
@@ -108,7 +108,7 @@ impl ProductRepository for SqliteProductRepository {
                     "UPDATE products SET name = ?, price = ?, description = ?, quantity = ?, updated_at = ? WHERE id = ?"
                 )
                 .bind(&product.name)
-                .bind(product.price)
+                .bind(product.price())
                 .bind(&product.description)
                 .bind(product.quantity)
                 .bind(&now)
@@ -123,7 +123,7 @@ impl ProductRepository for SqliteProductRepository {
                     "INSERT INTO products (name, price, description, quantity, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
                 )
                 .bind(&product.name)
-                .bind(product.price)
+                .bind(product.price())
                 .bind(&product.description)
                 .bind(product.quantity)
                 .bind(&now)
