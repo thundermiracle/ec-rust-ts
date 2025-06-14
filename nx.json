@@ -1,0 +1,144 @@
+{
+  "installation": {
+    "version": "21.1.3"
+  },
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "nxCloudId": "68498dffa3601f510694f85b",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/jest.config.[jt]s",
+      "!{projectRoot}/src/test-setup.[jt]s",
+      "!{projectRoot}/test-setup.[jt]s",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/eslint.config.js"
+    ],
+    "sharedGlobals": []
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"],
+      "cache": true
+    },
+    "test": {
+      "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js"],
+      "cache": true
+    },
+    "lint": {
+      "inputs": ["default", "{workspaceRoot}/.eslintrc.json", "{workspaceRoot}/eslint.config.js"],
+      "cache": true
+    },
+    "dev": {
+      "cache": false
+    },
+    "start": {
+      "cache": false
+    }
+  },
+  "projects": {
+    "frontend": {
+      "root": "app/frontend",
+      "projectType": "application",
+      "sourceRoot": "app/frontend/src",
+      "targets": {
+        "build": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "pnpm build",
+            "cwd": "app/frontend"
+          }
+        },
+        "dev": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "pnpm dev",
+            "cwd": "app/frontend"
+          }
+        },
+        "start": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "pnpm start",
+            "cwd": "app/frontend"
+          }
+        },
+        "lint": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "pnpm lint",
+            "cwd": "app/frontend"
+          }
+        },
+        "test": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "pnpm test",
+            "cwd": "app/frontend"
+          }
+        }
+      },
+      "tags": ["scope:frontend", "type:app"]
+    },
+    "backend": {
+      "root": "app/backend",
+      "projectType": "application",
+      "sourceRoot": "app/backend/src",
+      "targets": {
+        "build": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "cargo build --release",
+            "cwd": "app/backend"
+          }
+        },
+        "dev": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "cargo run",
+            "cwd": "app/backend"
+          }
+        },
+        "test": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "cargo test",
+            "cwd": "app/backend"
+          }
+        },
+        "check": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "cargo check",
+            "cwd": "app/backend"
+          }
+        },
+        "lint": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "cargo clippy -- -D warnings",
+            "cwd": "app/backend"
+          }
+        },
+        "format": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "cargo fmt",
+            "cwd": "app/backend"
+          }
+        },
+        "watch": {
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "bacon",
+            "cwd": "app/backend"
+          }
+        }
+      },
+      "tags": ["scope:backend", "type:app"]
+    }
+  }
+}

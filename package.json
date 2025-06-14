@@ -1,0 +1,40 @@
+{
+  "name": "ec-rust-ts",
+  "version": "1.0.0",
+  "description": "E-commerce monorepo with Rust backend and Next.js frontend",
+  "private": true,
+  "scripts": {
+    "dev": "nx run-many -t dev --parallel",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint",
+    "format": "nx run-many -t format",
+    "frontend:dev": "nx dev frontend",
+    "frontend:build": "nx build frontend",
+    "frontend:start": "nx start frontend",
+    "frontend:lint": "nx lint frontend",
+    "frontend:test": "nx test frontend",
+    "backend:dev": "nx dev backend",
+    "backend:build": "nx build backend",
+    "backend:test": "nx test backend",
+    "backend:lint": "nx lint backend",
+    "backend:format": "nx format backend",
+    "backend:watch": "nx watch backend",
+    "backend:check": "nx check backend",
+    "graph": "nx graph",
+    "reset": "nx reset",
+    "affected:build": "nx affected -t build",
+    "affected:test": "nx affected -t test",
+    "affected:lint": "nx affected -t lint"
+  },
+  "devDependencies": {
+    "nx": "^21.1.3"
+  },
+  "workspaces": [
+    "app/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
+}

@@ -1,0 +1,10 @@
+
+# Nx
+.nx/
+
+# Cursor
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Dependencies
+node_modules
