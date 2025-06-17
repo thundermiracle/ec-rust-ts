@@ -22,7 +22,7 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "cargo run",
+        "command": "bacon dev",
         "cwd": "{projectRoot}"
       }
     },

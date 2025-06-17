@@ -1,187 +1,185 @@
-use serde::{Deserialize, Serialize};
-use crate::application::queries::GetProductQuery;
+use crate::application::queries::{
+    CategoryQuery, ImageQuery, PriceQuery, ProductQuery, StatusQuery, StockQuery, VariantQuery,
+};
+use crate::interface_adapters::products::responses::{ProductResponse, VariantResponse};
 
-/// Product Presenter - 商品情報の統合プレゼンター
-/// 基本情報とリッチ情報を統合した単一のレスポンス構造
-#[derive(Serialize, Deserialize)]
-pub struct ProductPresenter {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub material: Option<String>,
-    pub dimensions: Option<String>,
-    
-    // 価格情報
-    pub price: u32,                    // 現在価格（セール価格 or 基本価格）
-    pub base_price: u32,               // 基本価格
-    pub sale_price: Option<u32>,       // セール価格
-    pub discount_percentage: Option<u8>, // 割引率
-    pub savings_amount: Option<u32>,   // 節約額
-    
-    // カテゴリー情報
-    pub category: CategoryInfo,
-    
-    // 画像情報
-    pub images: Vec<ProductImage>,
-    pub main_image: Option<String>,
-    
-    // 色情報
-    pub colors: Vec<String>,
-    pub available_colors: Vec<ColorInfo>,
-    
-    // フラグ・タグ情報
-    pub is_on_sale: bool,
-    pub is_best_seller: bool,
-    pub is_quick_ship: bool,
-    pub is_sold_out: bool,
-    pub is_new_arrival: bool,
-    pub tags: Vec<TagInfo>,
-    
-    // 在庫情報
-    pub quantity: u32,
-    pub is_available: bool,
-    pub stock_status: String,
-}
-
-/// カテゴリー情報
-#[derive(Serialize, Deserialize)]
-pub struct CategoryInfo {
-    pub id: String,
-    pub name: String,
-    pub slug: String,
-}
-
-/// 商品画像情報
-#[derive(Serialize, Deserialize)]
-pub struct ProductImage {
-    pub url: String,
-    pub alt_text: Option<String>,
-    pub is_main: bool,
-    pub sort_order: u32,
-}
-
-/// 色情報
-#[derive(Serialize, Deserialize)]
-pub struct ColorInfo {
-    pub name: String,
-    pub hex_code: Option<String>,
-    pub display_order: u32,
-}
-
-/// タグ情報
-#[derive(Serialize, Deserialize)]
-pub struct TagInfo {
-    pub slug: String,
-    pub name: String,
-    pub color_code: Option<String>,
-    pub priority: u8,
-}
-
-/// Application層のQueryからPresenterへの変換
-impl From<GetProductQuery> for ProductPresenter {
-    fn from(query: GetProductQuery) -> Self {
-        ProductPresenter {
-            id: query.id.to_string(),
-            name: query.name.clone(),
-            description: query.description.clone(),
-            material: Some("Walnut Wood".to_string()),
-            dimensions: Some("48\" x 24\" x 30\"".to_string()),
-            
-            // 価格情報（基本価格から10%割引のサンプル）
-            price: query.price,
-            base_price: (query.price as f64 * 1.11) as u32, // 逆算でbase_price
-            sale_price: if query.id % 2 == 1 { Some(query.price) } else { None },
-            discount_percentage: if query.id % 2 == 1 { Some(10) } else { None },
-            savings_amount: if query.id % 2 == 1 { 
-                Some((query.price as f64 * 0.11) as u32) 
-            } else { 
-                None 
-            },
-            
-            // カテゴリー情報（サンプル）
-            category: CategoryInfo {
-                id: "desks".to_string(),
-                name: "Desks".to_string(),
-                slug: "desks".to_string(),
-            },
-            
-            // 画像情報（サンプル）
-            images: vec![
-                ProductImage {
-                    url: format!("https://picsum.photos/id/{}/800/800", query.id * 10),
-                    alt_text: Some(format!("{} - Main View", query.name)),
-                    is_main: true,
-                    sort_order: 0,
-                },
-                ProductImage {
-                    url: format!("https://picsum.photos/id/{}/800/800", query.id * 10 + 1),
-                    alt_text: Some(format!("{} - Side View", query.name)),
-                    is_main: false,
-                    sort_order: 1,
-                },
-            ],
-            main_image: Some(format!("https://picsum.photos/id/{}/800/800", query.id * 10)),
-            
-            // 色情報（サンプル）
-            colors: vec!["Walnut".to_string()],
-            available_colors: vec![
-                ColorInfo {
-                    name: "Walnut".to_string(),
-                    hex_code: Some("#8B4513".to_string()),
-                    display_order: 1,
-                },
-            ],
-            
-            // フラグ情報（サンプル）
-            is_on_sale: query.id % 2 == 1,
-            is_best_seller: query.id % 3 == 0,
-            is_quick_ship: query.id % 4 == 0,
-            is_sold_out: query.quantity == 0,
-            is_new_arrival: query.id > 6,
-            tags: vec![
-                TagInfo {
-                    slug: if query.id % 2 == 1 { "on_sale".to_string() } else { "best_seller".to_string() },
-                    name: if query.id % 2 == 1 { "On Sale".to_string() } else { "Best Seller".to_string() },
-                    color_code: Some("#e74c3c".to_string()),
-                    priority: 1,
-                },
-            ],
-            
-            // 在庫情報
-            quantity: query.quantity,
-            is_available: query.quantity > 0,
-            stock_status: if query.quantity > 10 {
-                "In Stock".to_string()
-            } else if query.quantity > 0 {
-                "Low Stock".to_string()
-            } else {
-                "Out of Stock".to_string()
-            },
-        }
-    }
-}
+/// Product用のプレゼンター
+/// Clean Architecture: Interface Adapters層
+pub struct ProductPresenter;
 
 impl ProductPresenter {
-    /// 価格表示フォーマット
-    pub fn format_price_display(&self) -> String {
-        if let Some(sale_price) = self.sale_price {
-            format!("¥{} (was ¥{})", sale_price, self.base_price)
-        } else {
-            format!("¥{}", self.base_price)
+    /// ProductQueryをAPI応答形式に変換
+    pub fn present(product_query: ProductQuery) -> ProductResponse {
+        // VariantQueryをVariantResponseに変換
+        let variants: Vec<VariantResponse> = product_query
+            .variants
+            .into_iter()
+            .map(VariantResponse::from)
+            .collect();
+
+        ProductResponse {
+            id: product_query.id.to_string(),
+            name: product_query.name,
+            price: product_query.price.base_price,
+            sale_price: product_query.price.sale_price,
+            images: product_query.images.images,
+            category: product_query.category.slug,
+            description: product_query.description,
+            material: product_query.material,
+            dimensions: product_query.dimensions,
+            colors: product_query.colors,
+            is_on_sale: product_query.status.is_on_sale,
+            is_best_seller: product_query.status.is_best_seller,
+            is_quick_ship: product_query.status.is_quick_ship,
+            is_sold_out: product_query.stock.is_sold_out,
+            variants,
         }
-    }
-    
-    /// 割引表示
-    pub fn format_discount_display(&self) -> Option<String> {
-        self.discount_percentage.map(|discount| format!("{}% OFF", discount))
     }
 
-    /// 在庫状況表示
-    pub fn format_availability_status(&self) -> String {
-        if self.quantity > 0 {
-            "在庫あり".to_string()
-        } else {
-            "在庫切れ".to_string()
+
+    /// 複数のProductをまとめて変換
+    pub fn present_list(product_queries: Vec<ProductQuery>) -> Vec<ProductResponse> {
+        product_queries.into_iter().map(Self::present).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::application::queries::VariantQuery;
+
+    fn create_test_product_query() -> ProductQuery {
+        ProductQuery {
+            id: 1,
+            name: "Test Product".to_string(),
+            description: "Test Description".to_string(),
+            material: Some("Cotton".to_string()),
+            dimensions: Some("10x10x10cm".to_string()),
+            price: PriceQuery {
+                base_price: 1000,
+                sale_price: Some(800),
+                current_price: 800,
+                discount_percentage: Some(20),
+                savings_amount: 200,
+            },
+            category: CategoryQuery {
+                id: "test-category-id".to_string(),
+                name: "Test Category".to_string(),
+                slug: "test-category".to_string(),
+            },
+            stock: StockQuery {
+                quantity: 10,
+                is_sold_out: false,
+                is_available: true,
+            },
+            images: ImageQuery {
+                images: vec!["image1.jpg".to_string()],
+                main_image: Some("image1.jpg".to_string()),
+            },
+            status: StatusQuery {
+                is_on_sale: true,
+                is_best_seller: false,
+                is_quick_ship: false,
+                is_active: true,
+            },
+            colors: vec!["Red".to_string()],
+            tags: vec!["sale".to_string()],
+            variants: vec![],
         }
+    }
+
+    fn create_product_query_with_variants() -> ProductQuery {
+        let mut product_query = create_test_product_query();
+        product_query.id = 1;
+        product_query.name = "Desk - Walnut".to_string();
+        product_query.description =
+            "Minimalist walnut desk with clean lines and modern design".to_string();
+        product_query.material = Some("Walnut Wood".to_string());
+        product_query.dimensions = Some("48\" x 24\" x 30\"".to_string());
+        product_query.price = PriceQuery {
+            base_price: 2290,
+            sale_price: Some(1790),
+            current_price: 1790,
+            discount_percentage: Some(21), // calculated
+            savings_amount: 500,
+        };
+        product_query.category.slug = "desks".to_string();
+        product_query.images = ImageQuery {
+            images: vec![
+                "https://picsum.photos/id/100/800/800".to_string(),
+                "https://picsum.photos/id/101/800/800".to_string(),
+            ],
+            main_image: Some("https://picsum.photos/id/100/800/800".to_string()),
+        };
+        product_query.colors = vec!["Walnut".to_string()];
+        product_query.status.is_on_sale = true;
+        product_query.status.is_best_seller = true;
+        product_query.variants = vec![
+            VariantQuery {
+                id: "desk-walnut-small".to_string(),
+                name: "Small".to_string(),
+                price: 1790,
+                color: "Walnut".to_string(),
+                image: Some("https://picsum.photos/id/100/800/800".to_string()),
+                is_available: true,
+            },
+            VariantQuery {
+                id: "desk-walnut-large".to_string(),
+                name: "Large".to_string(),
+                price: 2290,
+                color: "Walnut".to_string(),
+                image: Some("https://picsum.photos/id/101/800/800".to_string()),
+                is_available: true,
+            },
+        ];
+
+        product_query
+    }
+
+    #[test]
+    fn test_present_product_query() {
+        let product_query = create_test_product_query();
+        let response = ProductPresenter::present(product_query);
+
+        assert_eq!(response.id, "1");
+        assert_eq!(response.name, "Test Product");
+        assert_eq!(response.price, 1000);
+        assert_eq!(response.sale_price, Some(800));
+        assert_eq!(response.category, "test-category");
+        assert!(response.is_on_sale);
+    }
+
+    #[test]
+    fn test_mockdata_compatible_json_output() {
+        let product_query = create_product_query_with_variants();
+        let response = ProductPresenter::present(product_query);
+
+        // JSON出力をテスト
+        let json_output = serde_json::to_string_pretty(&response).unwrap();
+        println!("Generated ProductResponse JSON (compatible with mockData.ts):");
+        println!("{}", json_output);
+
+        // キー構造をテスト
+        assert_eq!(response.id, "1");
+        assert_eq!(response.name, "Desk - Walnut");
+        assert_eq!(response.price, 2290);
+        assert_eq!(response.sale_price, Some(1790));
+        assert_eq!(response.category, "desks");
+        assert_eq!(response.variants.len(), 2);
+
+        // バリアント構造をテスト
+        let small_variant = &response.variants[0];
+        assert_eq!(small_variant.id, "desk-walnut-small");
+        assert_eq!(small_variant.name, "Small");
+        assert_eq!(small_variant.price, 1790);
+        assert_eq!(small_variant.color, "Walnut");
+        assert!(small_variant.is_available);
+
+        let large_variant = &response.variants[1];
+        assert_eq!(large_variant.id, "desk-walnut-large");
+        assert_eq!(large_variant.name, "Large");
+        assert_eq!(large_variant.price, 2290);
+        assert_eq!(large_variant.color, "Walnut");
+        assert!(large_variant.is_available);
     }
 } 

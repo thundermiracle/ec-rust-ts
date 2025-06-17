@@ -29,15 +29,15 @@ impl ProductEntity {
             id: product.id as i64,
             name: product.name.clone(),
             description: product.description.clone(),
-            material: None, // TODO: Domain modelに追加予定
-            dimensions: None, // TODO: Domain modelに追加予定
-            base_price: product.price() as i64,
-            sale_price: None, // TODO: セール価格対応
-            category_id: 1, // TODO: カテゴリー対応
+            material: product.material.clone(),
+            dimensions: product.dimensions.clone(),
+            base_price: product.base_price.yen() as i64,
+            sale_price: product.sale_price.map(|price| price.yen() as i64),
+            category_id: 1, // TODO: カテゴリーIDの適切な処理
             quantity: product.quantity as i64,
-            is_active: true,
-            is_best_seller: false,
-            is_quick_ship: false,
+            is_active: product.is_available,
+            is_best_seller: product.is_best_seller,
+            is_quick_ship: product.is_quick_ship,
             created_at: chrono::Utc::now().to_rfc3339(),
             updated_at: chrono::Utc::now().to_rfc3339(),
         }
@@ -45,7 +45,7 @@ impl ProductEntity {
     
     /// エンティティからドメインモデルへの変換
     pub fn to_domain(self) -> Result<Product, DomainError> {
-        Product::new(
+        Product::new_simple(
             self.id as u32,
             self.name,
             self.description,

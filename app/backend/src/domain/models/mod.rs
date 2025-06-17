@@ -7,7 +7,7 @@ mod tag;
 mod inventory;
 mod value_objects;
 
-pub use self::product::Product;
+pub use self::product::{Product, StockStatus, ProductDisplayStatus};
 pub use self::category::{Category, CategoryId};
 pub use self::color::{Color, ColorName};
 pub use self::product_image::{ProductImage, ProductImageId, ProductImageProductId, ImageUrl};

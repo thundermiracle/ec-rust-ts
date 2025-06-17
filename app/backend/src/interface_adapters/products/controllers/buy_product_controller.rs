@@ -25,6 +25,8 @@ impl BuyProductController {
         Path(id): Path<u32>, 
         Json(request): Json<BuyProductRequest>
     ) -> Result<()> {
+        println!("->> BuyProductController::handle - product_id: {}, quantity: {}", id, request.quantity);
+        
         let buy_product_usecase = container.create_buy_product_usecase();
         
         // RequestからCommandへの変換
@@ -34,11 +36,9 @@ impl BuyProductController {
         
         buy_product_usecase
             .buy(id, command)
-            .await
-            .map_err(|e| match e {
-                ApplicationError::ProductNotFound(_) => Error::NotFound,
-                ApplicationError::Domain(_) => Error::BuyProductFailed,
-                _ => Error::InternalServerError,
-            })
+            .await?; // ApplicationErrorからErrorへの自動変換を利用
+        
+        println!("->> BuyProductController::handle - purchase successful for product_id: {}", id);
+        Ok(())
     }
 } 

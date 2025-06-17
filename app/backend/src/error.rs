@@ -1,4 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse};
+use crate::application::ApplicationError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -39,5 +40,33 @@ impl IntoResponse for Error {
 impl From<anyhow::Error> for Error {
     fn from(error: anyhow::Error) -> Self {
         Error::ServerError(Some(error.to_string()))
+    }
+}
+
+// ApplicationErrorからErrorへの変換実装
+impl From<ApplicationError> for Error {
+    fn from(app_error: ApplicationError) -> Self {
+        println!("->> ApplicationError conversion: {:?}", app_error);
+        
+        match app_error {
+            ApplicationError::ProductNotFound(_) => Error::NotFound,
+            ApplicationError::Domain(domain_error) => {
+                println!("->> Domain error details: {:?}", domain_error);
+                // ドメインエラーは通常、バリデーションエラーとして扱う
+                Error::BuyProductFailed
+            },
+            ApplicationError::Repository(repo_error) => {
+                println!("->> Repository error details: {:?}", repo_error);
+                match repo_error {
+                    crate::application::error::RepositoryError::NotFound => Error::NotFound,
+                    _ => Error::InternalServerError,
+                }
+            },
+            ApplicationError::Validation(_) => Error::BuyProductFailed,
+            ApplicationError::QueryMapping(query_error) => {
+                println!("->> Query mapping error details: {:?}", query_error);
+                Error::InternalServerError
+            }
+        }
     }
 }

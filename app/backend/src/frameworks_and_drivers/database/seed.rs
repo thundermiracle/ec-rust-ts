@@ -163,6 +163,17 @@ pub async fn seed_sample_products() -> Result<()> {
         ("monument-charcoal-1", "Monument - Charcoal", "Phone stand with minimalist design",
          "Metal", "4\" x 4\" x 6\"", 13500, None, "accessories", 50, false, false, true),
     ];
+
+    let product_variants: &[(&str, &[(&str, &str, i64, Option<i64>, &str, i64)])] = &[
+        ("desk-walnut-1", &[
+            ("Small", "Walnut", 1790 * 150, None, "https://picsum.photos/id/100/800/800", 7),
+            ("Large", "Walnut", 2290 * 150, None, "https://picsum.photos/id/101/800/800", 8),
+        ]),
+        ("form-armchair-swivel-1", &[
+            ("Black Upholstery", "Black", 1345 * 150, None, "https://picsum.photos/id/312/800/800", 4),
+            ("Gray Upholstery", "Gray", 1715 * 150, None, "https://picsum.photos/id/315/800/800", 4),
+        ]),
+    ];
     
     for (id, name, description, material, dimensions, base_price, sale_price, category_slug, quantity, is_best_seller, _is_on_sale, is_quick_ship) in products {
         // カテゴリーIDを取得
@@ -191,13 +202,88 @@ pub async fn seed_sample_products() -> Result<()> {
         .bind(base_price)
         .bind(sale_price)
         .bind(category_id)
-        .bind(quantity)
+        .bind(0) // Quantity is updated later
         .bind(is_best_seller)
         .bind(is_quick_ship)
         .fetch_optional(pool)
         .await?;
         
         if let Some(product_id) = product_id {
+            // バリアントを検索
+            let variants_to_seed = product_variants.iter().find(|(p_id, _)| *p_id == id);
+
+            if let Some((_, variants)) = variants_to_seed {
+                // バリアントを持つ商品の処理
+                let mut total_quantity = 0;
+                for (v_name, v_color, v_base_price, v_sale_price, v_image_url, v_quantity) in variants.iter().cloned() {
+                    let color_id: i64 = sqlx::query_scalar("SELECT id FROM colors WHERE name = ?")
+                        .bind(v_color)
+                        .fetch_one(pool)
+                        .await?;
+
+                    let variant_id = sqlx::query_scalar::<_, i64>(
+                        r#"
+                        INSERT INTO product_variants (product_id, name, color_id, base_price, sale_price, image_url, quantity, is_available)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
+                        RETURNING id
+                        "#
+                    )
+                    .bind(product_id)
+                    .bind(v_name)
+                    .bind(color_id)
+                    .bind(v_base_price)
+                    .bind(v_sale_price)
+                    .bind(v_image_url)
+                    .bind(v_quantity)
+                    .fetch_one(pool)
+                    .await?;
+
+                    // バリアントの在庫を挿入
+                    sqlx::query(
+                        r#"
+                        INSERT INTO inventory (variant_id, total_quantity, reserved_quantity, low_stock_threshold)
+                        VALUES (?, ?, 0, 5)
+                        "#
+                    )
+                    .bind(variant_id)
+                    .bind(v_quantity)
+                    .execute(pool)
+                    .await?;
+                    
+                    total_quantity += v_quantity;
+                }
+
+                // 親商品の数量を更新
+                sqlx::query("UPDATE products SET quantity = ? WHERE id = ?")
+                    .bind(total_quantity)
+                    .bind(product_id)
+                    .execute(pool)
+                    .await?;
+            } else {
+                // バリアントを持たない商品の処理
+                // 在庫データを挿入
+                sqlx::query(
+                    r#"
+                    INSERT OR IGNORE INTO inventory (
+                        product_id, total_quantity, reserved_quantity, 
+                        low_stock_threshold
+                    )
+                    VALUES (?, ?, 0, 5)
+                    "#
+                )
+                .bind(product_id)
+                .bind(quantity)
+                .execute(pool)
+                .await?;
+
+                // 親商品の数量を更新
+                 sqlx::query("UPDATE products SET quantity = ? WHERE id = ?")
+                    .bind(quantity)
+                    .bind(product_id)
+                    .execute(pool)
+                    .await?;
+            }
+
             // 商品画像を挿入（mockDataのimagesから）
             let images = match id {
                 "desk-walnut-1" => vec![
@@ -283,21 +369,6 @@ pub async fn seed_sample_products() -> Result<()> {
                 .execute(pool)
                 .await?;
             }
-            
-            // 在庫データを挿入
-            sqlx::query(
-                r#"
-                INSERT OR IGNORE INTO inventory (
-                    product_id, total_quantity, reserved_quantity, 
-                    low_stock_threshold
-                )
-                VALUES (?, ?, 0, 5)
-                "#
-            )
-            .bind(product_id)
-            .bind(quantity)
-            .execute(pool)
-            .await?;
             
             // 商品色を挿入（mockDataのcolorsから）
             let colors = match id {
