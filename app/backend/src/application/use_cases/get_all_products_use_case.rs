@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::application::repositories::ProductRepository;
 use crate::application::error::ApplicationError;
-use crate::application::queries::GetProductQuery;
+use crate::application::queries::ProductSummary;
 
 pub struct GetAllProductsUseCase {
     product_repository: Arc<dyn ProductRepository + Send + Sync>,
@@ -15,7 +15,7 @@ impl GetAllProductsUseCase {
         }
     }
 
-    pub async fn get_all(&self) -> Result<Vec<GetProductQuery>, ApplicationError> {
+    pub async fn get_all(&self) -> Result<Vec<ProductSummary>, ApplicationError> {
         print!("->> get_all_products_usecase");
         let products = self.product_repository.find_all().await?;
         let result = products.into_iter().map(|p| p.into()).collect();

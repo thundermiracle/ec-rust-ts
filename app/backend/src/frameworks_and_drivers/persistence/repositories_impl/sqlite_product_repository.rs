@@ -1,8 +1,60 @@
-use crate::domain::models::Product;
+use crate::domain::models::{Product, Category, Color, ProductImage, Tag, CategoryId, ColorName, ProductImageId, ProductImageProductId, ImageUrl, TagSlug, Money};
 use crate::frameworks_and_drivers::database::db::get_db;
 use crate::frameworks_and_drivers::persistence::entities::ProductEntity;
 use crate::application::repositories::ProductRepository;
 use crate::application::error::RepositoryError;
+use crate::domain::error::DomainError;
+use sqlx::FromRow;
+
+/// 完全な商品情報を取得するためのJOIN結果構造体
+#[derive(Debug, FromRow)]
+struct CompleteProductRow {
+    // Product fields
+    id: i64,
+    name: String,
+    description: String,
+    material: Option<String>,
+    dimensions: Option<String>,
+    base_price: i64,
+    sale_price: Option<i64>,
+    category_id: i64,
+    quantity: i64,
+    is_active: bool,
+    is_best_seller: bool,
+    is_quick_ship: bool,
+    created_at: String,
+    updated_at: String,
+    
+    // Category fields (nullable for LEFT JOIN)
+    category_name: Option<String>,
+    category_slug: Option<String>,
+    category_parent_id: Option<i64>,
+}
+
+/// カラー情報取得用の構造体
+#[derive(Debug, FromRow)]
+struct ColorRow {
+    color_name: String,
+    hex_code: Option<String>,
+}
+
+/// 画像情報取得用の構造体
+#[derive(Debug, FromRow)]
+struct ImageRow {
+    image_id: i64,
+    image_url: String,
+    sort_order: i64,
+}
+
+/// タグ情報取得用の構造体
+#[derive(Debug, FromRow)]
+struct TagRow {
+    tag_name: String,
+    tag_slug: String,
+    color_code: Option<String>,
+    priority: i64,
+    is_system: bool,
+}
 
 /// SQLite商品リポジトリ実装 - 新しい正規化スキーマ対応
 /// Clean Architecture: Frameworks & Drivers層のデータアクセス実装
@@ -13,7 +65,44 @@ impl SqliteProductRepository {
         Self {}
     }
     
+    /// 関連データを含む完全なProductを構築
+    async fn build_complete_product(
+        &self,
+        product_row: CompleteProductRow,
+        colors: Vec<Color>,
+        images: Vec<ProductImage>,
+        tags: Vec<Tag>,
+    ) -> Result<Product, RepositoryError> {
+        // Category構築 - new()メソッドを使用してプライベートフィールドにアクセス
+        let category = if let (Some(name), Some(slug)) = (product_row.category_name, product_row.category_slug) {
+            let category_id = CategoryId::new(product_row.category_id.to_string())
+                .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+            let parent_id = if let Some(parent_id_value) = product_row.category_parent_id {
+                Some(CategoryId::new(parent_id_value.to_string())
+                    .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?)
+            } else {
+                None
+            };
+            Category::new(category_id, name, slug, parent_id)
+                .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?
+        } else {
+            Category::default()
+        };
 
+        // Product構築
+        Product::new(
+            product_row.id as u32,
+            product_row.name,
+            product_row.description,
+            product_row.quantity as u32,
+            Money::from_yen(product_row.base_price as u32),
+            category,
+            colors,
+            images,
+            tags,
+            vec![], // variants - 今は空のベクターで初期化
+        ).map_err(|e| RepositoryError::QueryExecution(e.to_string()))
+    }
 }
 
 #[async_trait::async_trait]
@@ -52,29 +141,115 @@ impl ProductRepository for SqliteProductRepository {
             .map_err(|e| RepositoryError::DatabaseConnection(e.to_string()))?;
         let pool = db.get_pool();
         
-        let entity = sqlx::query_as::<_, ProductEntity>(
+        // メイン商品情報とカテゴリー情報を取得
+        let product_row = sqlx::query_as::<_, CompleteProductRow>(
             r#"
-            SELECT id, name, description, material, dimensions, 
-                   base_price, sale_price, category_id, quantity,
-                   is_active, is_best_seller, is_quick_ship,
-                   created_at, updated_at
-            FROM products 
-            WHERE id = ? AND is_active = TRUE
+            SELECT 
+                p.id, p.name, p.description, p.material, p.dimensions,
+                p.base_price, p.sale_price, p.category_id, p.quantity,
+                p.is_active, p.is_best_seller, p.is_quick_ship,
+                p.created_at, p.updated_at,
+                c.name as category_name,
+                c.slug as category_slug,
+                c.parent_id as category_parent_id
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.id = ? AND p.is_active = TRUE
             "#
         )
         .bind(id as i64)
         .fetch_optional(pool)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        let product_row = match product_row {
+            Some(row) => row,
+            None => return Ok(None),
+        };
+
+        // カラー情報を取得
+        let color_rows = sqlx::query_as::<_, ColorRow>(
+            r#"
+            SELECT cl.name as color_name, cl.hex_code
+            FROM product_colors pc
+            JOIN colors cl ON pc.color_id = cl.id
+            WHERE pc.product_id = ?
+            ORDER BY cl.display_order, cl.name
+            "#
+        )
+        .bind(id as i64)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        let colors: Result<Vec<Color>, DomainError> = color_rows
+            .into_iter()
+            .map(|row| {
+                let color_name = ColorName::new(row.color_name)?;
+                Ok(Color::new(color_name, row.hex_code)?)
+            })
+            .collect();
+        let colors = colors.map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        // 画像情報を取得
+        let image_rows = sqlx::query_as::<_, ImageRow>(
+            r#"
+            SELECT id as image_id, image_url, sort_order
+            FROM product_images
+            WHERE product_id = ?
+            ORDER BY sort_order
+            "#
+        )
+        .bind(id as i64)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        let images: Result<Vec<ProductImage>, DomainError> = image_rows
+            .into_iter()
+            .map(|row| {
+                let image_id = ProductImageId::new(row.image_id as u32);
+                let product_image_id = ProductImageProductId::new(id.to_string())?;
+                let image_url = ImageUrl::new(row.image_url)?;
+                ProductImage::new(image_id, product_image_id, image_url, row.sort_order as u32)
+            })
+            .collect();
+        let images = images.map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        // タグ情報を取得
+        let tag_rows = sqlx::query_as::<_, TagRow>(
+            r#"
+            SELECT t.name as tag_name, t.slug as tag_slug, t.color_code, t.priority, t.is_system
+            FROM product_tags pt
+            JOIN tags t ON pt.tag_id = t.id
+            WHERE pt.product_id = ?
+            ORDER BY t.priority DESC, t.name
+            "#
+        )
+        .bind(id as i64)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        let tags: Result<Vec<Tag>, DomainError> = tag_rows
+            .into_iter()
+            .map(|row| {
+                let tag_slug = TagSlug::new(row.tag_slug)?;
+                Tag::new(
+                    tag_slug,
+                    row.tag_name,
+                    row.color_code,
+                    row.priority as u8,
+                    row.is_system,
+                )
+            })
+            .collect();
+        let tags = tags.map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        // 完全なProductオブジェクトを構築
+        let product = self.build_complete_product(product_row, colors, images, tags).await?;
         
-        match entity {
-            Some(entity) => {
-                let product = entity.to_domain()
-                    .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-                Ok(Some(product))
-            },
-            None => Ok(None),
-        }
+        Ok(Some(product))
     }
 
     async fn save(&self, product: Product) -> Result<(), RepositoryError> {

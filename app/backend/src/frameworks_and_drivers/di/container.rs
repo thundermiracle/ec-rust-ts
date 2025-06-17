@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use crate::frameworks_and_drivers::persistence::repositories_impl::SqliteProductRepository;
 use crate::application::repositories::ProductRepository;
-use crate::application::use_cases::{GetProductUseCase, GetAllProductsUseCase, BuyProductUseCase};
+use crate::application::use_cases::{
+    GetProductUseCase, GetAllProductsUseCase, BuyProductUseCase,
+};
 
 /// コンテナはアプリケーションの依存関係を管理します
 /// Uncle Bob's Clean Architecture: Frameworks & Drivers層でDI設定
@@ -36,6 +38,8 @@ impl Container {
     pub fn create_buy_product_usecase(&self) -> BuyProductUseCase {
         BuyProductUseCase::new(self.product_repository.clone())
     }
+    
+
 }
 
 /// グローバルなコンテナインスタンスを取得します

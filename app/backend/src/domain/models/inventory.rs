@@ -17,7 +17,7 @@ pub struct InventoryId(u32);
 
 /// 商品ID参照値オブジェクト（Inventoryが参照する商品ID）
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InventoryProductId(String);
+pub struct InventoryProductId(u32);
 
 /// バリアントID参照値オブジェクト（Inventoryが参照するバリアントID）
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -180,18 +180,18 @@ impl InventoryId {
 
 impl InventoryProductId {
     /// 新しい商品ID参照を作成
-    pub fn new(product_id: String) -> Result<Self, DomainError> {
-        if product_id.trim().is_empty() {
+    pub fn new(product_id: u32) -> Result<Self, DomainError> {
+        if product_id == 0 {
             return Err(DomainError::InvalidProductData(
-                "Product ID cannot be empty".to_string(),
+                "Product ID cannot be zero".to_string(),
             ));
         }
         Ok(Self(product_id))
     }
 
     /// 商品IDの値を取得
-    pub fn value(&self) -> &str {
-        &self.0
+    pub fn value(&self) -> u32 {
+        self.0
     }
 }
 
@@ -237,100 +237,117 @@ mod tests {
     #[test]
     fn create_valid_inventory() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        let inventory = Inventory::new(id, product_id, None, 10, 2);
+        let inventory = Inventory::new(id, product_id, None, 100, 10);
+        
         assert!(inventory.is_ok());
-        
         let inventory = inventory.unwrap();
-        assert_eq!(inventory.available_quantity(), 8);
-        assert!(inventory.is_in_stock());
+        assert_eq!(inventory.available_quantity(), 90);
         assert!(!inventory.is_sold_out());
     }
 
     #[test]
     fn create_variant_inventory() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let variant_id = InventoryVariantId::new("desk-walnut-small".to_string()).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
+        let variant_id = InventoryVariantId::new("size-small".to_string()).unwrap();
         
-        let inventory = Inventory::new(id, product_id, Some(variant_id), 5, 0);
+        let inventory = Inventory::new(id, product_id, Some(variant_id), 50, 5);
+        
         assert!(inventory.is_ok());
-        
         let inventory = inventory.unwrap();
         assert!(inventory.is_variant_inventory());
-        assert_eq!(inventory.available_quantity(), 5);
+        assert_eq!(inventory.available_quantity(), 45);
     }
 
     #[test]
     fn reject_invalid_reserved_quantity() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        let inventory = Inventory::new(id, product_id, None, 5, 10); // Reserved > Total
-        assert!(inventory.is_err());
+        let result = Inventory::new(id, product_id, None, 50, 60); // 予約数量が在庫数量を超過
+        
+        assert!(result.is_err());
     }
 
     #[test]
     fn reserve_inventory() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let mut inventory = Inventory::new(id, product_id, None, 10, 0).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        assert!(inventory.reserve(3).is_ok());
-        assert_eq!(inventory.available_quantity(), 7);
-        assert_eq!(inventory.reserved_quantity, 3);
+        let mut inventory = Inventory::new(id, product_id, None, 100, 10).unwrap();
+        
+        let result = inventory.reserve(20);
+        assert!(result.is_ok());
+        assert_eq!(inventory.reserved_quantity, 30);
+        assert_eq!(inventory.available_quantity(), 70);
     }
 
     #[test]
     fn reject_over_reservation() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let mut inventory = Inventory::new(id, product_id, None, 5, 0).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        assert!(inventory.reserve(10).is_err()); // More than available
+        let mut inventory = Inventory::new(id, product_id, None, 100, 10).unwrap();
+        
+        let result = inventory.reserve(95); // 利用可能数量(90)を超過
+        assert!(result.is_err());
     }
 
     #[test]
     fn consume_inventory() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let mut inventory = Inventory::new(id, product_id, None, 10, 3).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        assert!(inventory.consume(5).is_ok());
-        assert_eq!(inventory.quantity, 5);
-        assert_eq!(inventory.reserved_quantity, 0); // Consumed from reserved first
+        let mut inventory = Inventory::new(id, product_id, None, 100, 20).unwrap();
+        
+        let result = inventory.consume(15);
+        assert!(result.is_ok());
+        assert_eq!(inventory.quantity, 85);
+        assert_eq!(inventory.reserved_quantity, 5); // 予約から15消費、5残る
     }
 
     #[test]
     fn restock_inventory() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let mut inventory = Inventory::new(id, product_id, None, 5, 0).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        assert!(inventory.restock(10).is_ok());
-        assert_eq!(inventory.quantity, 15);
+        let mut inventory = Inventory::new(id, product_id, None, 50, 10).unwrap();
+        
+        let result = inventory.restock(25);
+        assert!(result.is_ok());
+        assert_eq!(inventory.quantity, 75);
+        assert_eq!(inventory.available_quantity(), 65);
     }
 
     #[test]
     fn check_purchase_capability() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let inventory = Inventory::new(id, product_id, None, 10, 3).unwrap();
+        let product_id = InventoryProductId::new(1).unwrap();
         
-        assert!(inventory.can_purchase(5)); // Available: 7
-        assert!(inventory.can_purchase(7)); // Exact match
-        assert!(!inventory.can_purchase(8)); // More than available
+        let inventory = Inventory::new(id, product_id, None, 100, 30).unwrap();
+        
+        assert!(inventory.can_purchase(70));  // 利用可能数量(70)内
+        assert!(!inventory.can_purchase(80)); // 利用可能数量(70)を超過
     }
 
     #[test]
     fn check_sold_out_status() {
         let id = InventoryId::new(1);
-        let product_id = InventoryProductId::new("desk-walnut-1".to_string()).unwrap();
-        let inventory = Inventory::new(id, product_id, None, 5, 5).unwrap(); // All reserved
+        let product_id = InventoryProductId::new(1).unwrap();
+        
+        let inventory = Inventory::new(id, product_id, None, 10, 10).unwrap(); // 全て予約済み
         
         assert!(inventory.is_sold_out());
         assert!(!inventory.is_in_stock());
-        assert_eq!(inventory.available_quantity(), 0);
+    }
+
+    #[test]
+    fn reject_zero_product_id() {
+        let result = InventoryProductId::new(0);
+        
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Product ID cannot be zero"));
     }
 } 

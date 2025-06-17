@@ -1,7 +1,5 @@
 use anyhow::Result;
-use sqlx::{Sqlite, SqlitePool};
-
-use crate::frameworks_and_drivers::database::db::get_db;
+use sqlx::SqlitePool;
 
 pub async fn run_migrations(database_url: &str) -> Result<()> {
     // データベース接続を直接作成

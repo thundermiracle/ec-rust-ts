@@ -89,6 +89,17 @@ impl std::fmt::Display for CategoryId {
     }
 }
 
+impl Default for Category {
+    fn default() -> Self {
+        Self {
+            id: CategoryId("default".to_string()),
+            name: "Default Category".to_string(),
+            slug: "default".to_string(),
+            parent_id: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
