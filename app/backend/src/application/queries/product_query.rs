@@ -50,7 +50,7 @@ impl ProductQueryMapper {
                 id: variant.id.value().to_string(),
                 name: variant.name.clone(),
                 price: variant.current_price().yen(),
-                color: variant.color.clone(),
+                color: variant.color_name(),
                 image: variant.image_url.clone(),
                 is_available: variant.is_available,
             })
@@ -79,7 +79,7 @@ impl ProductQueryMapper {
                 slug: product.category.slug.clone(),
             },
             stock: StockQuery {
-                quantity: product.quantity,
+                quantity: product.stock_quantity,
                 is_sold_out: product.is_sold_out(),
                 is_available: product.is_available_for_purchase(),
             },
@@ -93,7 +93,7 @@ impl ProductQueryMapper {
                 is_quick_ship: product.is_quick_ship,
                 is_active: product.is_available,
             },
-            colors: product.color_names(),
+            colors: product.all_color_names(),
             tags: product.tag_names(),
             variants,
         };

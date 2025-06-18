@@ -18,7 +18,11 @@ struct CompleteProductRow {
     base_price: i64,
     sale_price: Option<i64>,
     category_id: i64,
+    color_id: Option<i64>,
     quantity: i64,
+    reserved_quantity: i64,
+    low_stock_threshold: Option<i64>,
+    has_variants: bool,
     is_active: bool,
     is_best_seller: bool,
     is_quick_ship: bool,
@@ -35,7 +39,7 @@ struct CompleteProductRow {
 #[derive(Debug, FromRow)]
 struct ColorRow {
     color_name: String,
-    hex_code: Option<String>,
+    hex: Option<String>,
 }
 
 /// 画像情報取得用の構造体
@@ -64,9 +68,16 @@ struct VariantRow {
     name: String,
     base_price: i64,
     sale_price: Option<i64>,
+    color_id: i64,
     color_name: String,
+    color_hex: String,
+    size: Option<String>,
     image_url: Option<String>,
     is_available: bool,
+    stock_quantity: i64,
+    reserved_quantity: i64,
+    low_stock_threshold: Option<i64>,
+    cost_price: Option<i64>,
 }
 
 /// SQLite商品リポジトリ実装 - 新しい正規化スキーマ対応
@@ -82,7 +93,7 @@ impl SqliteProductRepository {
     async fn build_complete_product(
         &self,
         product_row: CompleteProductRow,
-        colors: Vec<Color>,
+        color: Option<Color>,
         images: Vec<ProductImage>,
         tags: Vec<Tag>,
         variants: Vec<ProductVariant>,
@@ -109,12 +120,15 @@ impl SqliteProductRepository {
             product_row.name,
             product_row.description,
             product_row.quantity as u32,
+            product_row.reserved_quantity as u32,
             Money::from_yen(product_row.base_price as u32),
             category,
-            colors,
+            color,
+            product_row.has_variants,
             images,
             tags,
             variants,
+            product_row.low_stock_threshold.map(|t| t as u32),
         ).map_err(|e| RepositoryError::QueryExecution(e.to_string()))
     }
 }
@@ -129,8 +143,9 @@ impl ProductRepository for SqliteProductRepository {
         let entities = sqlx::query_as::<_, ProductEntity>(
             r#"
             SELECT id, name, description, material, dimensions, 
-                   base_price, sale_price, category_id, quantity,
-                   is_active, is_best_seller, is_quick_ship,
+                   color_id, base_price, sale_price, category_id, 
+                   stock_quantity, reserved_quantity, low_stock_threshold,
+                   has_variants, is_active, is_best_seller, is_quick_ship,
                    created_at, updated_at
             FROM products 
             WHERE is_active = TRUE
@@ -160,8 +175,10 @@ impl ProductRepository for SqliteProductRepository {
             r#"
             SELECT 
                 p.id, p.name, p.description, p.material, p.dimensions,
-                p.base_price, p.sale_price, p.category_id, p.quantity,
-                p.is_active, p.is_best_seller, p.is_quick_ship,
+                p.base_price, p.sale_price, p.category_id, p.color_id,
+                p.stock_quantity as quantity, /* stock_quantityをquantityにエイリアス */
+                p.reserved_quantity, p.low_stock_threshold,
+                p.has_variants, p.is_active, p.is_best_seller, p.is_quick_ship,
                 p.created_at, p.updated_at,
                 c.name as category_name,
                 c.slug as category_slug,
@@ -181,29 +198,34 @@ impl ProductRepository for SqliteProductRepository {
             None => return Ok(None),
         };
 
-        // カラー情報を取得
-        let color_rows = sqlx::query_as::<_, ColorRow>(
-            r#"
-            SELECT cl.name as color_name, cl.hex_code
-            FROM product_colors pc
-            JOIN colors cl ON pc.color_id = cl.id
-            WHERE pc.product_id = ?
-            ORDER BY cl.display_order, cl.name
-            "#
-        )
-        .bind(id as i64)
-        .fetch_all(pool)
-        .await
-        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+        // カラー情報を取得（単一商品の場合）
+        let color = if !product_row.has_variants {
+            if let Some(color_id) = product_row.color_id {
+                let color_row = sqlx::query_as::<_, (String, String)>(
+                    r#"
+                    SELECT name, hex FROM colors WHERE id = ?
+                    "#
+                )
+                .bind(color_id)
+                .fetch_optional(pool)
+                .await
+                .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
-        let colors: Result<Vec<Color>, DomainError> = color_rows
-            .into_iter()
-            .map(|row| {
-                let color_name = ColorName::new(row.color_name)?;
-                Ok(Color::new(color_name, row.hex_code)?)
-            })
-            .collect();
-        let colors = colors.map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+                if let Some((color_name, hex_code)) = color_row {
+                    let color_name = ColorName::new(color_name)
+                        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+                    let color = Color::new(color_id as u32, color_name, hex_code, None, None)
+                        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+                    Some(color)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         // 画像情報を取得
         let image_rows = sqlx::query_as::<_, ImageRow>(
@@ -265,8 +287,9 @@ impl ProductRepository for SqliteProductRepository {
             r#"
             SELECT 
                 pv.id, pv.product_id, pv.name, pv.base_price, pv.sale_price, 
-                c.name as color_name, 
-                pv.image_url, pv.is_available
+                c.id as color_id, c.name as color_name, c.hex as color_hex,
+                pv.size, pv.image_url, pv.is_available, pv.stock_quantity, pv.reserved_quantity,
+                pv.low_stock_threshold, pv.cost_price
             FROM product_variants pv
             JOIN colors c ON pv.color_id = c.id
             WHERE pv.product_id = ?
@@ -283,22 +306,38 @@ impl ProductRepository for SqliteProductRepository {
             .map(|row| {
                 let variant_id = ProductVariantId::new(row.id.to_string())?;
                 let product_id = ProductVariantProductId::new(row.product_id as u32)?;
+                
+                // 色オブジェクトを作成
+                let color_name = ColorName::new(row.color_name)?;
+                let color = Color::new(
+                    row.color_id as u32, 
+                    color_name, 
+                    row.color_hex, 
+                    None, 
+                    None
+                )?;
+                
                 ProductVariant::new(
                     variant_id,
                     product_id,
                     row.name,
                     Money::from_yen(row.base_price as u32),
                     row.sale_price.map(|p| Money::from_yen(p as u32)),
-                    row.color_name,
+                    Some(color),
+                    row.size,
                     row.image_url,
                     row.is_available,
+                    row.stock_quantity as u32,
+                    row.reserved_quantity as u32,
+                    row.low_stock_threshold.map(|t| t as u32),
+                    row.cost_price.map(|p| Money::from_yen(p as u32)),
                 )
             })
             .collect();
         let variants = variants.map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
         // 完全なProductオブジェクトを構築
-        let product = self.build_complete_product(product_row, colors, images, tags, variants).await?;
+        let product = self.build_complete_product(product_row, color, images, tags, variants).await?;
         
         Ok(Some(product))
     }
@@ -326,8 +365,9 @@ impl ProductRepository for SqliteProductRepository {
                     r#"
                     UPDATE products 
                     SET name = ?, description = ?, material = ?, dimensions = ?,
-                        base_price = ?, sale_price = ?, category_id = ?, quantity = ?,
-                        is_active = ?, is_best_seller = ?, is_quick_ship = ?,
+                        color_id = ?, base_price = ?, sale_price = ?, category_id = ?, 
+                        stock_quantity = ?, reserved_quantity = ?, low_stock_threshold = ?,
+                        has_variants = ?, is_active = ?, is_best_seller = ?, is_quick_ship = ?,
                         updated_at = ?
                     WHERE id = ?
                     "#
@@ -336,10 +376,14 @@ impl ProductRepository for SqliteProductRepository {
                 .bind(&entity.description)
                 .bind(&entity.material)
                 .bind(&entity.dimensions)
+                .bind(entity.color_id)
                 .bind(entity.base_price)
                 .bind(entity.sale_price)
                 .bind(entity.category_id)
-                .bind(entity.quantity)
+                .bind(entity.stock_quantity)
+                .bind(entity.reserved_quantity)
+                .bind(entity.low_stock_threshold)
+                .bind(entity.has_variants)
                 .bind(entity.is_active)
                 .bind(entity.is_best_seller)
                 .bind(entity.is_quick_ship)
@@ -355,20 +399,25 @@ impl ProductRepository for SqliteProductRepository {
                     r#"
                     INSERT INTO products (
                         name, description, material, dimensions,
-                        base_price, sale_price, category_id, quantity,
-                        is_active, is_best_seller, is_quick_ship,
+                        color_id, base_price, sale_price, category_id, 
+                        stock_quantity, reserved_quantity, low_stock_threshold,
+                        has_variants, is_active, is_best_seller, is_quick_ship,
                         created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     "#
                 )
                 .bind(&entity.name)
                 .bind(&entity.description)
                 .bind(&entity.material)
                 .bind(&entity.dimensions)
+                .bind(entity.color_id)
                 .bind(entity.base_price)
                 .bind(entity.sale_price)
                 .bind(entity.category_id)
-                .bind(entity.quantity)
+                .bind(entity.stock_quantity)
+                .bind(entity.reserved_quantity)
+                .bind(entity.low_stock_threshold)
+                .bind(entity.has_variants)
                 .bind(entity.is_active)
                 .bind(entity.is_best_seller)
                 .bind(entity.is_quick_ship)

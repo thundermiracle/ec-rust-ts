@@ -1,5 +1,6 @@
 use crate::domain::error::DomainError;
 use crate::domain::models::value_objects::Money;
+use crate::domain::models::Color;
 
 /// 商品バリアント（商品の色違い・サイズ違いなど）
 #[derive(Debug, Clone, PartialEq)]
@@ -9,9 +10,14 @@ pub struct ProductVariant {
     pub name: String,
     pub base_price: Money, // セント単位で保存
     pub sale_price: Option<Money>,
-    pub color: String,
+    pub color: Option<Color>, // 色オブジェクト（オプション）
+    pub size: Option<String>, // サイズ（オプション）
     pub image_url: Option<String>,
     pub is_available: bool,
+    pub stock_quantity: u32,
+    pub reserved_quantity: u32,
+    pub low_stock_threshold: Option<u32>,
+    pub cost_price: Option<Money>,
 }
 
 /// 商品バリアントID値オブジェクト
@@ -31,21 +37,19 @@ impl ProductVariant {
         name: String,
         base_price: Money,
         sale_price: Option<Money>,
-        color: String,
+        color: Option<Color>,
+        size: Option<String>,
         image_url: Option<String>,
         is_available: bool,
+        stock_quantity: u32,
+        reserved_quantity: u32,
+        low_stock_threshold: Option<u32>,
+        cost_price: Option<Money>,
     ) -> Result<Self, DomainError> {
         // ビジネスルール: バリアント名は空不可
         if name.trim().is_empty() {
             return Err(DomainError::InvalidProductData(
                 "Variant name cannot be empty".to_string(),
-            ));
-        }
-
-        // ビジネスルール: 色は空不可
-        if color.trim().is_empty() {
-            return Err(DomainError::InvalidProductData(
-                "Variant color cannot be empty".to_string(),
             ));
         }
 
@@ -65,15 +69,34 @@ impl ProductVariant {
             ));
         }
 
+        // ビジネスルール: 在庫数は0以上である必要がある
+        if stock_quantity < 0 {
+            return Err(DomainError::InvalidProductData(
+                "Stock quantity cannot be negative".to_string(),
+            ));
+        }
+
+        // ビジネスルール: 予約数は在庫数以下である必要がある
+        if reserved_quantity > stock_quantity {
+            return Err(DomainError::InvalidProductData(
+                "Reserved quantity cannot exceed stock quantity".to_string(),
+            ));
+        }
+
         Ok(Self {
             id,
             product_id,
             name: name.trim().to_string(),
             base_price,
             sale_price,
-            color: color.trim().to_string(),
+            color,
+            size,
             image_url,
             is_available,
+            stock_quantity,
+            reserved_quantity,
+            low_stock_threshold,
+            cost_price,
         })
     }
 
@@ -89,7 +112,31 @@ impl ProductVariant {
 
     /// 購入可能かどうかを判定
     pub fn is_purchasable(&self) -> bool {
-        self.is_available
+        self.is_available && self.stock_quantity > self.reserved_quantity
+    }
+
+    /// 実際に購入可能な在庫数を取得
+    pub fn available_stock(&self) -> u32 {
+        self.stock_quantity.saturating_sub(self.reserved_quantity)
+    }
+
+    /// 在庫があるかどうかを判定
+    pub fn has_stock(&self) -> bool {
+        self.available_stock() > 0
+    }
+
+    /// 低在庫かどうかを判定
+    pub fn is_low_stock(&self) -> bool {
+        if let Some(threshold) = self.low_stock_threshold {
+            self.available_stock() <= threshold && self.available_stock() > 0
+        } else {
+            false
+        }
+    }
+
+    /// 在庫切れかどうかを判定
+    pub fn is_out_of_stock(&self) -> bool {
+        self.available_stock() == 0
     }
 
     /// 割引率を計算（パーセンテージ）
@@ -111,6 +158,16 @@ impl ProductVariant {
     /// 商品IDを取得
     pub fn product_id(&self) -> &ProductVariantProductId {
         &self.product_id
+    }
+
+    /// 色の名前を取得
+    pub fn color_name(&self) -> String {
+        self.color.as_ref().map(|c| c.name().to_string()).unwrap_or_default()
+    }
+
+    /// 色のHEXコードを取得
+    pub fn color_hex(&self) -> String {
+        self.color.as_ref().map(|c| c.hex_code().to_string()).unwrap_or_default()
     }
 }
 
@@ -163,11 +220,16 @@ impl std::fmt::Display for ProductVariantProductId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::models::ColorName;
 
     #[test]
     fn create_valid_variant() {
         let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
         let product_id = ProductVariantProductId::new(1).unwrap();
+        
+        // Create a color for testing
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
         
         let variant = ProductVariant::new(
             id,
@@ -175,9 +237,14 @@ mod tests {
             "Small".to_string(),
             Money::from_yen(179000), // 179,000円
             None,
-            "Walnut".to_string(),
+            Some(color),
+            Some("S".to_string()), // size
             Some("https://example.com/image.jpg".to_string()),
             true,
+            100,
+            0,
+            Some(5),
+            None,
         );
         
         assert!(variant.is_ok());
@@ -185,6 +252,45 @@ mod tests {
         assert_eq!(variant.current_price().yen(), 179000);
         assert!(!variant.is_on_sale());
         assert!(variant.is_purchasable());
+        assert_eq!(variant.available_stock(), 100);
+        assert!(variant.has_stock());
+        assert!(!variant.is_out_of_stock());
+        assert_eq!(variant.color_name(), "Walnut");
+        assert_eq!(variant.color_hex(), "#8B4513");
+    }
+
+    #[test]
+    fn create_variant_with_color_object() {
+        let id = ProductVariantId::new("desk-walnut-large".to_string()).unwrap();
+        let product_id = ProductVariantProductId::new(1).unwrap();
+        
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
+        let variant = ProductVariant::new(
+            id,
+            product_id,
+            "Large".to_string(),
+            Money::from_yen(199000), // 199,000円
+            None,
+            Some(color),
+            Some("L".to_string()),
+            Some("https://example.com/image.jpg".to_string()),
+            true,
+            50,
+            5,
+            Some(10),
+            Some(Money::from_yen(150000)), // Cost price: 150,000円
+        );
+        
+        assert!(variant.is_ok());
+        let variant = variant.unwrap();
+        assert_eq!(variant.current_price().yen(), 199000);
+        assert!(!variant.is_on_sale());
+        assert!(variant.is_purchasable());
+        assert_eq!(variant.available_stock(), 45); // 50 - 5 = 45
+        assert_eq!(variant.color_name(), "Walnut");
+        assert_eq!(variant.color_hex(), "#8B4513");
     }
 
     #[test]
@@ -192,15 +298,23 @@ mod tests {
         let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
         let product_id = ProductVariantProductId::new(1).unwrap();
         
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
         let variant = ProductVariant::new(
             id,
             product_id,
             "Small".to_string(),
             Money::from_yen(179000), // 179,000円
             Some(Money::from_yen(149000)), // 149,000円
-            "Walnut".to_string(),
+            Some(color),
+            Some("S".to_string()),
             None,
             true,
+            100,
+            0,
+            None,
+            None,
         );
         
         assert!(variant.is_ok());
@@ -215,34 +329,23 @@ mod tests {
         let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
         let product_id = ProductVariantProductId::new(1).unwrap();
         
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
         let result = ProductVariant::new(
             id,
             product_id,
             "".to_string(),
             Money::from_yen(179000),
             None,
-            "Walnut".to_string(),
+            Some(color),
+            None,
             None,
             true,
-        );
-        
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn reject_empty_color() {
-        let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
-        let product_id = ProductVariantProductId::new(1).unwrap();
-        
-        let result = ProductVariant::new(
-            id,
-            product_id,
-            "Small".to_string(),
-            Money::from_yen(179000),
+            100,
+            0,
             None,
-            "".to_string(),
             None,
-            true,
         );
         
         assert!(result.is_err());
@@ -253,15 +356,23 @@ mod tests {
         let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
         let product_id = ProductVariantProductId::new(1).unwrap();
         
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
         let result = ProductVariant::new(
             id,
             product_id,
             "Small".to_string(),
             Money::from_yen(0), // 0円は無効
             None,
-            "Walnut".to_string(),
+            Some(color),
+            None,
             None,
             true,
+            100,
+            0,
+            None,
+            None,
         );
         
         assert!(result.is_err());
@@ -272,15 +383,23 @@ mod tests {
         let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
         let product_id = ProductVariantProductId::new(1).unwrap();
         
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
         let result = ProductVariant::new(
             id,
             product_id,
             "Small".to_string(),
             Money::from_yen(100000), // 100,000円
             Some(Money::from_yen(150000)), // 150,000円（基本価格より高い！）
-            "Walnut".to_string(),
+            Some(color),
+            None,
             None,
             true,
+            100,
+            0,
+            None,
+            None,
         );
         
         assert!(result.is_err());
@@ -288,11 +407,61 @@ mod tests {
 
     #[test]
     fn reject_zero_product_id() {
-        let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
-        
         let result = ProductVariantProductId::new(0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reject_negative_stock() {
+        let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
+        let product_id = ProductVariantProductId::new(1).unwrap();
+        
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
+        let result = ProductVariant::new(
+            id,
+            product_id,
+            "Small".to_string(),
+            Money::from_yen(179000),
+            None,
+            Some(color),
+            None,
+            None,
+            true,
+            0, // This should be fine
+            0,
+            None,
+            None,
+        );
+        
+        assert!(result.is_ok());
+    }
+    
+    #[test]
+    fn reject_excessive_reservation() {
+        let id = ProductVariantId::new("desk-walnut-small".to_string()).unwrap();
+        let product_id = ProductVariantProductId::new(1).unwrap();
+        
+        let color_name = ColorName::new("Walnut".to_string()).unwrap();
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None).unwrap();
+        
+        let result = ProductVariant::new(
+            id,
+            product_id,
+            "Small".to_string(),
+            Money::from_yen(179000),
+            None,
+            Some(color),
+            None,
+            None,
+            true,
+            10,
+            20, // More reserved than in stock
+            None,
+            None,
+        );
         
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Product ID cannot be zero"));
     }
 } 

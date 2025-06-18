@@ -33,33 +33,44 @@ pub struct Product {
     pub description: String,
     pub material: Option<String>,
     pub dimensions: Option<String>,
-    pub quantity: u32,
+    pub stock_quantity: u32,
+    pub reserved_quantity: u32,
+    pub low_stock_threshold: Option<u32>,
     pub is_on_sale: bool,         // セール中
     pub is_available: bool,          // 商品の有効/無効
     pub is_best_seller: bool,     // ベストセラー
     pub is_quick_ship: bool,      // 迅速配送
     
+    // Color reference for simple products
+    pub color: Option<Color>,
+    
+    // Flag for variant products
+    pub has_variants: bool,
+    
     // Related aggregates
     pub images: Vec<ProductImage>,
     pub category: Category,
-    pub colors: Vec<Color>,
     pub tags: Vec<Tag>,
     pub variants: Vec<ProductVariant>,
 }
 
 impl Product {
     /// 新しいProductを作成
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: u32,
         name: String,
         description: String,
         quantity: u32,
+        reserved_quantity: u32,
         base_price: Money,
         category: Category,
-        colors: Vec<Color>,
+        color: Option<Color>,
+        has_variants: bool,
         images: Vec<ProductImage>,
         tags: Vec<Tag>,
         variants: Vec<ProductVariant>,
+        low_stock_threshold: Option<u32>,
     ) -> Result<Self, DomainError> {
         // Validate name
         if name.trim().is_empty() {
@@ -68,10 +79,40 @@ impl Product {
             ));
         }
 
-        // Validate price
-        if !base_price.is_positive() {
+        // Validate price for non-variant products
+        if !has_variants {
+            if !base_price.is_positive() {
+                return Err(DomainError::InvalidProductData(
+                    "Product price must be positive".to_string(),
+                ));
+            }
+
+            // Color validation for non-variant products
+            if color.is_none() {
+                return Err(DomainError::InvalidProductData(
+                    "Simple products must have a color".to_string(),
+                ));
+            }
+        } else {
+            // Variant products shouldn't have a direct color
+            if color.is_some() {
+                return Err(DomainError::InvalidProductData(
+                    "Variant products should not have a direct color".to_string(),
+                ));
+            }
+
+            // Variant products shouldn't have a direct price
+            if base_price.yen() > 0 {
+                return Err(DomainError::InvalidProductData(
+                    "Variant products should not have a direct price".to_string(),
+                ));
+            }
+        }
+
+        // Stock validation
+        if reserved_quantity > quantity {
             return Err(DomainError::InvalidProductData(
-                "Product price must be positive".to_string(),
+                "Reserved quantity cannot exceed stock quantity".to_string(),
             ));
         }
 
@@ -83,14 +124,17 @@ impl Product {
             description: description.trim().to_string(),
             material: None,
             dimensions: None,
-            quantity,
+            stock_quantity: quantity,
+            reserved_quantity,
+            low_stock_threshold,
             is_on_sale: false,
             is_available: true,
             is_best_seller: false,
             is_quick_ship: false,
+            color,
+            has_variants,
             images,
             category,
-            colors,
             tags,
             variants,
         })
@@ -102,19 +146,48 @@ impl Product {
         name: String, 
         description: String, 
         quantity: u32,
-        base_price: Money
+        reserved_quantity: u32,
+        base_price: Money,
+        color: Color,
     ) -> Result<Self, DomainError> {
         Self::new(
             id,
             name,
             description,
             quantity,
+            reserved_quantity,
             base_price,
             Category::default(),
+            Some(color),
+            false,  // No variants
             vec![],
             vec![],
             vec![],
+            Some(5), // Default low stock threshold
+        )
+    }
+
+    /// Create a new variant product
+    pub fn new_with_variants(
+        id: u32, 
+        name: String, 
+        description: String, 
+        variants: Vec<ProductVariant>,
+    ) -> Result<Self, DomainError> {
+        Self::new(
+            id,
+            name,
+            description,
+            0, // No direct quantity for variant products
+            0,
+            Money::from_yen(0), // No direct price for variant products
+            Category::default(),
+            None, // No direct color for variant products
+            true, // Has variants
             vec![],
+            vec![],
+            variants,
+            None, // No direct threshold for variant products
         )
     }
 
@@ -210,17 +283,17 @@ impl Product {
 
     /// 商品が購入可能かどうかを判定
     pub fn is_available_for_purchase(&self) -> bool {
-        self.is_available && self.quantity > 0
+        self.is_available && self.stock_quantity > 0
     }
 
     /// Check if product is sold out
     pub fn is_sold_out(&self) -> bool {
-        self.quantity == 0
+        self.stock_quantity == 0
     }
 
     /// Get stock status based on business rules
     pub fn stock_status(&self) -> StockStatus {
-        match self.quantity {
+        match self.stock_quantity {
             0 => StockStatus::OutOfStock,
             1..=5 => StockStatus::VeryLow,
             6..=20 => StockStatus::Low,
@@ -246,28 +319,73 @@ impl Product {
             ));
         }
 
-        if quantity > self.quantity {
+        if quantity > self.stock_quantity {
             return Err(DomainError::InsufficientQuantity {
                 requested: quantity,
-                available: self.quantity,
+                available: self.stock_quantity,
             });
         }
-        self.quantity -= quantity;
+        self.stock_quantity -= quantity;
 
         Ok(())
     }
 
-    /// メイン画像を取得
-    pub fn main_image(&self) -> Option<&ProductImage> {
-        self.images.first()
+    /// Get variant colors for variant products
+    pub fn variant_colors(&self) -> Vec<Color> {
+        if !self.has_variants {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+        let mut seen_color_ids = std::collections::HashSet::new();
+
+        // Extract unique colors from variants
+        for variant in &self.variants {
+            if let Some(color) = &variant.color {
+                let color_id = color.id();
+                if seen_color_ids.insert(color_id) {
+                    result.push(color.clone());
+                }
+            }
+        }
+
+        result
     }
 
-    /// 色の名前一覧を取得
-    pub fn color_names(&self) -> Vec<String> {
-        self.colors
+    /// 画像URL一覧を取得
+    pub fn image_urls(&self) -> Vec<String> {
+        self.images
             .iter()
-            .map(|color| color.name().value().to_string())
+            .map(|image| image.url().to_string())
             .collect()
+    }
+
+    /// 全ての色名一覧を取得
+    pub fn all_color_names(&self) -> Vec<String> {
+        if self.has_variants {
+            self.variant_colors()
+                .iter()
+                .map(|color| color.name().to_string())
+                .collect()
+        } else if let Some(color) = &self.color {
+            vec![color.name().to_string()]
+        } else {
+            vec![] // No colors available
+        }
+    }
+
+    /// Get list of all available color hex codes (either from single color or variants)
+    pub fn all_color_hex_codes(&self) -> Vec<String> {
+        if self.has_variants {
+            return self.variant_colors()
+                .iter()
+                .map(|color| color.hex_code().to_string())
+                .collect();
+        } else if let Some(color) = &self.color {
+            return vec![color.hex_code().to_string()];
+        }
+        
+        vec![] // No colors available
     }
 
     /// タグ名一覧を取得
@@ -278,11 +396,23 @@ impl Product {
             .collect()
     }
 
-    /// 画像URL一覧を取得
-    pub fn image_urls(&self) -> Vec<String> {
-        self.images
-            .iter()
-            .map(|image| image.url().to_string())
-            .collect()
+    /// メイン画像を取得
+    pub fn main_image(&self) -> Option<&ProductImage> {
+        self.images.iter().find(|image| image.is_main_image())
+    }
+
+    /// 色の名前を取得（単一色の商品の場合）
+    pub fn color_name(&self) -> Option<String> {
+        self.color.as_ref().map(|c| c.name().to_string())
+    }
+
+    /// 色のHEXコードを取得（単一色の商品の場合）
+    pub fn color_hex(&self) -> Option<String> {
+        self.color.as_ref().map(|c| c.hex_code().to_string())
+    }
+
+    /// 実際に購入可能な在庫数を取得
+    pub fn available_stock(&self) -> u32 {
+        self.stock_quantity.saturating_sub(self.reserved_quantity)
     }
 } 

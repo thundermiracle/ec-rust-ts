@@ -1,11 +1,16 @@
 use crate::domain::error::DomainError;
 
 /// 色ドメインモデル
-/// 製品の色を管理し、表示名とHEXコード（オプション）を保持
+/// 製品の色を管理し、表示名とHEXコードを保持
+/// 新しいデータベーススキーマの集中型colorsテーブルに対応
 #[derive(Debug, Clone, PartialEq)]
 pub struct Color {
+    /// 色のID（データベースからの主キー）
+    pub id: u32,
     pub name: ColorName,
-    pub hex_code: Option<String>,
+    pub hex: String,
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// 色名値オブジェクト
@@ -14,29 +19,22 @@ pub struct ColorName(String);
 
 impl Color {
     /// 新しい色を作成
-    pub fn new(name: ColorName, hex_code: Option<String>) -> Result<Self, DomainError> {
+    pub fn new(
+        id: u32,
+        name: ColorName, 
+        hex_code: String, 
+        created_at: Option<chrono::DateTime<chrono::Utc>>,
+        updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<Self, DomainError> {
         // HEXコードのバリデーション
-        if let Some(ref hex) = hex_code {
-            Self::validate_hex_code(hex)?;
-        }
-
-        Ok(Self { name, hex_code })
-    }
-
-    /// HEXコードなしで色を作成
-    pub fn from_name(name: ColorName) -> Self {
-        Self {
-            name,
-            hex_code: None,
-        }
-    }
-
-    /// HEXコード付きで色を作成
-    pub fn with_hex(name: ColorName, hex_code: String) -> Result<Self, DomainError> {
         Self::validate_hex_code(&hex_code)?;
-        Ok(Self {
-            name,
-            hex_code: Some(hex_code),
+
+        Ok(Self { 
+            id,
+            name, 
+            hex: hex_code,
+            created_at,
+            updated_at,
         })
     }
 
@@ -65,8 +63,23 @@ impl Color {
     }
 
     /// HEXコードを取得
-    pub fn hex_code(&self) -> Option<&str> {
-        self.hex_code.as_deref()
+    pub fn hex_code(&self) -> &str {
+        &self.hex
+    }
+
+    /// 色のIDを取得
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    /// 作成日時を取得
+    pub fn created_at(&self) -> Option<&chrono::DateTime<chrono::Utc>> {
+        self.created_at.as_ref()
+    }
+
+    /// 更新日時を取得
+    pub fn updated_at(&self) -> Option<&chrono::DateTime<chrono::Utc>> {
+        self.updated_at.as_ref()
     }
 }
 
@@ -105,10 +118,7 @@ impl std::fmt::Display for ColorName {
 
 impl std::fmt::Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.hex_code {
-            Some(hex) => write!(f, "{} ({})", self.name, hex),
-            None => write!(f, "{}", self.name),
-        }
+        write!(f, "{} ({})", self.name, self.hex)
     }
 }
 
@@ -117,41 +127,45 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create_color_without_hex() {
+    fn create_color_with_valid_hex() {
         let color_name = ColorName::new("Walnut".to_string()).unwrap();
-        let color = Color::from_name(color_name);
+        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None);
+        assert!(color.is_ok());
+        let color = color.unwrap();
         assert_eq!(color.name().value(), "Walnut");
-        assert!(color.hex_code().is_none());
+        assert_eq!(color.hex_code(), "#8B4513");
+        assert_eq!(color.id(), 1);
     }
 
     #[test]
-    fn create_color_with_valid_hex() {
-        let color_name = ColorName::new("Black".to_string()).unwrap();
-        let color = Color::with_hex(color_name, "#000000".to_string());
+    fn create_color_without_id() {
+        let color_name = ColorName::new("White Oak".to_string()).unwrap();
+        let color = Color::new(2, color_name, "#F5F5DC".to_string(), None, None);
         assert!(color.is_ok());
         let color = color.unwrap();
-        assert_eq!(color.name().value(), "Black");
-        assert_eq!(color.hex_code(), Some("#000000"));
+        assert_eq!(color.name().value(), "White Oak");
+        assert_eq!(color.hex_code(), "#F5F5DC");
+        assert_eq!(color.id(), 2);
     }
 
     #[test]
     fn reject_invalid_hex_format() {
         let color_name = ColorName::new("Red".to_string()).unwrap();
-        let color = Color::with_hex(color_name, "FF0000".to_string());
+        let color = Color::new(3, color_name, "FF0000".to_string(), None, None);
         assert!(color.is_err());
     }
 
     #[test]
     fn reject_invalid_hex_length() {
         let color_name = ColorName::new("Red".to_string()).unwrap();
-        let color = Color::with_hex(color_name, "#FF00".to_string());
+        let color = Color::new(4, color_name, "#FF00".to_string(), None, None);
         assert!(color.is_err());
     }
 
     #[test]
     fn reject_invalid_hex_characters() {
         let color_name = ColorName::new("Red".to_string()).unwrap();
-        let color = Color::with_hex(color_name, "#GGGGGG".to_string());
+        let color = Color::new(5, color_name, "#GGGGGG".to_string(), None, None);
         assert!(color.is_err());
     }
 

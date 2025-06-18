@@ -46,7 +46,6 @@ erDiagram
         text description
         string material
         string dimensions
-        string size
         int color_id FK
         int category_id FK
         int base_price
@@ -147,7 +146,6 @@ Unified product catalogue supporting both simple and complex products.
 | `description`         | TEXT                                 | Product description                                                |
 | `material`            | TEXT                                 | Material composition                                               |
 | `dimensions`          | TEXT                                 | Physical dimensions (e.g., "W120×D60×H75cm")                       |
-| `size`                | TEXT                                 | Size designation (e.g., "S", "M", "L", "Standard")                 |
 | `color_id`            | INTEGER FK                           | Reference to **colors** table *(used when `has_variants = FALSE`)* |
 | `category_id`         | INTEGER FK                           | Reference to **categories** table                                  |
 | `base_price`          | INTEGER                              | Base price in yen (used when `has_variants = FALSE`)               |
@@ -164,7 +162,7 @@ Unified product catalogue supporting both simple and complex products.
 
 **Business Rules**
 
-* **Simple products** (`has_variants = FALSE`) manage price, inventory, size and *color\_id* directly in `products`.
+* **Simple products** (`has_variants = FALSE`) manage price, inventory and *color\_id* directly in `products`.
 * **Variant products** (`has_variants = TRUE`) must have `color_id IS NULL`; colour is delegated to variants.
 * `base_price` is **required** when `has_variants = FALSE`.
 
@@ -258,12 +256,12 @@ INSERT INTO colors (name, hex) VALUES
 ```sql
 -- Bamboo desk organiser without variants
 INSERT INTO products (
-    name, sku, description, material, dimensions, size,
+    name, sku, description, material, dimensions,
     color_id, category_id,
     base_price, sale_price, stock_quantity, has_variants
 ) VALUES (
     'Desk Organizer', 'DO-BAMBOO-001', 'Minimalist desk organizer', 'Bamboo',
-    'W20×D15×H8cm', 'Standard',
+    'W20×D15×H8cm',
     (SELECT id FROM colors WHERE name = 'Natural Bamboo'), 5,
     4500, NULL, 25, FALSE
 );
@@ -337,7 +335,7 @@ SELECT
 
     -- Size info
     CASE
-        WHEN p.has_variants = FALSE THEN p.size
+        WHEN p.has_variants = FALSE THEN p.dimensions
         ELSE (
             SELECT COUNT(DISTINCT pv.size) FROM product_variants pv
             WHERE pv.product_id = p.id AND pv.is_available = TRUE
@@ -392,7 +390,6 @@ SELECT
     -- Simple product fields
     p.base_price AS product_base_price,
     p.sale_price AS product_sale_price,
-    p.size       AS product_size,
     c.name       AS product_color_name,
     c.hex        AS product_color_hex,
     (p.stock_quantity - p.reserved_quantity) AS product_available_stock,
@@ -484,7 +481,7 @@ SELECT
     ELSE c2.hex
   END AS primary_color_hex,
   CASE
-    WHEN p.has_variants = FALSE THEN p.size
+    WHEN p.has_variants = FALSE THEN p.dimensions
     ELSE av.size_count::TEXT || ' sizes'
   END AS size_info,
   CASE
