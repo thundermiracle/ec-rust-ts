@@ -1,418 +1,330 @@
-use crate::domain::models::{Category, Color, ProductImage, Tag, ProductVariant};
+use crate::domain::models::value_objects::*;
 use crate::domain::error::DomainError;
-use crate::domain::models::value_objects::Money;
+use crate::domain::models::{SKU, StockAdjustment, ProductImage, Tag};
+use chrono::{DateTime, Utc};
+use std::collections::HashSet;
 
-/// Stock status levels based on business rules
-#[derive(Debug, Clone, PartialEq)]
-pub enum StockStatus {
-    OutOfStock,
-    VeryLow,    // 1-5 items
-    Low,        // 6-20 items  
-    Available,  // 21+ items
-}
-
-/// Product display status based on business state
-#[derive(Debug, Clone, PartialEq)]
-pub enum ProductDisplayStatus {
-    SoldOut,
-    OnSale,
-    Normal,
-}
-
-/// Product Aggregate Root (previously ProductAggregate)
-/// Clean Architecture: Domain層のAggregate
-/// 商品とその関連エンティティを集約し、一貫性を保つ
-/// Enhanced Product Model with Japanese Yen pricing and business logic
 #[derive(Debug, Clone)]
 pub struct Product {
-    // Core product fields
-    pub id: u32,
-    pub name: String,
-    pub base_price: Money,         // u32 price → Money base_price
-    pub sale_price: Option<Money>, // セール価格（オプション）
-    pub description: String,
-    pub material: Option<String>,
-    pub dimensions: Option<String>,
-    pub stock_quantity: u32,
-    pub reserved_quantity: u32,
-    pub low_stock_threshold: Option<u32>,
-    pub is_on_sale: bool,         // セール中
-    pub is_available: bool,          // 商品の有効/無効
-    pub is_best_seller: bool,     // ベストセラー
-    pub is_quick_ship: bool,      // 迅速配送
+    // 基本情報
+    id: ProductId,
+    name: ProductName,
+    description: Description,
+    category_id: CategoryId,
+    is_best_seller: bool,
+    is_quick_ship: bool,
+    is_available: bool,
     
-    // Color reference for simple products
-    pub color: Option<Color>,
+    // SKUs（このProductに属するSKU）
+    skus: Vec<SKU>,
     
-    // Flag for variant products
-    pub has_variants: bool,
+    // 関連エンティティ
+    images: Vec<ProductImage>,
+    tags: Vec<Tag>,
     
-    // Related aggregates
-    pub images: Vec<ProductImage>,
-    pub category: Category,
-    pub tags: Vec<Tag>,
-    pub variants: Vec<ProductVariant>,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
 }
 
 impl Product {
-    /// 新しいProductを作成
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        id: u32,
-        name: String,
-        description: String,
-        quantity: u32,
-        reserved_quantity: u32,
-        base_price: Money,
-        category: Category,
-        color: Option<Color>,
-        has_variants: bool,
-        images: Vec<ProductImage>,
-        tags: Vec<Tag>,
-        variants: Vec<ProductVariant>,
-        low_stock_threshold: Option<u32>,
+    pub fn create(
+        id: ProductId,
+        name: ProductName,
+        description: Description,
+        category_id: CategoryId,
     ) -> Result<Self, DomainError> {
-        // Validate name
-        if name.trim().is_empty() {
-            return Err(DomainError::InvalidProductData(
-                "Product name cannot be empty".to_string(),
-            ));
-        }
-
-        // Validate price for non-variant products
-        if !has_variants {
-            if !base_price.is_positive() {
-                return Err(DomainError::InvalidProductData(
-                    "Product price must be positive".to_string(),
-                ));
-            }
-
-            // Color validation for non-variant products
-            if color.is_none() {
-                return Err(DomainError::InvalidProductData(
-                    "Simple products must have a color".to_string(),
-                ));
-            }
-        } else {
-            // Variant products shouldn't have a direct color
-            if color.is_some() {
-                return Err(DomainError::InvalidProductData(
-                    "Variant products should not have a direct color".to_string(),
-                ));
-            }
-
-            // Variant products shouldn't have a direct price
-            if base_price.yen() > 0 {
-                return Err(DomainError::InvalidProductData(
-                    "Variant products should not have a direct price".to_string(),
-                ));
-            }
-        }
-
-        // Stock validation
-        if reserved_quantity > quantity {
-            return Err(DomainError::InvalidProductData(
-                "Reserved quantity cannot exceed stock quantity".to_string(),
-            ));
-        }
-
         Ok(Self {
             id,
-            name: name.trim().to_string(),
-            base_price,
-            sale_price: None,
-            description: description.trim().to_string(),
-            material: None,
-            dimensions: None,
-            stock_quantity: quantity,
-            reserved_quantity,
-            low_stock_threshold,
-            is_on_sale: false,
-            is_available: true,
+            name,
+            description,
+            category_id,
             is_best_seller: false,
             is_quick_ship: false,
-            color,
-            has_variants,
-            images,
-            category,
-            tags,
-            variants,
+            is_available: false,
+            skus: vec![],
+            images: vec![],
+            tags: vec![],
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         })
     }
 
-    /// Simple constructor for cases where related entities are not needed
-    pub fn new_simple(
-        id: u32, 
-        name: String, 
-        description: String, 
-        quantity: u32,
-        reserved_quantity: u32,
-        base_price: Money,
-        color: Color,
-    ) -> Result<Self, DomainError> {
-        Self::new(
-            id,
-            name,
-            description,
-            quantity,
-            reserved_quantity,
-            base_price,
-            Category::default(),
-            Some(color),
-            false,  // No variants
-            vec![],
-            vec![],
-            vec![],
-            Some(5), // Default low stock threshold
-        )
-    }
-
-    /// Create a new variant product
-    pub fn new_with_variants(
-        id: u32, 
-        name: String, 
-        description: String, 
-        variants: Vec<ProductVariant>,
-    ) -> Result<Self, DomainError> {
-        Self::new(
-            id,
-            name,
-            description,
-            0, // No direct quantity for variant products
-            0,
-            Money::from_yen(0), // No direct price for variant products
-            Category::default(),
-            None, // No direct color for variant products
-            true, // Has variants
-            vec![],
-            vec![],
-            variants,
-            None, // No direct threshold for variant products
-        )
-    }
-
-    /// 商品IDを取得
-    pub fn product_id(&self) -> u32 {
-        self.id
-    }
-
-    /// Get the current effective price (sale price if available, otherwise base price)
-    pub fn current_price(&self) -> Money {
-        self.sale_price.unwrap_or(self.base_price)
-    }
-
-    /// Get discount percentage if on sale
-    pub fn discount_percentage(&self) -> Option<u8> {
-        self.sale_price.map(|sale_price| {
-            let discount = self.base_price.yen() - sale_price.yen();
-            ((discount as f64 / self.base_price.yen() as f64) * 100.0).ceil() as u8
-        })
-    }
-
-    /// Calculate total savings amount
-    pub fn savings_amount(&self) -> Money {
-        if let Some(sale_price) = self.sale_price {
-            self.base_price.subtract(sale_price).unwrap_or(Money::from_yen(0))
-        } else {
-            Money::from_yen(0)
-        }
-    }
-
-    /// Check if product is on sale
-    pub fn is_on_sale(&self) -> bool {
-        self.sale_price.is_some()
-    }
-
-    /// Set sale price
-    pub fn set_sale_price(&mut self, sale_price: Money) -> Result<(), DomainError> {
-        if sale_price.yen() >= self.base_price.yen() {
-            return Err(DomainError::InvalidProductData(
-                "Sale price must be less than base price".to_string(),
+    // SKU管理
+    pub fn add_sku(&mut self, sku: SKU) -> Result<(), DomainError> {
+        // ビジネスルール: 同じSKUコードは追加不可
+        if self.skus.iter().any(|s| s.sku_code() == sku.sku_code()) {
+            return Err(DomainError::BusinessRuleViolation(
+                format!("SKU code '{}' already exists in this product", sku.sku_code().value()),
             ));
         }
-        self.sale_price = Some(sale_price);
-        self.is_on_sale = true;
+
+        // ビジネスルール: SKUは同じProductに属する必要がある
+        if sku.product_id() != &self.id {
+            return Err(DomainError::BusinessRuleViolation(
+                "SKU must belong to this product".to_string(),
+            ));
+        }
+
+        self.skus.push(sku);
+        self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Clear sale price
-    pub fn clear_sale_price(&mut self) {
-        self.sale_price = None;
-        self.is_on_sale = false;
+    pub fn remove_sku(&mut self, sku_id: &SKUId) -> Result<SKU, DomainError> {
+        let index = self.skus.iter().position(|s| s.id() == sku_id)
+            .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
+
+        let removed_sku = self.skus.remove(index);
+        self.updated_at = Utc::now();
+        Ok(removed_sku)
     }
 
-    /// Set material
-    pub fn set_material(&mut self, material: String) {
-        self.material = Some(material);
+    pub fn find_sku_by_id(&self, sku_id: &SKUId) -> Option<&SKU> {
+        self.skus.iter().find(|s| s.id() == sku_id)
     }
 
-    /// Set dimensions
-    pub fn set_dimensions(&mut self, dimensions: String) {
-        self.dimensions = Some(dimensions);
+    pub fn find_sku_by_id_mut(&mut self, sku_id: &SKUId) -> Option<&mut SKU> {
+        self.skus.iter_mut().find(|s| s.id() == sku_id)
     }
 
-    /// Mark as best seller
-    pub fn mark_as_best_seller(&mut self) {
-        self.is_best_seller = true;
+    pub fn find_sku_by_code(&self, sku_code: &SKUCode) -> Option<&SKU> {
+        self.skus.iter().find(|s| s.sku_code() == sku_code)
     }
 
-    /// Unmark as best seller
-    pub fn unmark_as_best_seller(&mut self) {
-        self.is_best_seller = false;
+    // 在庫操作（Product経由でSKU操作）
+    pub fn adjust_sku_stock(&mut self, sku_id: &SKUId, adjustment: StockAdjustment) -> Result<(), DomainError> {
+        let sku = self.find_sku_by_id_mut(sku_id)
+            .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
+        
+        sku.adjust_stock(adjustment)?;
+        self.updated_at = Utc::now();
+        Ok(())
     }
 
-    /// Enable quick ship
-    pub fn enable_quick_ship(&mut self) {
-        self.is_quick_ship = true;
+    pub fn reserve_sku_stock(&mut self, sku_id: &SKUId, quantity: u32) -> Result<(), DomainError> {
+        let sku = self.find_sku_by_id_mut(sku_id)
+            .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
+        
+        sku.reserve_stock(quantity)?;
+        self.updated_at = Utc::now();
+        Ok(())
     }
 
-    /// Disable quick ship
-    pub fn disable_quick_ship(&mut self) {
-        self.is_quick_ship = false;
+    pub fn set_sku_sale_price(&mut self, sku_id: &SKUId, sale_price: Money) -> Result<(), DomainError> {
+        let sku = self.find_sku_by_id_mut(sku_id)
+            .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
+        
+        sku.set_sale_price(sale_price)?;
+        self.updated_at = Utc::now();
+        Ok(())
     }
 
-    /// Activate product
-    pub fn activate(&mut self) {
-        self.is_available = true;
+    // Product レベルのビジネスロジック
+    pub fn has_variants(&self) -> bool {
+        self.skus.len() > 1 || 
+        self.skus.iter().any(|sku| sku.variant_attributes().has_any_attributes())
     }
 
-    /// Deactivate product
-    pub fn deactivate(&mut self) {
-        self.is_available = false;
-    }
-
-    /// 商品が購入可能かどうかを判定
     pub fn is_available_for_purchase(&self) -> bool {
-        self.is_available && self.stock_quantity > 0
+        self.is_available && self.skus.iter().any(|sku| sku.is_purchasable())
     }
 
-    /// Check if product is sold out
-    pub fn is_sold_out(&self) -> bool {
-        self.stock_quantity == 0
+    pub fn total_available_stock(&self) -> u32 {
+        self.skus.iter().map(|sku| sku.available_quantity()).sum()
     }
 
-    /// Get stock status based on business rules
-    pub fn stock_status(&self) -> StockStatus {
-        match self.stock_quantity {
-            0 => StockStatus::OutOfStock,
-            1..=5 => StockStatus::VeryLow,
-            6..=20 => StockStatus::Low,
-            _ => StockStatus::Available,
+    pub fn price_range(&self) -> Option<(Money, Money)> {
+        if self.skus.is_empty() {
+            return None;
         }
+
+        let prices: Vec<Money> = self.skus.iter().map(|sku| sku.current_price()).collect();
+        let min_price = prices.iter().min().cloned()?;
+        let max_price = prices.iter().max().cloned()?;
+        
+        Some((min_price, max_price))
     }
 
-    /// Get product display status based on business state
-    pub fn display_status(&self) -> ProductDisplayStatus {
-        if self.is_sold_out() {
-            ProductDisplayStatus::SoldOut
-        } else if self.is_on_sale {
-            ProductDisplayStatus::OnSale
-        } else {
-            ProductDisplayStatus::Normal
-        }
-    }
+    pub fn available_colors(&self) -> Vec<ColorId> {
+        let mut colors = Vec::new();
+        let mut seen_colors = HashSet::new();
 
-    pub fn sell(&mut self, quantity: u32) -> Result<(), DomainError> {
-        if !self.is_available {
-            return Err(DomainError::InvalidProductData(
-                "Cannot sell inactive product".to_string(),
-            ));
-        }
-
-        if quantity > self.stock_quantity {
-            return Err(DomainError::InsufficientQuantity {
-                requested: quantity,
-                available: self.stock_quantity,
-            });
-        }
-        self.stock_quantity -= quantity;
-
-        Ok(())
-    }
-
-    /// Get variant colors for variant products
-    pub fn variant_colors(&self) -> Vec<Color> {
-        if !self.has_variants {
-            return vec![];
-        }
-
-        let mut result = Vec::new();
-        let mut seen_color_ids = std::collections::HashSet::new();
-
-        // Extract unique colors from variants
-        for variant in &self.variants {
-            if let Some(color) = &variant.color {
-                let color_id = color.id();
-                if seen_color_ids.insert(color_id) {
-                    result.push(color.clone());
+        for sku in &self.skus {
+            if let Some(color_id) = sku.variant_attributes().color_id() {
+                if seen_colors.insert(color_id.value()) {
+                    colors.push(color_id.clone());
                 }
             }
         }
 
-        result
+        colors
     }
 
-    /// 画像URL一覧を取得
-    pub fn image_urls(&self) -> Vec<String> {
-        self.images
-            .iter()
-            .map(|image| image.url().to_string())
-            .collect()
+    pub fn available_dimensions(&self) -> Vec<Dimensions> {
+        let mut dimensions = Vec::new();
+        let mut seen_dimensions = HashSet::new();
+
+        for sku in &self.skus {
+            if let Some(dim) = sku.variant_attributes().dimensions() {
+                if seen_dimensions.insert(dim.value()) {
+                    dimensions.push(dim.clone());
+                }
+            }
+        }
+
+        dimensions
     }
 
-    /// 全ての色名一覧を取得
-    pub fn all_color_names(&self) -> Vec<String> {
-        if self.has_variants {
-            self.variant_colors()
-                .iter()
-                .map(|color| color.name().to_string())
-                .collect()
-        } else if let Some(color) = &self.color {
-            vec![color.name().to_string()]
-        } else {
-            vec![] // No colors available
+    pub fn available_materials(&self) -> Vec<Material> {
+        let mut materials = Vec::new();
+        let mut seen_materials = HashSet::new();
+
+        for sku in &self.skus {
+            if let Some(material) = sku.variant_attributes().material() {
+                if seen_materials.insert(material.value()) {
+                    materials.push(material.clone());
+                }
+            }
+        }
+
+        materials
+    }
+
+    pub fn low_stock_skus(&self) -> Vec<&SKU> {
+        self.skus.iter().filter(|sku| sku.is_low_stock()).collect()
+    }
+
+    pub fn out_of_stock_skus(&self) -> Vec<&SKU> {
+        self.skus.iter().filter(|sku| sku.is_out_of_stock()).collect()
+    }
+
+    // 画像管理
+    pub fn add_image(&mut self, image: ProductImage) {
+        self.images.push(image);
+        self.updated_at = Utc::now();
+    }
+
+    pub fn main_image(&self) -> Option<&ProductImage> {
+        self.images.iter().find(|img| img.is_main_image())
+    }
+
+    // タグ管理
+    pub fn add_tag(&mut self, tag: Tag) {
+        if !self.tags.iter().any(|t| t.slug().value() == tag.slug().value()) {
+            self.tags.push(tag);
+            self.updated_at = Utc::now();
         }
     }
 
-    /// Get list of all available color hex codes (either from single color or variants)
-    pub fn all_color_hex_codes(&self) -> Vec<String> {
-        if self.has_variants {
-            return self.variant_colors()
-                .iter()
-                .map(|color| color.hex_code().to_string())
-                .collect();
-        } else if let Some(color) = &self.color {
-            return vec![color.hex_code().to_string()];
+    pub fn remove_tag(&mut self, tag_slug: &str) {
+        self.tags.retain(|t| t.slug().value() != tag_slug);
+        self.updated_at = Utc::now();
+    }
+
+    // 商品の公開・非公開
+    pub fn publish(&mut self) -> Result<(), DomainError> {
+        // ビジネスルール: SKUが存在しない場合は公開不可
+        if self.skus.is_empty() {
+            return Err(DomainError::BusinessRuleViolation(
+                "Cannot publish product without SKUs".to_string(),
+            ));
+        }
+
+        // ビジネスルール: 購入可能なSKUが必要
+        if !self.skus.iter().any(|sku| sku.is_purchasable()) {
+            return Err(DomainError::BusinessRuleViolation(
+                "Cannot publish product without purchasable SKUs".to_string(),
+            ));
+        }
+
+        self.is_available = true;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    pub fn discontinue(&mut self) -> Result<(), DomainError> {
+        self.is_available = false;
+        
+        // 全SKUも販売停止
+        for sku in &mut self.skus {
+            sku.discontinue();
         }
         
-        vec![] // No colors available
+        self.updated_at = Utc::now();
+        Ok(())
     }
 
-    /// タグ名一覧を取得
-    pub fn tag_names(&self) -> Vec<String> {
-        self.tags
-            .iter()
-            .map(|tag| tag.name().to_string())
-            .collect()
+    pub fn mark_as_best_seller(&mut self) {
+        self.is_best_seller = true;
+        self.updated_at = Utc::now();
     }
 
-    /// メイン画像を取得
-    pub fn main_image(&self) -> Option<&ProductImage> {
-        self.images.iter().find(|image| image.is_main_image())
+    pub fn unmark_as_best_seller(&mut self) {
+        self.is_best_seller = false;
+        self.updated_at = Utc::now();
     }
 
-    /// 色の名前を取得（単一色の商品の場合）
-    pub fn color_name(&self) -> Option<String> {
-        self.color.as_ref().map(|c| c.name().to_string())
+    pub fn enable_quick_ship(&mut self) {
+        self.is_quick_ship = true;
+        self.updated_at = Utc::now();
     }
 
-    /// 色のHEXコードを取得（単一色の商品の場合）
-    pub fn color_hex(&self) -> Option<String> {
-        self.color.as_ref().map(|c| c.hex_code().to_string())
+    pub fn disable_quick_ship(&mut self) {
+        self.is_quick_ship = false;
+        self.updated_at = Utc::now();
     }
 
-    /// 実際に購入可能な在庫数を取得
-    pub fn available_stock(&self) -> u32 {
-        self.stock_quantity.saturating_sub(self.reserved_quantity)
+    pub fn update_description(&mut self, description: Description) {
+        self.description = description;
+        self.updated_at = Utc::now();
     }
-} 
+
+    // Getters
+    pub fn id(&self) -> &ProductId {
+        &self.id
+    }
+
+    pub fn name(&self) -> &ProductName {
+        &self.name
+    }
+
+    pub fn description(&self) -> &Description {
+        &self.description
+    }
+
+    pub fn category_id(&self) -> &CategoryId {
+        &self.category_id
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.is_available
+    }
+
+    pub fn is_best_seller(&self) -> bool {
+        self.is_best_seller
+    }
+
+    pub fn is_quick_ship(&self) -> bool {
+        self.is_quick_ship
+    }
+
+    pub fn skus(&self) -> &[SKU] {
+        &self.skus
+    }
+
+    pub fn images(&self) -> &[ProductImage] {
+        &self.images
+    }
+
+    pub fn tags(&self) -> &[Tag] {
+        &self.tags
+    }
+
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
+}
