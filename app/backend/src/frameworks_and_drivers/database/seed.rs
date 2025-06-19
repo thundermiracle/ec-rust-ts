@@ -1,5 +1,6 @@
 use anyhow::Result;
 use sqlx::SqlitePool;
+use uuid::Uuid;
 
 use crate::frameworks_and_drivers::database::db::get_db;
 
@@ -91,26 +92,29 @@ async fn seed_colors(pool: &SqlitePool) -> Result<()> {
 /// カテゴリーを挿入
 async fn seed_categories(pool: &SqlitePool) -> Result<()> {
     let categories = [
-        ("desks", "Desks", None::<i64>, 1),
-        ("tables", "Tables", None::<i64>, 2),
-        ("seating", "Seating", None::<i64>, 3),
-        ("bench-consoles", "Bench and Consoles", None::<i64>, 4),
-        ("accessories", "Accessories", None::<i64>, 5),
-        ("monitor-risers", "Monitor Risers", None::<i64>, 6),
-        ("wall-shelves", "Wall Shelves", None::<i64>, 7),
-        ("side-tables", "Side Tables", None::<i64>, 8),
-        ("lighting", "Lighting", None::<i64>, 9),
-        ("bike-racks", "Bike Racks", None::<i64>, 10),
-        ("audio", "Audio", None::<i64>, 11),
+        ("desks", "Desks", None::<String>, 1),
+        ("tables", "Tables", None::<String>, 2),
+        ("seating", "Seating", None::<String>, 3),
+        ("bench-consoles", "Bench and Consoles", None::<String>, 4),
+        ("accessories", "Accessories", None::<String>, 5),
+        ("monitor-risers", "Monitor Risers", None::<String>, 6),
+        ("wall-shelves", "Wall Shelves", None::<String>, 7),
+        ("side-tables", "Side Tables", None::<String>, 8),
+        ("lighting", "Lighting", None::<String>, 9),
+        ("bike-racks", "Bike Racks", None::<String>, 10),
+        ("audio", "Audio", None::<String>, 11),
     ];
     
     for (slug, name, parent_id, display_order) in categories {
+        let category_id = Uuid::new_v4().to_string();
+        
         sqlx::query(
             r#"
-            INSERT OR IGNORE INTO categories (slug, name, parent_id, display_order)
-            VALUES (?, ?, ?, ?)
+            INSERT OR IGNORE INTO categories (id, slug, name, parent_id, display_order)
+            VALUES (?, ?, ?, ?, ?)
             "#
         )
+        .bind(&category_id)
         .bind(slug)
         .bind(name)
         .bind(parent_id)
@@ -129,209 +133,157 @@ pub async fn seed_sample_products() -> Result<()> {
     
     println!("🛍️  Seeding sample products from mockData...");
     
-    // シンプル商品（バリアントなし）
+    // シンプル商品（単一SKU）
     let simple_products = [
-        // Desk Organizer - バリアントなしの商品
+        // Desk Organizer
         (
             "Desk Organizer", 
-            "DO-BAMBOO-001", 
             "Minimalist desk organizer", 
-            "Bamboo", 
-            "W20×D15×H8cm",
-            "Natural Bamboo", // color_name
-            4500, // base_price
-            None::<i64>, // sale_price
             "accessories", // category_slug
-            25, // stock_quantity
             false, // is_best_seller
-            false  // is_quick_ship
+            false, // is_quick_ship
+            vec![
+                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
+                ("DO-BAMBOO-001", "Natural Bamboo", "Natural Bamboo", "Bamboo", "W20×D15×H8cm", 4500, None::<i64>, 25)
+            ]
         ),
-        // Pendant Light - バリアントなしの商品
+        // Pendant Light
         (
-            "Pendant Light - Brass", 
-            "PL-BRASS-001", 
+            "Pendant Light", 
             "Modern pendant light with brass finish", 
-            "Brass and Glass", 
-            "8\" x 8\" x 12\"",
-            "Brass", // color_name
-            36000, // base_price
-            None::<i64>, // sale_price
             "lighting", // category_slug
-            20, // stock_quantity
             false, // is_best_seller
-            true  // is_quick_ship
+            true, // is_quick_ship
+            vec![
+                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
+                ("PL-BRASS-001", "Brass Finish", "Brass", "Brass and Glass", "8\" x 8\" x 12\"", 36000, None::<i64>, 20)
+            ]
         ),
     ];
     
-    // バリアント商品
-    let variant_products = [
-        // Coffee Table - バリアントあり
+    // 複数SKU商品
+    let multi_sku_products = [
+        // Coffee Table - 複数SKU
         (
             "Coffee Table", 
-            "CT-ROUND-001", 
             "Round coffee table", 
-            "Oak wood", 
             "tables", // category_slug
+            true, // is_best_seller
+            false, // is_quick_ship
             vec![
-                // バリアント: (sku, name, color_name, size, base_price, sale_price, stock_quantity)
-                ("CT-WALNUT-SMALL", "Small – Walnut", "Walnut", "Small", 160000, None::<i64>, 8),
-                ("CT-WALNUT-LARGE", "Large – Walnut", "Walnut", "Large", 180000, None::<i64>, 5),
-                ("CT-OAK-SMALL", "Small – White Oak", "White Oak", "Small", 160000, None::<i64>, 12),
-                ("CT-OAK-LARGE", "Large – White Oak", "White Oak", "Large", 180000, None::<i64>, 7),
+                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
+                ("CT-WALNUT-SMALL", "Small – Walnut", "Walnut", "Solid Walnut", "Diameter: 80cm, Height: 45cm", 160000, None::<i64>, 8),
+                ("CT-WALNUT-LARGE", "Large – Walnut", "Walnut", "Solid Walnut", "Diameter: 100cm, Height: 45cm", 180000, None::<i64>, 5),
+                ("CT-OAK-SMALL", "Small – White Oak", "White Oak", "Solid Oak", "Diameter: 80cm, Height: 45cm", 160000, None::<i64>, 12),
+                ("CT-OAK-LARGE", "Large – White Oak", "White Oak", "Solid Oak", "Diameter: 100cm, Height: 45cm", 180000, None::<i64>, 7)
             ]
         ),
-        // Form Armchair - バリアントあり
+        // Form Armchair - 複数SKU
         (
             "Form Armchair Swivel", 
-            "FA-SWIVEL-001", 
             "Comfortable swivel armchair with premium upholstery", 
-            "Fabric and Metal", 
             "seating", // category_slug
+            false, // is_best_seller
+            false, // is_quick_ship
             vec![
-                // バリアント: (sku, name, color_name, size, base_price, sale_price, stock_quantity)
-                ("FA-BLACK-STD", "Black Upholstery", "Black", "Standard", 201750, Some(180000), 4),
-                ("FA-GRAY-STD", "Gray Upholstery", "Gray", "Standard", 201750, Some(180000), 4),
+                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
+                ("FA-BLACK-STD", "Black Upholstery", "Black", "Fabric and Metal", "Standard", 201750, Some(180000), 4),
+                ("FA-GRAY-STD", "Gray Upholstery", "Gray", "Fabric and Metal", "Standard", 201750, Some(180000), 4)
             ]
         ),
     ];
     
-    // シンプル商品（バリアントなし）を挿入
-    for (name, sku, description, material, dimensions, color_name, base_price, sale_price, category_slug, stock_quantity, is_best_seller, is_quick_ship) in simple_products {
-        // カテゴリーIDを取得
-        let category_id: i64 = sqlx::query_scalar(
-            "SELECT id FROM categories WHERE slug = ?"
-        )
-        .bind(category_slug)
-        .fetch_one(pool)
-        .await?;
-        
-        // 色IDを取得
-        let color_id: i64 = sqlx::query_scalar(
-            "SELECT id FROM colors WHERE name = ?"
-        )
-        .bind(color_name)
-        .fetch_one(pool)
-        .await?;
-        
-        // 商品を挿入
-        let product_id = sqlx::query_scalar::<_, i64>(
-            r#"
-            INSERT INTO products (
-                name, sku, description, material, dimensions,
-                color_id, category_id, base_price, sale_price,
-                stock_quantity, reserved_quantity, has_variants,
-                is_active, is_best_seller, is_quick_ship
+    // すべての商品を処理（シンプルと複数SKU）
+    for products in [simple_products, multi_sku_products].iter() {
+        for (name, description, category_slug, is_best_seller, is_quick_ship, skus) in products.iter() {
+            // カテゴリーIDを取得
+            let category_id: String = sqlx::query_scalar(
+                "SELECT id FROM categories WHERE slug = ?"
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, FALSE, TRUE, ?, ?)
-            RETURNING id
-            "#
-        )
-        .bind(name)
-        .bind(sku)
-        .bind(description)
-        .bind(material)
-        .bind(dimensions)
-        .bind(color_id)
-        .bind(category_id)
-        .bind(base_price)
-        .bind(sale_price)
-        .bind(stock_quantity)
-        .bind(is_best_seller)
-        .bind(is_quick_ship)
-        .fetch_one(pool)
-        .await?;
-        
-        // サンプル画像を挿入
-        sqlx::query(
-            r#"
-            INSERT INTO product_images (product_id, image_url, alt_text, display_order)
-            VALUES (?, ?, ?, 0)
-            "#
-        )
-        .bind(product_id)
-        .bind(format!("https://picsum.photos/id/{}/800/800", 100 + product_id))
-        .bind(format!("Image of {}", name))
-        .execute(pool)
-        .await?;
-    }
-    
-    // バリアント商品を挿入
-    for (name, sku, description, material, category_slug, variants) in variant_products {
-        // カテゴリーIDを取得
-        let category_id: i64 = sqlx::query_scalar(
-            "SELECT id FROM categories WHERE slug = ?"
-        )
-        .bind(category_slug)
-        .fetch_one(pool)
-        .await?;
-        
-        // 親商品を挿入（has_variants = TRUE）
-        let product_id = sqlx::query_scalar::<_, i64>(
-            r#"
-            INSERT INTO products (
-                name, sku, description, material, category_id,
-                has_variants, is_active, is_best_seller, is_quick_ship
-            )
-            VALUES (?, ?, ?, ?, ?, TRUE, TRUE, FALSE, FALSE)
-            RETURNING id
-            "#
-        )
-        .bind(name)
-        .bind(sku)
-        .bind(description)
-        .bind(material)
-        .bind(category_id)
-        .fetch_one(pool)
-        .await?;
-        
-        // サンプル画像を挿入（親商品用）
-        sqlx::query(
-            r#"
-            INSERT INTO product_images (product_id, image_url, alt_text, is_main)
-            VALUES (?, ?, ?, TRUE)
-            "#
-        )
-        .bind(product_id)
-        .bind(format!("https://picsum.photos/id/{}/800/800", 200 + product_id))
-        .bind(format!("Image of {}", name))
-        .execute(pool)
-        .await?;
-        
-        // バリアントを挿入
-        for (variant_idx, (variant_sku, variant_name, color_name, dimensions, base_price, sale_price, stock_quantity)) in variants.iter().enumerate() {
-            // 色IDを取得
-            let color_id: i64 = sqlx::query_scalar(
-                "SELECT id FROM colors WHERE name = ?"
-            )
-            .bind(color_name)
+            .bind(category_slug)
             .fetch_one(pool)
             .await?;
             
-            // バリアントを挿入
-            let variant_id = sqlx::query_scalar::<_, i64>(
+            // 商品IDを生成
+            let product_id = Uuid::new_v4().to_string();
+            
+            // 商品を挿入
+            sqlx::query(
                 r#"
-                INSERT INTO product_variants (
-                    product_id, sku, name, color_id, dimensions,
-                    base_price, sale_price, stock_quantity, reserved_quantity,
-                    is_available, image_url
+                INSERT INTO products (
+                    id, name, description, category_id,
+                    is_best_seller, is_quick_ship
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, TRUE, ?)
-                RETURNING id
+                VALUES (?, ?, ?, ?, ?, ?)
                 "#
             )
-            .bind(product_id)
-            .bind(variant_sku)
-            .bind(variant_name)
-            .bind(color_id)
-            .bind(dimensions)
-            .bind(base_price)
-            .bind(sale_price)
-            .bind(stock_quantity)
-            .bind(format!("https://picsum.photos/id/{}/800/800", 300 + product_id + variant_idx as i64))
-            .fetch_one(pool)
+            .bind(&product_id)
+            .bind(name)
+            .bind(description)
+            .bind(&category_id)
+            .bind(is_best_seller)
+            .bind(is_quick_ship)
+            .execute(pool)
             .await?;
             
-            println!("  ↳ Variant created: {} (ID: {})", variant_name, variant_id);
+            // サンプル画像を挿入
+            sqlx::query(
+                r#"
+                INSERT INTO product_images (
+                    product_id, image_url, alt_text, display_order
+                )
+                VALUES (?, ?, ?, 0)
+                "#
+            )
+            .bind(&product_id)
+            .bind(format!("https://picsum.photos/id/{}/800/800", 100 + skus.len() as i64))
+            .bind(format!("Image of {}", name))
+            .execute(pool)
+            .await?;
+            
+            println!("  ✓ Product created: {} (ID: {})", name, product_id);
+            
+            // 各SKUを挿入
+            for (sku_code, sku_name, color_name, material, dimensions, base_price, sale_price, stock_quantity) in skus {
+                // 色IDを取得
+                let color_id: i64 = sqlx::query_scalar(
+                    "SELECT id FROM colors WHERE name = ?"
+                )
+                .bind(color_name)
+                .fetch_one(pool)
+                .await?;
+                
+                // SKUを挿入
+                let sku_id = Uuid::new_v4().to_string();
+                
+                sqlx::query(
+                    r#"
+                    INSERT INTO skus (
+                        id, product_id, sku_code, name,
+                        color_id, material, dimensions,
+                        base_price, sale_price, 
+                        stock_quantity, reserved_quantity, low_stock_threshold,
+                        image_url
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5, ?)
+                    "#
+                )
+                .bind(&sku_id)
+                .bind(&product_id)
+                .bind(sku_code)
+                .bind(sku_name)
+                .bind(color_id)
+                .bind(material)
+                .bind(dimensions)
+                .bind(base_price)
+                .bind(sale_price)
+                .bind(stock_quantity)
+                .bind(format!("https://picsum.photos/id/{}/800/800", 200 + *base_price % 100))
+                .execute(pool)
+                .await?;
+                
+                println!("    ↳ SKU created: {} (ID: {})", sku_name, sku_id);
+            }
         }
     }
     

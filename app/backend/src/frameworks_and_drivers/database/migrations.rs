@@ -11,7 +11,7 @@ pub async fn run_migrations(database_url: &str) -> Result<()> {
     // Phase 2: 商品テーブル作成（カテゴリーと色テーブルに依存）
     create_products_table(&pool).await?;
     
-    // Phase 3: 商品関連テーブル作成（商品テーブルに依存）
+    // Phase 3: SKUと商品関連テーブル作成（商品テーブルに依存）
     create_product_related_tables(&pool).await?;
     
     println!("✅ All migrations completed successfully!");
@@ -24,10 +24,10 @@ async fn create_normalized_schema(pool: &sqlx::SqlitePool) -> Result<()> {
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY NOT NULL,
             name TEXT NOT NULL UNIQUE,
             slug TEXT NOT NULL UNIQUE,
-            parent_id INTEGER,
+            parent_id TEXT,
             display_order INTEGER DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -42,6 +42,8 @@ async fn create_normalized_schema(pool: &sqlx::SqlitePool) -> Result<()> {
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id)")
         .execute(pool).await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order)")
         .execute(pool).await?;
 
     // 色テーブル - 中央集権的な色マスターテーブル
@@ -82,6 +84,14 @@ async fn create_normalized_schema(pool: &sqlx::SqlitePool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // タグインデックス
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_priority ON tags(priority)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_system ON tags(is_system) WHERE is_system = 1")
+        .execute(pool).await?;
+
     println!("🏗️  Normalized schema created (categories, colors, tags)");
     Ok(())
 }
@@ -91,38 +101,15 @@ async fn create_products_table(pool: &sqlx::SqlitePool) -> Result<()> {
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY NOT NULL,
             name TEXT NOT NULL,
-            sku TEXT UNIQUE,
             description TEXT,
-            material TEXT,
-            dimensions TEXT,
-            color_id INTEGER,
-            category_id INTEGER NOT NULL,
-            base_price INTEGER,
-            sale_price INTEGER,
-            stock_quantity INTEGER DEFAULT 0,
-            reserved_quantity INTEGER DEFAULT 0,
-            low_stock_threshold INTEGER DEFAULT 5,
-            has_variants BOOLEAN DEFAULT FALSE,
-            is_active BOOLEAN DEFAULT TRUE,
+            category_id TEXT NOT NULL,
             is_best_seller BOOLEAN DEFAULT FALSE,
             is_quick_ship BOOLEAN DEFAULT FALSE,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
-            FOREIGN KEY (color_id) REFERENCES colors(id) ON DELETE RESTRICT,
-            CONSTRAINT positive_prices CHECK (base_price IS NULL OR base_price >= 0),
-            CONSTRAINT positive_stock CHECK (stock_quantity >= 0),
-            CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity),
-            CONSTRAINT price_consistency CHECK (
-                (has_variants = FALSE AND base_price IS NOT NULL) OR
-                (has_variants = TRUE AND base_price IS NULL)
-            ),
-            CONSTRAINT color_consistency CHECK (
-                (has_variants = FALSE AND color_id IS NOT NULL) OR
-                (has_variants = TRUE AND color_id IS NULL)
-            )
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
         )
         "#
     )
@@ -130,35 +117,76 @@ async fn create_products_table(pool: &sqlx::SqlitePool) -> Result<()> {
     .await?;
 
     // 商品インデックス
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category_id, is_active)")
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)")
         .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_has_variants ON products(has_variants)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_color ON products(color_id) WHERE has_variants = FALSE")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_price_range ON products(base_price, sale_price) WHERE has_variants = FALSE")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_stock ON products(stock_quantity, reserved_quantity) WHERE has_variants = FALSE")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_flags ON products(is_best_seller, is_quick_ship) WHERE is_active = TRUE")
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_best_seller ON products(is_best_seller) WHERE is_best_seller = 1")
         .execute(pool).await?;
     
     println!("📦 Products table created with constraints and indexes");
     Ok(())
 }
 
-/// Phase 3: 商品関連テーブル作成
+/// Phase 3: SKUと商品関連テーブル作成
 async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
+    // SKU（Stock Keeping Unit）テーブル
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS skus (
+            id TEXT PRIMARY KEY NOT NULL,
+            product_id TEXT NOT NULL,
+            sku_code TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            color_id INTEGER NOT NULL,
+            dimensions TEXT,
+            material TEXT,
+            base_price INTEGER NOT NULL,
+            sale_price INTEGER,
+            stock_quantity INTEGER DEFAULT 0,
+            reserved_quantity INTEGER DEFAULT 0,
+            low_stock_threshold INTEGER DEFAULT 5,
+            image_url TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+            FOREIGN KEY (color_id) REFERENCES colors(id) ON DELETE RESTRICT,
+            CONSTRAINT positive_prices CHECK (base_price >= 0),
+            CONSTRAINT positive_stock CHECK (stock_quantity >= 0),
+            CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity)
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    // SKUインデックス
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_product_id ON skus(product_id)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_code ON skus(sku_code)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_color ON skus(color_id)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_dimensions ON skus(dimensions) WHERE dimensions IS NOT NULL")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_material ON skus(material) WHERE material IS NOT NULL")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_stock ON skus(stock_quantity, reserved_quantity)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_price ON skus(base_price, sale_price)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_low_stock ON skus(stock_quantity, reserved_quantity, low_stock_threshold) WHERE stock_quantity - reserved_quantity <= low_stock_threshold AND stock_quantity - reserved_quantity > 0")
+        .execute(pool).await?;
+
     // 商品画像テーブル
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS product_images (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
+            product_id TEXT NOT NULL,
             image_url TEXT NOT NULL,
             alt_text TEXT,
             display_order INTEGER DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         )
         "#
@@ -168,49 +196,7 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
 
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id)")
         .execute(pool).await?;
-
-    // 商品バリアントテーブル
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS product_variants (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            sku TEXT UNIQUE,
-            name TEXT NOT NULL,
-            color_id INTEGER NOT NULL,
-            dimensions TEXT,
-            base_price INTEGER NOT NULL,
-            sale_price INTEGER,
-            stock_quantity INTEGER DEFAULT 0,
-            reserved_quantity INTEGER DEFAULT 0,
-            low_stock_threshold INTEGER DEFAULT 5,
-            is_available BOOLEAN DEFAULT TRUE,
-            image_url TEXT,
-            created_at TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-            FOREIGN KEY (color_id) REFERENCES colors(id) ON DELETE RESTRICT,
-            CONSTRAINT positive_variant_prices CHECK (base_price >= 0),
-            CONSTRAINT positive_variant_stock CHECK (stock_quantity >= 0),
-            CONSTRAINT valid_variant_reserved CHECK (reserved_quantity <= stock_quantity)
-        )
-        "#
-    )
-    .execute(pool)
-    .await?;
-
-    // バリアントインデックス
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON product_variants(product_id)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_variants_sku ON product_variants(sku) WHERE sku IS NOT NULL")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_variants_available ON product_variants(product_id, is_available)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_variants_color ON product_variants(color_id)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_variants_price ON product_variants(base_price, sale_price)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_variants_stock ON product_variants(stock_quantity, reserved_quantity)")
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_images_order ON product_images(product_id, display_order)")
         .execute(pool).await?;
 
     // 商品タグ関連テーブル
@@ -218,7 +204,7 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
         r#"
         CREATE TABLE IF NOT EXISTS product_tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
+            product_id TEXT NOT NULL,
             tag_id INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
@@ -230,7 +216,12 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
     .execute(pool)
     .await?;
 
-    println!("🔗 Product related tables created (images, variants, tags)");
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_tags_product_id ON product_tags(product_id)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_tags_tag_id ON product_tags(tag_id)")
+        .execute(pool).await?;
+
+    println!("🔗 Product related tables created (skus, images, product_tags)");
     Ok(())
 }
 

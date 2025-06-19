@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the **normalized database schema** for the e‑commerce product management system **after introducing a centralized `colors` master table**.  The design continues to follow Clean Architecture principles while supporting rich product data, including variants, images, categories, colors, and dynamic tagging.
+This document describes the **normalized database schema** for the e‑commerce product management system. The design follows Clean Architecture principles while supporting rich product data, including SKUs, images, categories, colors, and dynamic tagging.
 
 ## Entity Relationship Diagram
 
@@ -12,10 +12,10 @@ erDiagram
     %% Clean Architecture - Normalized Design
 
     categories {
-        int id PK
+        uuid id PK
         string name UK
         string slug UK
-        int parent_id FK
+        uuid parent_id FK
         int display_order
         timestamp created_at
         timestamp updated_at
@@ -40,57 +40,47 @@ erDiagram
     }
 
     products {
-        int id PK
+        uuid id PK
         string name
-        string sku UK
         text description
-        string material
-        string dimensions
-        int color_id FK
-        int category_id FK
-        int base_price
-        int sale_price
-        int stock_quantity
-        int reserved_quantity
-        int low_stock_threshold
-        boolean has_variants
-        boolean is_active
+        uuid category_id FK
         boolean is_best_seller
         boolean is_quick_ship
         timestamp created_at
         timestamp updated_at
     }
 
-    product_images {
-        int id PK
-        int product_id FK
-        string image_url
-        string alt_text
-        int display_order
-        timestamp created_at
-    }
-
-    product_variants {
-        int id PK
-        int product_id FK
-        string sku UK
+    skus {
+        uuid id PK
+        uuid product_id FK
+        string sku_code UK
         string name
         int color_id FK
         string dimensions
+        string material
         int base_price
         int sale_price
         int stock_quantity
         int reserved_quantity
         int low_stock_threshold
-        boolean is_available
         string image_url
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    product_images {
+        int id PK
+        uuid product_id FK
+        string image_url
+        string alt_text
+        int display_order
         timestamp created_at
         timestamp updated_at
     }
 
     product_tags {
         int id PK
-        int product_id FK
+        uuid product_id FK
         int tag_id FK
         timestamp created_at
     }
@@ -99,12 +89,11 @@ erDiagram
     categories ||--o{ categories : "parent‑child"
     categories ||--o{ products : "categorizes"
 
+    products ||--o{ skus : "has"
     products ||--o{ product_images : "has"
-    products ||--o{ product_variants : "has_variants"
     products ||--o{ product_tags : "tagged_with"
-    products }o--|| colors : "uses_color"
 
-    product_variants }o--|| colors : "uses_color"
+    skus }o--|| colors : "uses_color"
 
     tags ||--o{ product_tags : "applied_to"
 ```
@@ -115,7 +104,7 @@ erDiagram
 
 ### 1. `colors` – Master Color Catalog
 
-Central repository of all colors used across products and variants.  Centralizing color data ensures consistency in naming and HEX values, enables easy colour‑related analytics, and avoids duplication.
+Central repository of all colors used across products and SKUs. Centralizing color data ensures consistency in naming and HEX values, enables easy colour‑related analytics, and avoids duplication.
 
 | Column       | Type                                 | Description                                        |
 | ------------ | ------------------------------------ | -------------------------------------------------- |
@@ -132,108 +121,178 @@ Central repository of all colors used across products and variants.  Centralizin
 
 <hr />
 
-### 2. `products`
+### 2. `categories` - Product Category Hierarchy
 
-Unified product catalogue supporting both simple and complex products.
+Hierarchical structure for organizing products. Supports multi-level categorization through self-referential parent-child relationships.
 
-| Column                | Type                                 | Description                                                        |
-| --------------------- | ------------------------------------ | ------------------------------------------------------------------ |
-| `id`                  | INTEGER PK                           | Auto‑incrementing primary key                                      |
-| `name`                | TEXT NOT NULL                        | Product name (e.g., "Desk", "Coffee Table")                        |
-| `sku`                 | TEXT UNIQUE                          | Stock Keeping Unit identifier                                      |
-| `description`         | TEXT                                 | Product description                                                |
-| `material`            | TEXT                                 | Material composition                                               |
-| `dimensions`          | TEXT                                 | Physical dimensions (e.g., "W120×D60×H75cm")                       |
-| `color_id`            | INTEGER FK                           | Reference to **colors** table *(used when `has_variants = FALSE`)* |
-| `category_id`         | INTEGER FK                           | Reference to **categories** table                                  |
-| `base_price`          | INTEGER                              | Base price in yen (used when `has_variants = FALSE`)               |
-| `sale_price`          | INTEGER                              | Sale price in yen (used when `has_variants = FALSE`)               |
-| `stock_quantity`      | INTEGER DEFAULT 0                    | Total stock (used when `has_variants = FALSE`)                     |
-| `reserved_quantity`   | INTEGER DEFAULT 0                    | Reserved stock (used when `has_variants = FALSE`)                  |
-| `low_stock_threshold` | INTEGER DEFAULT 5                    | Low‑stock alert threshold                                          |
-| `has_variants`        | BOOLEAN DEFAULT FALSE                | Whether product uses variants                                      |
-| `is_active`           | BOOLEAN DEFAULT TRUE                 | Product visibility flag                                            |
-| `is_best_seller`      | BOOLEAN DEFAULT FALSE                | Best‑seller flag                                                   |
-| `is_quick_ship`       | BOOLEAN DEFAULT FALSE                | Quick‑shipping flag                                                |
-| `created_at`          | TIMESTAMP DEFAULT CURRENT\_TIMESTAMP | Creation timestamp                                                 |
-| `updated_at`          | TIMESTAMP DEFAULT CURRENT\_TIMESTAMP | Last update timestamp                                              |
+| Column          | Type                                   | Description                                      |
+| --------------- | -------------------------------------- | ------------------------------------------------ |
+| `id`            | UUID PK                                | Primary key                                      |
+| `name`          | VARCHAR(255) NOT NULL UNIQUE           | Category display name (e.g., "Furniture")        |
+| `slug`          | VARCHAR(255) NOT NULL UNIQUE           | URL-friendly identifier (e.g., "furniture")      |
+| `parent_id`     | UUID FK                                | Self-reference for parent category (nullable)     |
+| `display_order` | INTEGER NOT NULL DEFAULT 0             | Order for display in menus/navigation            |
+| `created_at`    | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp                      |
+| `updated_at`    | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Last update timestamp                   |
 
-**Business Rules**
+**Indexes**
 
-* **Simple products** (`has_variants = FALSE`) manage price, inventory and *color\_id* directly in `products`.
-* **Variant products** (`has_variants = TRUE`) must have `color_id IS NULL`; colour is delegated to variants.
-* `base_price` is **required** when `has_variants = FALSE`.
+* `idx_categories_parent` on `parent_id`
+* `idx_categories_slug` on `slug`
+* `idx_categories_display_order` on `display_order`
 
 **Constraints**
 
 ```sql
-CONSTRAINT positive_prices        CHECK (base_price IS NULL OR base_price >= 0),
-CONSTRAINT positive_stock         CHECK (stock_quantity >= 0),
-CONSTRAINT valid_reserved         CHECK (reserved_quantity <= stock_quantity),
-CONSTRAINT price_consistency      CHECK (
-    (has_variants = FALSE AND base_price IS NOT NULL) OR
-    (has_variants = TRUE  AND base_price IS NULL)
-),
-CONSTRAINT color_consistency      CHECK (
-    (has_variants = FALSE AND color_id IS NOT NULL) OR
-    (has_variants = TRUE  AND color_id IS NULL)
-)
+-- Prevent a category from being its own parent
+CONSTRAINT prevent_self_reference CHECK (id != parent_id)
 ```
 
-**Indexes**
+**Trigger**
 
-* `idx_products_category_active`   on `(category_id, is_active)`
-* `idx_products_has_variants`      on `has_variants`
-* `idx_products_color`             on `color_id` WHERE `has_variants = FALSE`
-* `idx_products_price_range`       on `(base_price, sale_price)` WHERE `has_variants = FALSE`
-* `idx_products_stock`             on `(stock_quantity, reserved_quantity)` WHERE `has_variants = FALSE`
-* `idx_products_flags`             on `(is_best_seller, is_quick_ship)` WHERE `is_active = TRUE`
+```sql
+-- Update timestamp when category is modified
+CREATE TRIGGER update_category_timestamp
+BEFORE UPDATE ON categories
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+```
 
 <hr />
 
-### 3. `product_variants`
+### 3. `products`
 
-Optional sellable units with specific attributes.  Used only when `products.has_variants = TRUE`.
+Master product catalog containing basic product information. Detailed product information is stored in the SKUs table.
 
-| Column                | Type                                 | Description                                       |
-| --------------------- | ------------------------------------ | ------------------------------------------------- |
-| `id`                  | INTEGER PK                           | Auto‑incrementing primary key                     |
-| `product_id`          | INTEGER FK NOT NULL                  | Reference to **products** table                   |
-| `sku`                 | TEXT UNIQUE                          | Stock Keeping Unit identifier                     |
-| `name`                | TEXT NOT NULL                        | Variant name (e.g., "Standard", "Small – Walnut") |
-| `color_id`            | INTEGER FK NOT NULL                  | Reference to **colors** table                     |
-| `size`                | TEXT                                 | Size designation (e.g., "S", "M", "120cm")        |
-| `base_price`          | INTEGER NOT NULL                     | Variant base price in yen                         |
-| `sale_price`          | INTEGER                              | Variant sale price in yen (optional)              |
-| `cost_price`          | INTEGER                              | Cost price for margin calculation                 |
-| `stock_quantity`      | INTEGER DEFAULT 0                    | Total available stock                             |
-| `reserved_quantity`   | INTEGER DEFAULT 0                    | Reserved for pending orders                       |
-| `low_stock_threshold` | INTEGER DEFAULT 5                    | Alert threshold                                   |
-| `is_available`        | BOOLEAN DEFAULT TRUE                 | Variant availability flag                         |
-| `image_url`           | TEXT                                 | Variant‑specific image URL                        |
-| `created_at`          | TIMESTAMP DEFAULT CURRENT\_TIMESTAMP | Creation timestamp                                |
-| `updated_at`          | TIMESTAMP DEFAULT CURRENT\_TIMESTAMP | Last update timestamp                             |
+| Column            | Type                                 | Description                                       |
+| ----------------- | ------------------------------------ | ------------------------------------------------- |
+| `id`              | UUID PK                              | Primary key                                       |
+| `name`            | VARCHAR(255) NOT NULL                | Product name (e.g., "Desk", "Coffee Table")       |
+| `description`     | TEXT                                 | Product description                               |
+| `category_id`     | UUID NOT NULL FK                     | Reference to **categories** table                 |
+| `is_best_seller`  | BOOLEAN NOT NULL DEFAULT FALSE       | Best‑seller flag                                  |
+| `is_quick_ship`   | BOOLEAN NOT NULL DEFAULT FALSE       | Quick‑shipping flag                               |
+| `created_at`      | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp                      |
+| `updated_at`      | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Last update timestamp                   |
+
+**Indexes**
+
+* `idx_products_category` on `category_id`
+* `idx_products_best_seller` on `is_best_seller` WHERE `is_best_seller = TRUE`
+
+**Note**: Product availability is determined by having at least one SKU with available stock (stock_quantity > reserved_quantity).
+
+<hr />
+
+### 4. `skus`
+
+Stock keeping units that represent sellable items with specific attributes.
+
+| Column                | Type                                   | Description                                       |
+| --------------------- | -------------------------------------- | ------------------------------------------------- |
+| `id`                  | UUID PK                                | Primary key                                       |
+| `product_id`          | UUID NOT NULL FK                       | Reference to **products** table                   |
+| `sku_code`            | VARCHAR(50) NOT NULL UNIQUE            | Stock Keeping Unit code                           |
+| `name`                | VARCHAR(255) NOT NULL                  | SKU name (e.g., "Standard", "Small – Walnut")     |
+| `color_id`            | INTEGER NOT NULL FK                    | Reference to **colors** table                     |
+| `dimensions`          | VARCHAR(50)                            | Physical dimensions (e.g., "W120×D60×H75cm")      |
+| `material`            | VARCHAR(100)                           | Material composition                              |
+| `base_price`          | INTEGER NOT NULL                       | Base price in yen                                 |
+| `sale_price`          | INTEGER                                | Sale price in yen (optional)                      |
+| `stock_quantity`      | INTEGER NOT NULL DEFAULT 0             | Total available stock                             |
+| `reserved_quantity`   | INTEGER NOT NULL DEFAULT 0             | Reserved for pending orders                       |
+| `low_stock_threshold` | INTEGER NOT NULL DEFAULT 5             | Alert threshold                                   |
+| `image_url`           | TEXT                                   | SKU‑specific image URL                            |
+| `created_at`          | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp                       |
+| `updated_at`          | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Last update timestamp                    |
 
 **Constraints**
 
 ```sql
-CONSTRAINT positive_variant_prices CHECK (base_price >= 0),
-CONSTRAINT positive_variant_stock  CHECK (stock_quantity >= 0),
-CONSTRAINT valid_variant_reserved  CHECK (reserved_quantity <= stock_quantity)
+CONSTRAINT positive_prices CHECK (base_price >= 0),
+CONSTRAINT positive_stock CHECK (stock_quantity >= 0),
+CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity)
 ```
 
 **Indexes**
 
-* `idx_product_variants_product_id`  on `product_id`
-* `idx_product_variants_sku`         on `sku` WHERE `sku IS NOT NULL`
-* `idx_product_variants_available`   on `(product_id, is_available)`
-* `idx_product_variants_color`       on `color_id`
-* `idx_product_variants_price`       on `(base_price, sale_price)`
-* `idx_product_variants_stock`       on `(stock_quantity, reserved_quantity)`
+* `idx_skus_product_id` on `product_id`
+* `idx_skus_code` on `sku_code`
+* `idx_skus_color` on `color_id`
+* `idx_skus_dimensions` on `dimensions` WHERE `dimensions IS NOT NULL`
+* `idx_skus_material` on `material` WHERE `material IS NOT NULL`
+* `idx_skus_stock` on `stock_quantity, reserved_quantity`
+* `idx_skus_price` on `base_price, sale_price`
+* `idx_skus_low_stock` on `stock_quantity, reserved_quantity, low_stock_threshold` WHERE `stock_quantity - reserved_quantity <= low_stock_threshold AND stock_quantity - reserved_quantity > 0`
 
 <hr />
 
-*The remaining tables (`categories`, `tags`, `product_images`, `product_tags`) are unchanged.  See previous documentation for their full definitions.*
+### 5. `product_images`
+
+Product images that are associated with a product.
+
+| Column           | Type                                 | Description                          |
+| ---------------- | ------------------------------------ | ------------------------------------ |
+| `id`             | SERIAL PK                            | Auto-incrementing primary key        |
+| `product_id`     | UUID NOT NULL FK                     | Reference to **products** table      |
+| `image_url`      | TEXT NOT NULL                        | URL to the image                     |
+| `alt_text`       | TEXT                                 | Alternative text for accessibility   |
+| `display_order`  | INTEGER NOT NULL DEFAULT 0           | Order of display                     |
+| `created_at`     | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp        |
+| `updated_at`     | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Last update timestamp     |
+
+**Indexes**
+
+* `idx_product_images_product_id` on `product_id`
+* `idx_product_images_order` on `(product_id, display_order)`
+
+<hr />
+
+### 6. `product_tags`
+
+Many-to-many relationship between products and tags.
+
+| Column        | Type                                 | Description                     |
+| ------------- | ------------------------------------ | ------------------------------- |
+| `id`          | SERIAL PK                            | Auto-incrementing primary key   |
+| `product_id`  | UUID NOT NULL FK                     | Reference to **products** table |
+| `tag_id`      | INTEGER NOT NULL FK                  | Reference to **tags** table     |
+| `created_at`  | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp   |
+
+**Indexes**
+
+* `idx_product_tags_product_id` on `product_id`
+* `idx_product_tags_tag_id` on `tag_id`
+* `idx_product_tags_unique` UNIQUE on `(product_id, tag_id)`
+
+<hr />
+
+### 7. `tags` - Product Tag System
+
+System for flexible product tagging to support filtering, promotion, and categorization.
+
+| Column       | Type                                   | Description                                     |
+| ------------ | -------------------------------------- | ----------------------------------------------- |
+| `id`         | INTEGER PK                             | Auto-incrementing primary key                   |
+| `slug`       | VARCHAR(50) NOT NULL UNIQUE            | URL-friendly identifier (e.g., "new-arrival")   |
+| `name`       | VARCHAR(50) NOT NULL                   | Display name (e.g., "New Arrival")              |
+| `priority`   | INTEGER NOT NULL DEFAULT 0             | Tag display/sorting priority                    |
+| `is_system`  | BOOLEAN NOT NULL DEFAULT FALSE         | Whether tag is system-generated or manual       |
+| `created_at` | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp                     |
+| `updated_at` | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Last update timestamp                  |
+
+**Indexes**
+
+* `idx_tags_slug` on `slug`
+* `idx_tags_priority` on `priority`
+* `idx_tags_system` on `is_system` WHERE `is_system = TRUE`
+
+**Trigger**
+
+```sql
+CREATE TRIGGER update_tag_timestamp
+BEFORE UPDATE ON tags
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+```
 
 ---
 
@@ -249,219 +308,150 @@ INSERT INTO colors (name, hex) VALUES
     ('Natural Bamboo','#D2B48C');
 ```
 
-### 2. Simple Product (no variants)
+### 2. Simple Product
 
 ```sql
--- Bamboo desk organiser without variants
-INSERT INTO products (
-    name, sku, description, material, dimensions,
-    color_id, category_id,
-    base_price, sale_price, stock_quantity, has_variants
+-- Create category first (if not exists)
+INSERT INTO categories (
+    id, name, slug, display_order
 ) VALUES (
-    'Desk Organizer', 'DO-BAMBOO-001', 'Minimalist desk organizer', 'Bamboo',
-    'W20×D15×H8cm',
-    (SELECT id FROM colors WHERE name = 'Natural Bamboo'), 5,
-    4500, NULL, 25, FALSE
-);
+    gen_random_uuid(), 'Storage', 'storage', 5
+) ON CONFLICT DO NOTHING
+RETURNING id;
+
+-- Save the UUID for referencing
+DO $$
+DECLARE
+    storage_category_id UUID;
+BEGIN
+    SELECT id INTO storage_category_id FROM categories WHERE slug = 'storage';
+    
+    -- Create product
+    INSERT INTO products (
+        id, name, description, category_id, is_best_seller
+    ) VALUES (
+        gen_random_uuid(), 'Desk Organizer', 'Minimalist desk organizer', storage_category_id, FALSE
+    );
+END $$;
 ```
 
-### 3. Product with Variants
+### 3. Product with Multiple SKUs
 
 ```sql
--- Parent product
-INSERT INTO products (
-    name, sku, description, material, category_id, has_variants
-) VALUES (
-    'Coffee Table', 'CT-ROUND-001', 'Round coffee table', 'Oak wood', 2, TRUE
-);
+-- Create categories
+DO $$
+DECLARE
+    furniture_category_id UUID;
+BEGIN
+    -- Insert furniture category
+    INSERT INTO categories (
+        id, name, slug, display_order
+    ) VALUES (
+        gen_random_uuid(), 'Furniture', 'furniture', 2
+    ) ON CONFLICT DO NOTHING
+    RETURNING id INTO furniture_category_id;
+    
+    -- If didn't insert, get the existing ID
+    IF furniture_category_id IS NULL THEN
+        SELECT id INTO furniture_category_id FROM categories WHERE slug = 'furniture';
+    END IF;
+    
+    -- Create parent product
+    INSERT INTO products (
+        id, name, description, category_id, is_best_seller
+    ) VALUES (
+        gen_random_uuid(), 'Coffee Table', 'Round coffee table', furniture_category_id, TRUE
+    );
+END $$;
 
--- Variants (note: colour and size live here)
-INSERT INTO product_variants (
-    product_id, sku, name, color_id, size, base_price, stock_quantity
-) VALUES
-((SELECT id FROM products WHERE sku = 'CT-ROUND-001'),
-    'CT-WALNUT-SMALL', 'Small – Walnut',
-    (SELECT id FROM colors WHERE name = 'Walnut'),
-    'Small', 160000, 8),
-((SELECT id FROM products WHERE sku = 'CT-ROUND-001'),
-    'CT-WALNUT-LARGE', 'Large – Walnut',
-    (SELECT id FROM colors WHERE name = 'Walnut'),
-    'Large', 180000, 5),
-((SELECT id FROM products WHERE sku = 'CT-ROUND-001'),
-    'CT-OAK-SMALL', 'Small – White Oak',
-    (SELECT id FROM colors WHERE name = 'White Oak'),
-    'Small', 160000, 12),
-((SELECT id FROM products WHERE sku = 'CT-ROUND-001'),
-    'CT-OAK-LARGE', 'Large – White Oak',
-    (SELECT id FROM colors WHERE name = 'White Oak'),
-    'Large', 180000, 7);
+-- Add SKUs with different colors and sizes
+DO $$
+DECLARE
+    product_id UUID;
+BEGIN
+    SELECT id INTO product_id FROM products WHERE name = 'Coffee Table';
+    
+    -- SKUs with different colors and sizes
+    INSERT INTO skus (
+        id, product_id, sku_code, name,
+        color_id, dimensions, material, base_price, stock_quantity
+    ) VALUES
+    (gen_random_uuid(),
+        product_id,
+        'CT-WALNUT-SMALL', 'Small – Walnut',
+        (SELECT id FROM colors WHERE name = 'Walnut'),
+        'Diameter: 80cm, Height: 45cm',
+        'Solid Walnut',
+        160000, 8),
+    (gen_random_uuid(),
+        product_id,
+        'CT-WALNUT-LARGE', 'Large – Walnut',
+        (SELECT id FROM colors WHERE name = 'Walnut'),
+        'Diameter: 100cm, Height: 45cm',
+        'Solid Walnut',
+        180000, 5),
+    (gen_random_uuid(),
+        product_id,
+        'CT-OAK-SMALL', 'Small – White Oak',
+        (SELECT id FROM colors WHERE name = 'White Oak'),
+        'Diameter: 80cm, Height: 45cm',
+        'Solid Oak',
+        160000, 12),
+    (gen_random_uuid(),
+        product_id,
+        'CT-OAK-LARGE', 'Large – White Oak',
+        (SELECT id FROM colors WHERE name = 'White Oak'),
+        'Diameter: 100cm, Height: 45cm',
+        'Solid Oak',
+        180000, 7);
+END $$;
 ```
 
 ---
 
-## Key Business Logic Queries (updated excerpts)
+## Timestamp Handling
 
-### 1. Unified Product Listing (simple + variants)
+To ensure `updated_at` fields are properly maintained, create a function and triggers:
 
 ```sql
-SELECT
-    p.id,
-    p.name,
-    p.description,
-    p.has_variants,
+-- Timestamp update function
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-    -- Colour (join via colour table or first available variant)
-    CASE
-        WHEN p.has_variants = FALSE THEN c.name
-        ELSE (
-            SELECT c2.name FROM product_variants pv2
-            JOIN colors c2 ON c2.id = pv2.color_id
-            WHERE pv2.product_id = p.id AND pv2.is_available = TRUE
-            LIMIT 1
-        )
-    END       AS primary_color_name,
+-- Triggers for each table
+CREATE TRIGGER update_product_timestamp
+BEFORE UPDATE ON products
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
-    CASE
-        WHEN p.has_variants = FALSE THEN c.hex
-        ELSE (
-            SELECT c2.hex FROM product_variants pv2
-            JOIN colors c2 ON c2.id = pv2.color_id
-            WHERE pv2.product_id = p.id AND pv2.is_available = TRUE
-            LIMIT 1
-        )
-    END       AS primary_color_hex,
+CREATE TRIGGER update_sku_timestamp
+BEFORE UPDATE ON skus
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
-    -- Size info
-    CASE
-        WHEN p.has_variants = FALSE THEN p.dimensions
-        ELSE (
-            SELECT COUNT(DISTINCT pv.size) FROM product_variants pv
-            WHERE pv.product_id = p.id AND pv.is_available = TRUE
-        )::TEXT || ' sizes'
-    END       AS size_info,
-
-    -- Pricing
-    CASE
-        WHEN p.has_variants = FALSE THEN p.base_price
-        ELSE (
-            SELECT MIN(pv.base_price) FROM product_variants pv
-            WHERE pv.product_id = p.id AND pv.is_available = TRUE
-        )
-    END       AS min_price,
-
-    CASE
-        WHEN p.has_variants = FALSE THEN p.base_price
-        ELSE (
-            SELECT MAX(pv.base_price) FROM product_variants pv
-            WHERE pv.product_id = p.id AND pv.is_available = TRUE
-        )
-    END       AS max_price,
-
-    -- Availability
-    CASE
-        WHEN p.has_variants = FALSE THEN (p.stock_quantity - p.reserved_quantity)
-        ELSE (
-            SELECT SUM(pv.stock_quantity - pv.reserved_quantity)
-            FROM product_variants pv
-            WHERE pv.product_id = p.id AND pv.is_available = TRUE
-        )
-    END AS total_available_stock
-
-FROM products p
-LEFT JOIN colors c ON c.id = p.color_id
-WHERE p.is_active = TRUE
-HAVING total_available_stock > 0
-ORDER BY p.is_best_seller DESC, p.name;
+CREATE TRIGGER update_product_image_timestamp
+BEFORE UPDATE ON product_images
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 ```
 
-### 2. Product Detail with Variants
+## Key Business Logic Queries
+
+### 1. Product Listing with Available Stock
 
 ```sql
-SELECT
-    p.id,
-    p.name,
-    p.description,
-    p.material,
-    p.dimensions,
-    p.has_variants,
-
-    -- Simple product fields
-    p.base_price AS product_base_price,
-    p.sale_price AS product_sale_price,
-    c.name       AS product_color_name,
-    c.hex        AS product_color_hex,
-    (p.stock_quantity - p.reserved_quantity) AS product_available_stock,
-
-    -- Variant data (NULL for simple products)
-    pv.id            AS variant_id,
-    pv.sku           AS variant_sku,
-    pv.name          AS variant_name,
-    pv.size          AS variant_size,
-    pv.base_price    AS variant_base_price,
-    pv.sale_price    AS variant_sale_price,
-    (pv.stock_quantity - pv.reserved_quantity) AS variant_available_stock,
-    c2.name          AS variant_color_name,
-    c2.hex           AS variant_color_hex
-
-FROM products p
-LEFT JOIN colors c ON c.id = p.color_id
-LEFT JOIN product_variants pv        ON pv.product_id = p.id AND pv.is_available = TRUE
-LEFT JOIN colors c2                  ON c2.id = pv.color_id
-WHERE p.id = ? AND p.is_active = TRUE
-ORDER BY c2.name, pv.size;
-```
-
----
-
-## Performance Optimization Strategies
-
-As the e-commerce catalog grows, performance optimization becomes critical. Here are strategies to ensure the database performs well under high load with large datasets.
-
-### Enhanced Indexing Strategies
-
-#### 1. Advanced Composite Indexes
-
-```sql
--- Frequently used search patterns combining category, color and availability
-CREATE INDEX idx_products_category_color_active ON products(category_id, color_id, is_active);
-
--- Price range filtering with availability (common in e-commerce)
-CREATE INDEX idx_variants_price_availability ON product_variants(base_price, is_available);
-
--- Combined stock and availability index
-CREATE INDEX idx_variants_stock_availability ON product_variants(stock_quantity, reserved_quantity, is_available);
-```
-
-#### 2. Partial Indexes for Active Data
-
-```sql
--- Index only active products (improves performance when most queries filter by is_active)
-CREATE INDEX idx_active_products_stock ON products(stock_quantity) 
-WHERE is_active = TRUE;
-
--- Index for available variants with stock
-CREATE INDEX idx_available_variants ON product_variants(product_id, color_id) 
-WHERE stock_quantity > reserved_quantity AND is_available = TRUE;
-```
-
-### Query Optimization Techniques
-
-#### 1. Using Common Table Expressions (CTEs)
-
-Refactoring the unified product listing query with CTEs improves readability and often performance:
-
-```sql
--- Optimize product listing query using CTEs
-WITH available_variants AS (
+WITH available_skus AS (
   SELECT 
     product_id,
     MIN(base_price) AS min_price,
     MAX(base_price) AS max_price,
     SUM(stock_quantity - reserved_quantity) AS total_stock,
-    COUNT(DISTINCT size) AS size_count,
+    COUNT(DISTINCT dimensions) AS size_count,
     MIN(color_id) AS primary_color_id
-  FROM product_variants
-  WHERE is_available = TRUE
+  FROM skus
+  WHERE stock_quantity - reserved_quantity > 0
   GROUP BY product_id
 )
 
@@ -469,109 +459,145 @@ SELECT
   p.id,
   p.name,
   p.description,
-  p.has_variants,
+  c.name AS category_name,
+  c2.name AS primary_color_name,
+  c2.hex AS primary_color_hex,
   CASE
-    WHEN p.has_variants = FALSE THEN c.name
-    ELSE c2.name
-  END AS primary_color_name,
-  CASE
-    WHEN p.has_variants = FALSE THEN c.hex
-    ELSE c2.hex
-  END AS primary_color_hex,
-  CASE
-    WHEN p.has_variants = FALSE THEN p.dimensions
-    ELSE av.size_count::TEXT || ' sizes'
+    WHEN av.size_count > 1 THEN av.size_count::TEXT || ' sizes'
+    ELSE s.dimensions
   END AS size_info,
-  CASE
-    WHEN p.has_variants = FALSE THEN p.base_price
-    ELSE av.min_price
-  END AS min_price,
-  CASE
-    WHEN p.has_variants = FALSE THEN p.base_price
-    ELSE av.max_price
-  END AS max_price,
-  CASE
-    WHEN p.has_variants = FALSE THEN (p.stock_quantity - p.reserved_quantity)
-    ELSE av.total_stock
-  END AS total_available_stock
+  av.min_price,
+  av.max_price,
+  av.total_stock AS total_available_stock,
+  p.is_best_seller,
+  p.is_quick_ship
 FROM products p
-LEFT JOIN colors c ON c.id = p.color_id
-LEFT JOIN available_variants av ON av.product_id = p.id
+JOIN categories c ON c.id = p.category_id
+JOIN available_skus av ON av.product_id = p.id
+LEFT JOIN skus s ON s.product_id = p.id AND s.color_id = av.primary_color_id
 LEFT JOIN colors c2 ON c2.id = av.primary_color_id
-WHERE p.is_active = TRUE
-HAVING total_available_stock > 0
 ORDER BY p.is_best_seller DESC, p.name;
 ```
 
-#### 2. Materialized Views for Common Queries
+### 2. Product Detail with SKUs
 
 ```sql
--- Materialized view for frequently accessed product listing
-CREATE MATERIALIZED VIEW product_listing AS
 SELECT
   p.id,
   p.name,
   p.description,
   c.name AS category_name,
-  CASE
-    WHEN p.has_variants = FALSE THEN p.base_price
-    ELSE (SELECT MIN(pv.base_price) FROM product_variants pv WHERE pv.product_id = p.id AND pv.is_available = TRUE)
-  END AS display_price,
-  -- Other commonly needed fields
-  p.is_best_seller,
-  p.is_quick_ship
+  s.id AS sku_id,
+  s.sku_code,
+  s.name AS sku_name,
+  s.dimensions,
+  s.material,
+  s.base_price,
+  s.sale_price,
+  (s.stock_quantity - s.reserved_quantity) AS available_stock,
+  c2.name AS color_name,
+  c2.hex AS color_hex
 FROM products p
 JOIN categories c ON c.id = p.category_id
-WHERE p.is_active = TRUE;
+JOIN skus s ON s.product_id = p.id
+JOIN colors c2 ON c2.id = s.color_id
+WHERE p.id = ?
+ORDER BY s.name;
+```
+
+### 3. Stock Status Query
+
+```sql
+SELECT
+  s.id,
+  s.sku_code,
+  s.name,
+  CASE
+    WHEN s.stock_quantity - s.reserved_quantity <= 0 THEN 'out_of_stock'
+    WHEN s.stock_quantity - s.reserved_quantity <= s.low_stock_threshold THEN 'low_stock'
+    ELSE 'in_stock'
+  END AS stock_status,
+  s.stock_quantity - s.reserved_quantity AS available_quantity
+FROM skus s
+WHERE s.product_id = ?
+ORDER BY s.name;
+```
+
+---
+
+## Performance Optimization Strategies
+
+### Enhanced Indexing Strategies
+
+```sql
+-- Frequently used filtering patterns
+CREATE INDEX idx_skus_availability ON skus(product_id, stock_quantity, reserved_quantity);
+
+-- Price range filtering with availability
+CREATE INDEX idx_skus_price_availability ON skus(base_price)
+WHERE stock_quantity > reserved_quantity;
+
+-- Combined material and color index for filtered searches
+CREATE INDEX idx_skus_material_color ON skus(material, color_id)
+WHERE stock_quantity > reserved_quantity;
+```
+
+### Query Optimization with CTEs
+
+```sql
+-- Optimize product search with CTEs
+WITH filtered_skus AS (
+  SELECT 
+    product_id,
+    COUNT(*) AS sku_count,
+    MIN(base_price) AS min_price,
+    SUM(CASE WHEN stock_quantity > reserved_quantity THEN 1 ELSE 0 END) AS available_count
+  FROM skus
+  WHERE 
+    material ILIKE '%oak%' AND
+    stock_quantity > reserved_quantity
+  GROUP BY product_id
+  HAVING SUM(CASE WHEN stock_quantity > reserved_quantity THEN 1 ELSE 0 END) > 0
+)
+SELECT
+  p.id,
+  p.name,
+  p.description,
+  fs.min_price,
+  fs.available_count
+FROM products p
+JOIN filtered_skus fs ON fs.product_id = p.id
+ORDER BY p.is_best_seller DESC, p.name;
+```
+
+### Materialized Views for Common Queries
+
+```sql
+-- Materialized view for product listing with availability
+CREATE MATERIALIZED VIEW available_product_listing AS
+WITH available_skus AS (
+  SELECT 
+    product_id,
+    MIN(base_price) AS min_price,
+    SUM(stock_quantity - reserved_quantity) AS total_stock
+  FROM skus
+  WHERE stock_quantity > reserved_quantity
+  GROUP BY product_id
+)
+SELECT
+  p.id,
+  p.name,
+  p.description,
+  c.name AS category_name,
+  av.min_price,
+  av.total_stock
+FROM products p
+JOIN categories c ON c.id = p.category_id
+JOIN available_skus av ON av.product_id = p.id
+WHERE av.total_stock > 0;
 
 -- Refresh strategy (can be scheduled)
--- REFRESH MATERIALIZED VIEW product_listing;
+-- REFRESH MATERIALIZED VIEW available_product_listing;
 ```
 
-### Database Partitioning
-
-For very large catalogs (millions of products), consider table partitioning:
-
-```sql
--- Partitioning products by category
-CREATE TABLE products (
-  -- existing column definitions
-) PARTITION BY LIST (category_id);
-
--- Create partitions for major categories
-CREATE TABLE products_category_1 PARTITION OF products
-  FOR VALUES IN (1);
-CREATE TABLE products_category_2 PARTITION OF products
-  FOR VALUES IN (2);
--- Additional category partitions as needed
-```
-
-### Monitoring and Maintenance
-
-#### 1. Query Analysis
-
-Regularly analyze slow queries:
-
-```sql
--- Analyze query execution plan
-EXPLAIN ANALYZE 
-SELECT /* complex query */;
-```
-
-#### 2. Index Maintenance
-
-```sql
--- Rebuild indexes periodically
-REINDEX TABLE products;
-REINDEX TABLE product_variants;
-```
-
-#### 3. Database Statistics
-
-```sql
--- Update optimizer statistics
-ANALYZE products;
-ANALYZE product_variants;
-```
-
-These optimization strategies should be implemented incrementally based on actual performance metrics and load testing. Start with the enhanced indexing and query optimization techniques, then consider more advanced strategies like materialized views and partitioning as the catalog grows.
+These optimization strategies should be implemented incrementally based on actual performance metrics and load testing. Start with the enhanced indexing and query optimization techniques, then consider more advanced strategies like materialized views as the catalog grows.

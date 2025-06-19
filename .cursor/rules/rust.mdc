@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Rust instructions
+
+- Always run cargo command from `app/backend` folder
+
