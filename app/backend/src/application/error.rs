@@ -25,6 +25,12 @@ pub enum RepositoryError {
     NotFound,
     /// その他のエラー
     Unknown(String),
+    /// データベースエラー
+    DatabaseError(String),
+    /// データ変換エラー
+    DataConversionError(String),
+    /// ドメインエラー
+    DomainError(String),
 }
 
 impl std::fmt::Display for ApplicationError {
@@ -46,6 +52,9 @@ impl std::fmt::Display for RepositoryError {
             RepositoryError::QueryExecution(msg) => write!(f, "Query execution error: {}", msg),
             RepositoryError::NotFound => write!(f, "Data not found"),
             RepositoryError::Unknown(msg) => write!(f, "Unknown error: {}", msg),
+            RepositoryError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
+            RepositoryError::DataConversionError(msg) => write!(f, "Data conversion error: {}", msg),
+            RepositoryError::DomainError(msg) => write!(f, "Domain error: {}", msg),
         }
     }
 }
