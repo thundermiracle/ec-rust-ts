@@ -66,7 +66,6 @@ erDiagram
         int product_id FK
         string image_url
         string alt_text
-        boolean is_main
         int display_order
         timestamp created_at
     }
@@ -77,10 +76,9 @@ erDiagram
         string sku UK
         string name
         int color_id FK
-        string size
+        string dimensions
         int base_price
         int sale_price
-        int cost_price
         int stock_quantity
         int reserved_quantity
         int low_stock_threshold

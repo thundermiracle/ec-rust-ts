@@ -7,7 +7,8 @@ pub struct ProductImage {
     pub id: ProductImageId,
     pub product_id: ProductImageProductId,
     pub image_url: ImageUrl,
-    pub sort_order: u32,
+    pub alt_text: Option<String>,
+    pub display_order: u32,
 }
 
 /// 商品画像ID値オブジェクト
@@ -28,6 +29,7 @@ impl ProductImage {
         id: ProductImageId,
         product_id: ProductImageProductId,
         image_url: ImageUrl,
+        alt_text: Option<String>,
         sort_order: u32,
     ) -> Result<Self, DomainError> {
         // ソート順序のビジネスルール: 最大値制限
@@ -41,13 +43,14 @@ impl ProductImage {
             id,
             product_id,
             image_url,
-            sort_order,
+            alt_text,
+            display_order: sort_order,
         })
     }
 
     /// メイン画像かどうかを判定（ソート順0番）
     pub fn is_main_image(&self) -> bool {
-        self.sort_order == 0
+        self.display_order == 0
     }
 
     /// 画像URLを取得
@@ -154,7 +157,7 @@ mod tests {
         let product_id = ProductImageProductId::new("desk-walnut-1".to_string()).unwrap();
         let image_url = ImageUrl::new("https://example.com/image.jpg".to_string()).unwrap();
         
-        let product_image = ProductImage::new(id, product_id, image_url, 0);
+        let product_image = ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 0);
         assert!(product_image.is_ok());
         
         let product_image = product_image.unwrap();
@@ -167,7 +170,7 @@ mod tests {
         let product_id = ProductImageProductId::new("desk-walnut-1".to_string()).unwrap();
         let image_url = ImageUrl::new("https://example.com/image2.jpg".to_string()).unwrap();
         
-        let product_image = ProductImage::new(id, product_id, image_url, 1);
+        let product_image = ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 1);
         assert!(product_image.is_ok());
         
         let product_image = product_image.unwrap();
@@ -180,7 +183,7 @@ mod tests {
         let product_id = ProductImageProductId::new("desk-walnut-1".to_string()).unwrap();
         let image_url = ImageUrl::new("https://example.com/image.jpg".to_string()).unwrap();
         
-        let product_image = ProductImage::new(id, product_id, image_url, 10000);
+        let product_image = ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 10000);
         assert!(product_image.is_err());
     }
 

@@ -9,8 +9,6 @@ pub struct Color {
     pub id: u32,
     pub name: ColorName,
     pub hex: String,
-    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// 色名値オブジェクト
@@ -22,19 +20,15 @@ impl Color {
     pub fn new(
         id: u32,
         name: ColorName, 
-        hex_code: String, 
-        created_at: Option<chrono::DateTime<chrono::Utc>>,
-        updated_at: Option<chrono::DateTime<chrono::Utc>>,
+        hex: String, 
     ) -> Result<Self, DomainError> {
         // HEXコードのバリデーション
-        Self::validate_hex_code(&hex_code)?;
+        Self::validate_hex_code(&hex)?;
 
         Ok(Self { 
             id,
             name, 
-            hex: hex_code,
-            created_at,
-            updated_at,
+            hex,
         })
     }
 
@@ -70,16 +64,6 @@ impl Color {
     /// 色のIDを取得
     pub fn id(&self) -> u32 {
         self.id
-    }
-
-    /// 作成日時を取得
-    pub fn created_at(&self) -> Option<&chrono::DateTime<chrono::Utc>> {
-        self.created_at.as_ref()
-    }
-
-    /// 更新日時を取得
-    pub fn updated_at(&self) -> Option<&chrono::DateTime<chrono::Utc>> {
-        self.updated_at.as_ref()
     }
 }
 
@@ -129,7 +113,7 @@ mod tests {
     #[test]
     fn create_color_with_valid_hex() {
         let color_name = ColorName::new("Walnut".to_string()).unwrap();
-        let color = Color::new(1, color_name, "#8B4513".to_string(), None, None);
+        let color = Color::new(1, color_name, "#8B4513".to_string());
         assert!(color.is_ok());
         let color = color.unwrap();
         assert_eq!(color.name().value(), "Walnut");
@@ -140,7 +124,7 @@ mod tests {
     #[test]
     fn create_color_without_id() {
         let color_name = ColorName::new("White Oak".to_string()).unwrap();
-        let color = Color::new(2, color_name, "#F5F5DC".to_string(), None, None);
+        let color = Color::new(2, color_name, "#F5F5DC".to_string());
         assert!(color.is_ok());
         let color = color.unwrap();
         assert_eq!(color.name().value(), "White Oak");
@@ -151,21 +135,21 @@ mod tests {
     #[test]
     fn reject_invalid_hex_format() {
         let color_name = ColorName::new("Red".to_string()).unwrap();
-        let color = Color::new(3, color_name, "FF0000".to_string(), None, None);
+        let color = Color::new(3, color_name, "FF0000".to_string());
         assert!(color.is_err());
     }
 
     #[test]
     fn reject_invalid_hex_length() {
         let color_name = ColorName::new("Red".to_string()).unwrap();
-        let color = Color::new(4, color_name, "#FF00".to_string(), None, None);
+        let color = Color::new(4, color_name, "#FF00".to_string());
         assert!(color.is_err());
     }
 
     #[test]
     fn reject_invalid_hex_characters() {
         let color_name = ColorName::new("Red".to_string()).unwrap();
-        let color = Color::new(5, color_name, "#GGGGGG".to_string(), None, None);
+        let color = Color::new(5, color_name, "#GGGGGG".to_string());
         assert!(color.is_err());
     }
 

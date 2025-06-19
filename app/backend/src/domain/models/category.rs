@@ -8,6 +8,7 @@ pub struct Category {
     pub name: String,
     pub slug: String,
     pub parent_id: Option<CategoryId>,
+    pub display_order: u32,
 }
 
 /// カテゴリID値オブジェクト
@@ -21,6 +22,7 @@ impl Category {
         name: String,
         slug: String,
         parent_id: Option<CategoryId>,
+        display_order: Option<u32>,
     ) -> Result<Self, DomainError> {
         // ビジネスルール: 名前とスラッグは空文字列不可
         if name.trim().is_empty() {
@@ -47,6 +49,7 @@ impl Category {
             name,
             slug,
             parent_id,
+            display_order: display_order.unwrap_or(0),
         })
     }
 
@@ -96,6 +99,7 @@ impl Default for Category {
             name: "Default Category".to_string(),
             slug: "default".to_string(),
             parent_id: None,
+            display_order: 0,
         }
     }
 }
@@ -111,6 +115,7 @@ mod tests {
             category_id.clone(),
             "Desks".to_string(),
             "desks".to_string(),
+            None,
             None,
         );
         assert!(category.is_ok());
@@ -128,6 +133,7 @@ mod tests {
             "Desks".to_string(),
             "desks".to_string(),
             Some(parent_id),
+            None,
         );
         assert!(category.is_ok());
         let category = category.unwrap();
@@ -143,6 +149,7 @@ mod tests {
             "".to_string(),
             "desks".to_string(),
             None,
+            None,
         );
         assert!(category.is_err());
     }
@@ -154,6 +161,7 @@ mod tests {
             category_id,
             "Desks".to_string(),
             "desks with spaces".to_string(),
+            None,
             None,
         );
         assert!(category.is_err());

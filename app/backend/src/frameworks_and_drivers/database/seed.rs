@@ -244,8 +244,8 @@ pub async fn seed_sample_products() -> Result<()> {
         // サンプル画像を挿入
         sqlx::query(
             r#"
-            INSERT INTO product_images (product_id, image_url, alt_text, is_main)
-            VALUES (?, ?, ?, TRUE)
+            INSERT INTO product_images (product_id, image_url, alt_text, display_order)
+            VALUES (?, ?, ?, 0)
             "#
         )
         .bind(product_id)
@@ -298,7 +298,7 @@ pub async fn seed_sample_products() -> Result<()> {
         .await?;
         
         // バリアントを挿入
-        for (variant_idx, (variant_sku, variant_name, color_name, size, base_price, sale_price, stock_quantity)) in variants.iter().enumerate() {
+        for (variant_idx, (variant_sku, variant_name, color_name, dimensions, base_price, sale_price, stock_quantity)) in variants.iter().enumerate() {
             // 色IDを取得
             let color_id: i64 = sqlx::query_scalar(
                 "SELECT id FROM colors WHERE name = ?"
@@ -311,7 +311,7 @@ pub async fn seed_sample_products() -> Result<()> {
             let variant_id = sqlx::query_scalar::<_, i64>(
                 r#"
                 INSERT INTO product_variants (
-                    product_id, sku, name, color_id, size,
+                    product_id, sku, name, color_id, dimensions,
                     base_price, sale_price, stock_quantity, reserved_quantity,
                     is_available, image_url
                 )
@@ -323,7 +323,7 @@ pub async fn seed_sample_products() -> Result<()> {
             .bind(variant_sku)
             .bind(variant_name)
             .bind(color_id)
-            .bind(size)
+            .bind(dimensions)
             .bind(base_price)
             .bind(sale_price)
             .bind(stock_quantity)
