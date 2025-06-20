@@ -10,7 +10,6 @@ pub struct ProductEntity {
     pub category_id: String,               // TEXT型 (UUID)
     pub is_best_seller: bool,
     pub is_quick_ship: bool,
-    pub is_active: bool,                   // DBの available と同等
     pub created_at: String,
     pub updated_at: String,
 }

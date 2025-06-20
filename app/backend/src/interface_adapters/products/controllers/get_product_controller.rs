@@ -3,9 +3,9 @@ use axum::{routing::get, Json, Router};
 use std::sync::Arc;
 
 use crate::frameworks_and_drivers::Container;
-use crate::error::{Error, Result};
-use crate::application::ApplicationError;
-use crate::interface_adapters::products::presenters::{ProductPresenter};
+use crate::error::Result;
+use crate::application::queries::GetProductQuery;
+use crate::interface_adapters::products::presenters::ProductPresenter;
 use crate::interface_adapters::products::responses::ProductResponse;
 
 /// Get Product Controller - 商品詳細取得の単一責任
@@ -23,14 +23,14 @@ impl GetProductController {
     /// 統合されたリッチな商品情報を返す
     async fn handle(
         State(container): State<Arc<Container>>,
-        Path(id): Path<u32>
+        Path(id): Path<String>
     ) -> Result<Json<ProductResponse>> {
         println!("->> GetProductController::handle - product_id: {}", id);
         
         let get_product_usecase = container.create_get_product_usecase();
         
         let product_detail = get_product_usecase
-            .get_by_id(id)
+            .get_by_id(GetProductQuery::new(id.clone()))
             .await?; // ApplicationErrorからErrorへの自動変換を利用
             
         println!("->> GetProductController::handle - success for product_id: {}", id);

@@ -1,5 +1,4 @@
 use crate::domain::DomainError;
-use crate::application::queries::QueryError;
 
 #[derive(Debug)]
 pub enum ApplicationError {
@@ -8,11 +7,9 @@ pub enum ApplicationError {
     /// リポジトリエラー
     Repository(RepositoryError),
     /// 商品が見つからない
-    ProductNotFound(u32),
+    ProductNotFound(String),
     /// バリデーションエラー
     Validation(String),
-    /// クエリマッピングエラー
-    QueryMapping(QueryError),
 }
 
 #[derive(Debug)]
@@ -40,7 +37,6 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::Repository(err) => write!(f, "Repository error: {}", err),
             ApplicationError::ProductNotFound(id) => write!(f, "Product not found: {}", id),
             ApplicationError::Validation(msg) => write!(f, "Validation error: {}", msg),
-            ApplicationError::QueryMapping(err) => write!(f, "Query mapping error: {}", err),
         }
     }
 }
@@ -76,9 +72,4 @@ impl From<RepositoryError> for ApplicationError {
     }
 }
 
-// QueryErrorからApplicationErrorへの変換
-impl From<QueryError> for ApplicationError {
-    fn from(err: QueryError) -> Self {
-        ApplicationError::QueryMapping(err)
-    }
-} 
+ 

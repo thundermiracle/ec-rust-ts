@@ -63,10 +63,6 @@ impl From<ApplicationError> for Error {
                 }
             },
             ApplicationError::Validation(_) => Error::BuyProductFailed,
-            ApplicationError::QueryMapping(query_error) => {
-                println!("->> Query mapping error details: {:?}", query_error);
-                Error::InternalServerError
-            }
         }
     }
 }

@@ -1,185 +1,224 @@
-use crate::application::queries::{
-    CategoryQuery, ImageQuery, PriceQuery, ProductQuery, StatusQuery, StockQuery, VariantQuery,
-};
+use crate::application::viewmodels::{ProductViewModel, VariantViewModel};
 use crate::interface_adapters::products::responses::{ProductResponse, VariantResponse};
 
-/// Product用のプレゼンター
-/// Clean Architecture: Interface Adapters層
+/// ProductPresenter
+/// Clean Architecture: Application層のProductViewModelをInterface Adapter層のProductResponseに変換
+/// プレゼンテーション層への出力形式を担当
 pub struct ProductPresenter;
 
 impl ProductPresenter {
-    /// ProductQueryをAPI応答形式に変換
-    pub fn present(product_query: ProductQuery) -> ProductResponse {
-        // VariantQueryをVariantResponseに変換
-        let variants: Vec<VariantResponse> = product_query
+    /// ProductViewModelをProductResponseに変換
+    /// 
+    /// # Arguments
+    /// * `product_view_model` - Application層のProductViewModel
+    /// 
+    /// # Returns
+    /// * `ProductResponse` - API応答用の形式に変換されたProductResponse
+    pub fn present(product_view_model: ProductViewModel) -> ProductResponse {
+        // variantsの変換
+        let variants: Vec<VariantResponse> = product_view_model
             .variants
             .into_iter()
-            .map(VariantResponse::from)
+            .map(Self::present_variant)
             .collect();
 
         ProductResponse {
-            id: product_query.id.to_string(),
-            name: product_query.name,
-            price: product_query.price.base_price,
-            sale_price: product_query.price.sale_price,
-            images: product_query.images.images,
-            category: product_query.category.slug,
-            description: product_query.description,
-            material: product_query.material,
-            dimensions: product_query.dimensions,
-            colors: product_query.colors,
-            is_on_sale: product_query.status.is_on_sale,
-            is_best_seller: product_query.status.is_best_seller,
-            is_quick_ship: product_query.status.is_quick_ship,
-            is_sold_out: product_query.stock.is_sold_out,
+            id: product_view_model.id,
+            name: product_view_model.name,
+            price: product_view_model.price,
+            sale_price: product_view_model.sale_price,
+            images: product_view_model.images,
+            category: product_view_model.category,
+            description: product_view_model.description,
+            material: product_view_model.material,
+            dimensions: product_view_model.dimensions,
+            colors: product_view_model.colors,
+            is_on_sale: Some(product_view_model.is_on_sale).filter(|&val| val),
+            is_best_seller: Some(product_view_model.is_best_seller).filter(|&val| val),
+            is_quick_ship: Some(product_view_model.is_quick_ship).filter(|&val| val),
+            is_sold_out: Some(product_view_model.is_sold_out).filter(|&val| val),
             variants,
         }
     }
 
-
-    /// 複数のProductをまとめて変換
-    pub fn present_list(product_queries: Vec<ProductQuery>) -> Vec<ProductResponse> {
-        product_queries.into_iter().map(Self::present).collect()
+    /// VariantViewModelをVariantResponseに変換
+    /// 
+    /// # Arguments
+    /// * `variant_view_model` - Application層のVariantViewModel
+    /// 
+    /// # Returns
+    /// * `VariantResponse` - API応答用の形式に変換されたVariantResponse
+    fn present_variant(variant_view_model: VariantViewModel) -> VariantResponse {
+        VariantResponse {
+            id: variant_view_model.id,
+            name: variant_view_model.name,
+            price: variant_view_model.price,
+            color: variant_view_model.color,
+            image: variant_view_model.image.unwrap_or_default(),
+            is_available: variant_view_model.is_available,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::queries::VariantQuery;
 
-    fn create_test_product_query() -> ProductQuery {
-        ProductQuery {
-            id: 1,
-            name: "Test Product".to_string(),
-            description: "Test Description".to_string(),
-            material: Some("Cotton".to_string()),
-            dimensions: Some("10x10x10cm".to_string()),
-            price: PriceQuery {
-                base_price: 1000,
-                sale_price: Some(800),
-                current_price: 800,
-                discount_percentage: Some(20),
-                savings_amount: 200,
-            },
-            category: CategoryQuery {
-                id: "test-category-id".to_string(),
-                name: "Test Category".to_string(),
-                slug: "test-category".to_string(),
-            },
-            stock: StockQuery {
-                quantity: 10,
-                is_sold_out: false,
-                is_available: true,
-            },
-            images: ImageQuery {
-                images: vec!["image1.jpg".to_string()],
-                main_image: Some("image1.jpg".to_string()),
-            },
-            status: StatusQuery {
-                is_on_sale: true,
-                is_best_seller: false,
-                is_quick_ship: false,
-                is_active: true,
-            },
-            colors: vec!["Red".to_string()],
-            tags: vec!["sale".to_string()],
-            variants: vec![],
-        }
-    }
+    #[test]
+    fn test_present_product_without_variants() {
+        // Given: ProductViewModelの作成
+        let product_view_model = ProductViewModel::new(
+            "desk-walnut-1".to_string(),
+            "Desk - Walnut".to_string(),
+            2290,
+            Some(1790),
+            vec!["image1.jpg".to_string(), "image2.jpg".to_string()],
+            "desks".to_string(),
+            "A beautiful walnut desk".to_string(),
+            Some("Walnut Wood".to_string()),
+            Some("48\" x 24\" x 30\"".to_string()),
+            vec!["Walnut".to_string(), "Black Oak".to_string()],
+            true,
+            true,
+            false,
+            false,
+            vec![],
+        );
 
-    fn create_product_query_with_variants() -> ProductQuery {
-        let mut product_query = create_test_product_query();
-        product_query.id = 1;
-        product_query.name = "Desk - Walnut".to_string();
-        product_query.description =
-            "Minimalist walnut desk with clean lines and modern design".to_string();
-        product_query.material = Some("Walnut Wood".to_string());
-        product_query.dimensions = Some("48\" x 24\" x 30\"".to_string());
-        product_query.price = PriceQuery {
-            base_price: 2290,
-            sale_price: Some(1790),
-            current_price: 1790,
-            discount_percentage: Some(21), // calculated
-            savings_amount: 500,
-        };
-        product_query.category.slug = "desks".to_string();
-        product_query.images = ImageQuery {
-            images: vec![
-                "https://picsum.photos/id/100/800/800".to_string(),
-                "https://picsum.photos/id/101/800/800".to_string(),
-            ],
-            main_image: Some("https://picsum.photos/id/100/800/800".to_string()),
-        };
-        product_query.colors = vec!["Walnut".to_string()];
-        product_query.status.is_on_sale = true;
-        product_query.status.is_best_seller = true;
-        product_query.variants = vec![
-            VariantQuery {
-                id: "desk-walnut-small".to_string(),
-                name: "Small".to_string(),
-                price: 1790,
-                color: "Walnut".to_string(),
-                image: Some("https://picsum.photos/id/100/800/800".to_string()),
-                is_available: true,
-            },
-            VariantQuery {
-                id: "desk-walnut-large".to_string(),
-                name: "Large".to_string(),
-                price: 2290,
-                color: "Walnut".to_string(),
-                image: Some("https://picsum.photos/id/101/800/800".to_string()),
-                is_available: true,
-            },
-        ];
+        // When: ProductPresenterで変換
+        let product_response = ProductPresenter::present(product_view_model);
 
-        product_query
+        // Then: 正しく変換されている
+        assert_eq!(product_response.id, "desk-walnut-1");
+        assert_eq!(product_response.name, "Desk - Walnut");
+        assert_eq!(product_response.price, 2290);
+        assert_eq!(product_response.sale_price, Some(1790));
+        assert_eq!(product_response.images.len(), 2);
+        assert_eq!(product_response.category, "desks");
+        assert_eq!(product_response.description, "A beautiful walnut desk");
+        assert_eq!(product_response.material, Some("Walnut Wood".to_string()));
+        assert_eq!(product_response.dimensions, Some("48\" x 24\" x 30\"".to_string()));
+        assert_eq!(product_response.colors.len(), 2);
+        assert_eq!(product_response.is_on_sale, Some(true));
+        assert_eq!(product_response.is_best_seller, Some(true));
+        assert_eq!(product_response.is_quick_ship, None); // false値はNoneになる
+        assert_eq!(product_response.is_sold_out, None);   // false値はNoneになる
+        assert!(product_response.variants.is_empty());
     }
 
     #[test]
-    fn test_present_product_query() {
-        let product_query = create_test_product_query();
-        let response = ProductPresenter::present(product_query);
+    fn test_present_product_with_variants() {
+        // Given: variantsを含むProductViewModelの作成
+        let variant1 = VariantViewModel::new(
+            "variant-1".to_string(),
+            "Small".to_string(),
+            1790,
+            "Walnut".to_string(),
+            Some("variant1.jpg".to_string()),
+            true,
+        );
 
-        assert_eq!(response.id, "1");
-        assert_eq!(response.name, "Test Product");
-        assert_eq!(response.price, 1000);
-        assert_eq!(response.sale_price, Some(800));
-        assert_eq!(response.category, "test-category");
-        assert!(response.is_on_sale);
+        let variant2 = VariantViewModel::new(
+            "variant-2".to_string(),
+            "Large".to_string(),
+            2290,
+            "Black Oak".to_string(),
+            None,
+            false,
+        );
+
+        let product_view_model = ProductViewModel::new(
+            "desk-walnut-1".to_string(),
+            "Desk - Walnut".to_string(),
+            1790,
+            None,
+            vec!["image1.jpg".to_string()],
+            "desks".to_string(),
+            "A beautiful walnut desk".to_string(),
+            Some("Walnut Wood".to_string()),
+            Some("48\" x 24\" x 30\"".to_string()),
+            vec!["Walnut".to_string(), "Black Oak".to_string()],
+            false,
+            false,
+            true,
+            false,
+            vec![variant1, variant2],
+        );
+
+        // When: ProductPresenterで変換
+        let product_response = ProductPresenter::present(product_view_model);
+
+        // Then: variantsも正しく変換されている
+        assert_eq!(product_response.variants.len(), 2);
+        
+        let first_variant = &product_response.variants[0];
+        assert_eq!(first_variant.id, "variant-1");
+        assert_eq!(first_variant.name, "Small");
+        assert_eq!(first_variant.price, 1790);
+        assert_eq!(first_variant.color, "Walnut");
+        assert_eq!(first_variant.image, "variant1.jpg");
+        assert!(first_variant.is_available);
+
+        let second_variant = &product_response.variants[1];
+        assert_eq!(second_variant.id, "variant-2");
+        assert_eq!(second_variant.name, "Large");
+        assert_eq!(second_variant.price, 2290);
+        assert_eq!(second_variant.color, "Black Oak");
+        assert_eq!(second_variant.image, ""); // None -> 空文字列
+        assert!(!second_variant.is_available);
+
+        // フラグの確認
+        assert_eq!(product_response.is_on_sale, None);     // false値はNoneになる
+        assert_eq!(product_response.is_best_seller, None); // false値はNoneになる
+        assert_eq!(product_response.is_quick_ship, Some(true));
+        assert_eq!(product_response.is_sold_out, None);   // false値はNoneになる
     }
 
     #[test]
-    fn test_mockdata_compatible_json_output() {
-        let product_query = create_product_query_with_variants();
-        let response = ProductPresenter::present(product_query);
+    fn test_present_variant() {
+        // Given: VariantViewModelの作成
+        let variant_view_model = VariantViewModel::new(
+            "variant-test".to_string(),
+            "Medium".to_string(),
+            2000,
+            "Walnut".to_string(),
+            Some("test.jpg".to_string()),
+            true,
+        );
 
-        // JSON出力をテスト
-        let json_output = serde_json::to_string_pretty(&response).unwrap();
-        println!("Generated ProductResponse JSON (compatible with mockData.ts):");
-        println!("{}", json_output);
+        // When: VariantPresenterで変換
+        let variant_response = ProductPresenter::present_variant(variant_view_model);
 
-        // キー構造をテスト
-        assert_eq!(response.id, "1");
-        assert_eq!(response.name, "Desk - Walnut");
-        assert_eq!(response.price, 2290);
-        assert_eq!(response.sale_price, Some(1790));
-        assert_eq!(response.category, "desks");
-        assert_eq!(response.variants.len(), 2);
-
-        // バリアント構造をテスト
-        let small_variant = &response.variants[0];
-        assert_eq!(small_variant.id, "desk-walnut-small");
-        assert_eq!(small_variant.name, "Small");
-        assert_eq!(small_variant.price, 1790);
-        assert_eq!(small_variant.color, "Walnut");
-        assert!(small_variant.is_available);
-
-        let large_variant = &response.variants[1];
-        assert_eq!(large_variant.id, "desk-walnut-large");
-        assert_eq!(large_variant.name, "Large");
-        assert_eq!(large_variant.price, 2290);
-        assert_eq!(large_variant.color, "Walnut");
-        assert!(large_variant.is_available);
+        // Then: 正しく変換されている
+        assert_eq!(variant_response.id, "variant-test");
+        assert_eq!(variant_response.name, "Medium");
+        assert_eq!(variant_response.price, 2000);
+        assert_eq!(variant_response.color, "Walnut");
+        assert_eq!(variant_response.image, "test.jpg");
+        assert!(variant_response.is_available);
     }
-} 
+
+    #[test]
+    fn test_present_variant_without_image() {
+        // Given: imageがNoneのVariantViewModel
+        let variant_view_model = VariantViewModel::new(
+            "variant-no-image".to_string(),
+            "No Image".to_string(),
+            1500,
+            "Black Oak".to_string(),
+            None,
+            false,
+        );
+
+        // When: VariantPresenterで変換
+        let variant_response = ProductPresenter::present_variant(variant_view_model);
+
+        // Then: imageは空文字列になる
+        assert_eq!(variant_response.id, "variant-no-image");
+        assert_eq!(variant_response.name, "No Image");
+        assert_eq!(variant_response.price, 1500);
+        assert_eq!(variant_response.color, "Black Oak");
+        assert_eq!(variant_response.image, ""); // None -> 空文字列
+        assert!(!variant_response.is_available);
+    }
+}

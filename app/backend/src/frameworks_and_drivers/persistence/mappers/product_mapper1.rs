@@ -1,26 +1,7 @@
 use crate::domain::models::{Product, ProductId, CategoryId, ProductName, Description};
 use crate::domain::error::DomainError;
-use crate::frameworks_and_drivers::persistence::entities::{
-    ProductEntity,
-    SKUEntity,
-    ProductImageEntity,
-    ProductTagEntity,
-    TagEntity,
-    ColorEntity,
-};
+use crate::frameworks_and_drivers::persistence::entities::ProductEntity;
 use uuid::Uuid;
-
-/// 製品集約データ - リポジトリから取得した関連データをまとめる構造体
-/// Clean Architecture: Frameworks & Drivers層でのデータ集約
-#[derive(Debug)]
-pub struct ProductAggregateData {
-    pub product: ProductEntity,
-    pub skus: Vec<SKUEntity>,
-    pub images: Vec<ProductImageEntity>,
-    pub tags: Vec<ProductTagEntity>,
-    pub tag_details: Vec<TagEntity>,
-    pub colors: Vec<ColorEntity>,
-}
 
 /// ドメインモデル変換用のマッパー
 /// Clean Architecture: Frameworks & Drivers層からDomain層への変換を担当

@@ -27,7 +27,7 @@ pub struct Product {
 }
 
 impl Product {
-    pub fn create(
+    pub fn new(
         id: ProductId,
         name: ProductName,
         description: Description,

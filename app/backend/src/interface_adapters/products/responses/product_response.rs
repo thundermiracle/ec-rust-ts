@@ -17,14 +17,14 @@ pub struct ProductResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dimensions: Option<String>,
     pub colors: Vec<String>,
-    #[serde(rename = "isOnSale")]
-    pub is_on_sale: bool,
-    #[serde(rename = "isBestSeller")]
-    pub is_best_seller: bool,
-    #[serde(rename = "isQuickShip")]
-    pub is_quick_ship: bool,
-    #[serde(rename = "isSoldOut")]
-    pub is_sold_out: bool,
+    #[serde(rename = "isOnSale", skip_serializing_if = "Option::is_none")]
+    pub is_on_sale: Option<bool>,
+    #[serde(rename = "isBestSeller", skip_serializing_if = "Option::is_none")]
+    pub is_best_seller: Option<bool>,
+    #[serde(rename = "isQuickShip", skip_serializing_if = "Option::is_none")]
+    pub is_quick_ship: Option<bool>,
+    #[serde(rename = "isSoldOut", skip_serializing_if = "Option::is_none")]
+    pub is_sold_out: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub variants: Vec<VariantResponse>,
 } 
