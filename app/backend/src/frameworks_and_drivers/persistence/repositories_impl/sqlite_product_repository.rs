@@ -146,7 +146,7 @@ impl ProductRepository for SqliteProductRepository {
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // 在庫確認
-            let available_stock = stock_quantity - reserved_quantity;
+            let available_stock = (stock_quantity - reserved_quantity).max(0) as u32;
             let is_available = available_stock > 0;
             if is_available {
                 all_sold_out = false;
@@ -226,24 +226,38 @@ impl ProductRepository for SqliteProductRepository {
     async fn find_all(&self) -> Result<ProductListViewModel, RepositoryError> {
         let pool = self.get_pool().await?;
 
-        // 全商品の基本情報とカテゴリー名を集約して取得（パフォーマンス最適化）
+        // 各商品の最初のSKUのデータを取得（ROW_NUMBERを使用してパフォーマンス最適化）
         let product_rows = sqlx::query(
             r#"
+            WITH first_sku AS (
+                SELECT 
+                    s.product_id,
+                    s.base_price,
+                    s.sale_price,
+                    s.stock_quantity,
+                    s.reserved_quantity,
+                    ROW_NUMBER() OVER (PARTITION BY s.product_id ORDER BY s.id) as rn
+                FROM skus s
+            )
             SELECT 
                 p.id,
                 p.name,
                 p.is_best_seller,
                 p.is_quick_ship,
                 c.name as category_name,
-                MIN(CASE WHEN s.sale_price IS NOT NULL THEN s.sale_price ELSE s.base_price END) as min_price,
-                MIN(s.sale_price) as sale_price,
-                SUM(s.stock_quantity - s.reserved_quantity) as total_stock,
-                MIN(pi.image_url) as first_image
+                fs.base_price,
+                fs.sale_price,
+                fs.stock_quantity,
+                fs.reserved_quantity,
+                pi.image_url as first_image
             FROM products p
             JOIN categories c ON c.id = p.category_id
-            JOIN skus s ON s.product_id = p.id
-            LEFT JOIN product_images pi ON pi.product_id = p.id
-            GROUP BY p.id, p.name, p.is_best_seller, p.is_quick_ship, c.name
+            JOIN first_sku fs ON fs.product_id = p.id AND fs.rn = 1
+            LEFT JOIN (
+                SELECT product_id, image_url,
+                       ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY display_order) as rn
+                FROM product_images
+            ) pi ON pi.product_id = p.id AND pi.rn = 1
             ORDER BY p.name
             "#
         )
@@ -310,11 +324,13 @@ impl ProductRepository for SqliteProductRepository {
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let category_name: String = product_row.try_get("category_name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let min_price: i64 = product_row.try_get("min_price")
+            let base_price: i64 = product_row.try_get("base_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let sale_price: Option<i64> = product_row.try_get("sale_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let total_stock: i64 = product_row.try_get("total_stock")
+            let stock_quantity: i64 = product_row.try_get("stock_quantity")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let reserved_quantity: i64 = product_row.try_get("reserved_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let first_image: Option<String> = product_row.try_get("first_image")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
@@ -332,21 +348,21 @@ impl ProductRepository for SqliteProductRepository {
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // 価格計算（JPYは最小単位で保存されているため100で割る）
-            let base_price = (min_price / 100) as u32;
+            let product_price = (base_price / 100) as u32;
             let sale_price_converted = sale_price.map(|p| (p / 100) as u32);
-            let stock_quantity = total_stock.max(0) as u32;
+            let available_stock = (stock_quantity - reserved_quantity).max(0) as u32;
 
             let product_summary = ProductSummaryViewModel::new(
                 product_id,
                 name,
                 category_name,
-                base_price,
+                product_price,
                 sale_price_converted,
                 first_image,
                 product_colors, // 色情報を追加
                 is_best_seller,
                 is_quick_ship,
-                stock_quantity,
+                available_stock,
             );
 
             product_summaries.push(product_summary);

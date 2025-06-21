@@ -185,13 +185,13 @@ pub async fn seed_sample_products() -> Result<()> {
         
         // 複数SKU商品
         ("Desk - Walnut", "Minimalist walnut desk with clean lines and modern design", "desks", true, false, 
-         vec![("DESK-WALNUT-SMALL", "Small", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 179000, Some(179000), 15),
+         vec![("DESK-WALNUT-SMALL", "Small", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 179000, Some(160000), 15),
               ("DESK-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 229000, Some(179000), 8)]),
         ("Form Armchair Swivel - Upholstered", "Comfortable swivel armchair with premium upholstery", "seating", false, false, 
          vec![("FORM-CHAIR-BLACK", "Black Upholstery", "Black", "Fabric and Metal", "28\" x 28\" x 32\"", 134500, Some(134500), 6),
-              ("FORM-CHAIR-GRAY", "Gray Upholstery", "Gray", "Fabric and Metal", "28\" x 28\" x 32\"", 171500, Some(134500), 4)]),
+              ("FORM-CHAIR-GRAY", "Gray Upholstery", "Gray", "Fabric and Metal", "28\" x 28\" x 32\"", 171500, Some(99999), 4)]),
         ("Desk - White Oak", "Modern desk with white oak finish", "desks", false, false, 
-         vec![("DESK-WHITE-OAK-SMALL", "Small", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 179000, Some(179000), 12),
+         vec![("DESK-WHITE-OAK-SMALL", "Small", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 179000, Some(159000), 12),
               ("DESK-WHITE-OAK-LARGE", "Large", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 219000, Some(179000), 7)]),
         ("Office Chair - Black", "Ergonomic office chair with leather upholstery", "seating", false, false, 
          vec![("OFFICE-CHAIR-BLACK-STD", "Standard Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 68000, None::<i64>, 10),
