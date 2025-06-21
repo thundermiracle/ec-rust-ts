@@ -29,11 +29,30 @@ export interface Category {
   subcategories?: Category[];
 }
 
-export interface FilterOptions {
-  categories: Category[];
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  salePrice?: number;
+  images: string[];
+  category: string;
+  description: string;
+  material?: string;
+  dimensions?: string;
   colors: string[];
-  priceRange: {
-    min: number;
-    max: number;
-  };
-} 
+  isOnSale?: boolean;
+  isBestSeller?: boolean;
+  isQuickShip?: boolean;
+  isSoldOut?: boolean;
+  variants: ProductVariant[];
+}
+
+export interface ProductVariant {
+  id: string;
+  name: string;
+  price: number;
+  salePrice?: number;
+  color: string;
+  image: string;
+  isAvailable: boolean;
+}

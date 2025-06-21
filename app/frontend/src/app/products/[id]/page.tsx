@@ -4,33 +4,79 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { products } from '../../../data/mockData';
-import { Product, ProductVariant } from '../../../types/product';
+import { ProductVariant } from '../../../types/product';
+import { useGetProductQuery } from '../../../lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronRight, ImageIcon } from 'lucide-react';
+import { ChevronRight, ImageIcon, Loader2 } from 'lucide-react';
 
 export default function ProductDetail() {
-  const params = useParams();
-  const productId = params.id as string;
+  const params = useParams<{ id: string }>();
+  const productId = params.id;
   
-  const product = products.find((p: Product) => p.id === productId);
+  // RTK Queryを使用してプロダクトデータを取得
+  const { data: product, isLoading, error } = useGetProductQuery(productId);
   
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    product?.variants?.[0] || null
-  );
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
 
+  // プロダクトデータが取得できたら、デフォルトのバリアントを設定
+  useState(() => {
+    if (product?.variants && product.variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(product.variants[0]);
+    }
+  });
+
+  // ローディング状態
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-4">Loading Product...</h1>
+            <p className="text-muted-foreground">Please wait while we fetch the product details.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // エラー状態
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <h1 className="text-2xl font-bold mb-4 text-destructive">Error Loading Product</h1>
+            <p className="text-muted-foreground mb-4">
+                             Sorry, we couldn&apos;t load the product details. Please try again later.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/">
+                Return to All Products
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // プロダクトが見つからない場合
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
             <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+            <p className="text-muted-foreground mb-4">
+                             The product you&apos;re looking for doesn&apos;t exist or has been removed.
+            </p>
             <Button asChild variant="outline">
               <Link href="/">
                 Return to All Products
@@ -113,7 +159,7 @@ export default function ProductDetail() {
             {/* Thumbnail Images */}
             {product.images.length > 1 && !selectedVariant && (
               <div className="flex gap-4">
-                {product.images.map((image, index) => (
+                {product.images.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
@@ -167,7 +213,7 @@ export default function ProductDetail() {
               <div>
                 <h3 className="text-lg font-medium text-foreground mb-4">Options</h3>
                 <div className="space-y-2">
-                  {product.variants.map((variant) => (
+                  {product.variants.map((variant: ProductVariant) => (
                     <Card
                       key={variant.id}
                       className={`cursor-pointer transition-colors ${
@@ -198,12 +244,12 @@ export default function ProductDetail() {
               </div>
             )}
 
-                        {/* Colors */}
+            {/* Colors */}
             {product.colors.length > 0 && (
               <div>
                 <h3 className="text-lg font-medium text-foreground mb-4">Available Colors</h3>
                 <div className="flex gap-3">
-                  {product.colors.map((color, index) => (
+                  {product.colors.map((color: string, index: number) => (
                     <div key={index} className="flex flex-col items-center gap-2">
                       <div
                         className="w-10 h-10 rounded-full border-2 border-border shadow-sm"

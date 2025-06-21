@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import type { ProductList } from '../types/product'
+import type { Product, ProductList } from '../types/product'
 
 // APIエンドポイントのベースURL（バックエンドのURLに合わせて調整してください）
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
@@ -22,17 +22,17 @@ export const api = createApi({
       query: () => '/products',
       providesTags: ['Product'],
     }),
-    // getProduct: builder.query<ProductDetail, string>({
-    //   query: (id) => `/products/${id}`,
-    //   providesTags: (result, error, id) => [{ type: 'Product', id }],
-    // }),
+    getProduct: builder.query<Product, string>({
+      query: (id) => `/products/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Product', id }],
+    }),
   }),
 })
 
 // 自動生成されたフックをエクスポート
 export const {
   useGetProductsQuery,
-  // useGetProductQuery,
+  useGetProductQuery,
 } = api
 
  
