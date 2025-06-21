@@ -3,7 +3,7 @@ use sqlx::{Row, SqlitePool};
 
 use crate::application::error::RepositoryError;
 use crate::application::repositories::ProductRepository;
-use crate::application::viewmodels::{ProductViewModel, VariantViewModel};
+use crate::application::viewmodels::{ProductListViewModel, ProductSummaryViewModel, ProductViewModel, VariantViewModel};
 use crate::domain::models::ProductId;
 use crate::frameworks_and_drivers::database::db::get_db;
 
@@ -221,5 +221,150 @@ impl ProductRepository for SqliteProductRepository {
         );
 
         Ok(Some(product_view_model))
+    }
+
+    async fn find_all(&self) -> Result<ProductListViewModel, RepositoryError> {
+        let pool = self.get_pool().await?;
+
+        // 全商品の基本情報とカテゴリー名を集約して取得（パフォーマンス最適化）
+        let product_rows = sqlx::query(
+            r#"
+            SELECT 
+                p.id,
+                p.name,
+                p.is_best_seller,
+                p.is_quick_ship,
+                c.name as category_name,
+                MIN(CASE WHEN s.sale_price IS NOT NULL THEN s.sale_price ELSE s.base_price END) as min_price,
+                MIN(s.sale_price) as sale_price,
+                SUM(s.stock_quantity - s.reserved_quantity) as total_stock,
+                MIN(pi.image_url) as first_image
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            JOIN skus s ON s.product_id = p.id
+            LEFT JOIN product_images pi ON pi.product_id = p.id
+            GROUP BY p.id, p.name, p.is_best_seller, p.is_quick_ship, c.name
+            ORDER BY p.name
+            "#
+        )
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        if product_rows.is_empty() {
+            let product_list = ProductListViewModel {
+                products: Vec::new(),
+                total_count: 0,
+                page: 1,
+                per_page: 0,
+                has_next_page: false,
+                has_previous_page: false,
+            };
+            return Ok(product_list);
+        }
+
+        // 全商品のIDを収集
+        let product_ids: Vec<String> = product_rows
+            .iter()
+            .map(|row| row.try_get("id"))
+            .collect::<Result<Vec<String>, _>>()
+            .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+
+        // プレースホルダーを動的に生成
+        let placeholders = product_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+
+        // 各商品の色情報を取得
+        let color_query = format!(
+            r#"
+            SELECT DISTINCT
+                s.product_id,
+                colors.name as color_name
+            FROM skus s
+            JOIN colors ON colors.id = s.color_id
+            WHERE s.product_id IN ({})
+            ORDER BY s.product_id, colors.name
+            "#,
+            placeholders
+        );
+
+        let mut color_query_builder = sqlx::query(&color_query);
+        for product_id in &product_ids {
+            color_query_builder = color_query_builder.bind(product_id);
+        }
+
+        let color_rows = color_query_builder
+            .fetch_all(&pool)
+            .await
+            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        let mut product_summaries = Vec::new();
+
+        for product_row in product_rows {
+            let product_id: String = product_row.try_get("id")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let name: String = product_row.try_get("name")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let is_best_seller: bool = product_row.try_get("is_best_seller")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let is_quick_ship: bool = product_row.try_get("is_quick_ship")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let category_name: String = product_row.try_get("category_name")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let min_price: i64 = product_row.try_get("min_price")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sale_price: Option<i64> = product_row.try_get("sale_price")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let total_stock: i64 = product_row.try_get("total_stock")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let first_image: Option<String> = product_row.try_get("first_image")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+
+            // この商品の色情報を取得
+            let product_colors: Vec<String> = color_rows
+                .iter()
+                .filter(|row| {
+                    row.try_get::<String, _>("product_id")
+                        .map(|id| id == product_id)
+                        .unwrap_or(false)
+                })
+                .map(|row| row.try_get("color_name"))
+                .collect::<Result<Vec<String>, _>>()
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+
+            // 価格計算（JPYは最小単位で保存されているため100で割る）
+            let base_price = (min_price / 100) as u32;
+            let sale_price_converted = sale_price.map(|p| (p / 100) as u32);
+            let stock_quantity = total_stock.max(0) as u32;
+
+            let product_summary = ProductSummaryViewModel::new(
+                product_id,
+                name,
+                category_name,
+                base_price,
+                sale_price_converted,
+                first_image,
+                product_colors, // 色情報を追加
+                is_best_seller,
+                is_quick_ship,
+                stock_quantity,
+            );
+
+            product_summaries.push(product_summary);
+        }
+
+        let total_count = product_summaries.len() as u32;
+
+        // 簡単な実装：ページング無しでの全件返却
+        // 実際のプロダクションではLIMIT/OFFSETでページングを実装する
+        let product_list = ProductListViewModel {
+            products: product_summaries,
+            total_count,
+            page: 1,
+            per_page: total_count,
+            has_next_page: false,
+            has_previous_page: false,
+        };
+
+        Ok(product_list)
     }
 }

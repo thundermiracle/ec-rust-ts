@@ -11,7 +11,6 @@ pub struct SKU {
     variant_attributes: VariantAttributes,
     base_price: Money,
     sale_price: Option<Money>,
-    cost_price: Option<Money>,
     stock: Stock,
     status: SKUStatus,
     created_at: DateTime<Utc>,
@@ -57,7 +56,6 @@ impl SKU {
             variant_attributes,
             base_price,
             sale_price: None,
-            cost_price: None,
             stock,
             status: SKUStatus::Active,
             created_at: Utc::now(),
@@ -221,10 +219,6 @@ impl SKU {
         self.sale_price
     }
 
-    pub fn cost_price(&self) -> Option<Money> {
-        self.cost_price
-    }
-
     pub fn stock(&self) -> &Stock {
         &self.stock
     }
@@ -257,7 +251,7 @@ impl SKU {
 // Stock構造体
 #[derive(Debug, Clone)]
 pub struct Stock {
-    total_quantity: u32,
+    stock_quantity: u32,
     reserved_quantity: u32,
     low_stock_threshold: u32,
 }
@@ -271,18 +265,18 @@ impl Stock {
         }
 
         Ok(Self {
-            total_quantity: total,
+            stock_quantity: total,
             reserved_quantity: reserved,
             low_stock_threshold: 5,
         })
     }
 
     pub fn available_quantity(&self) -> u32 {
-        self.total_quantity.saturating_sub(self.reserved_quantity)
+        self.stock_quantity.saturating_sub(self.reserved_quantity)
     }
 
     pub fn total_quantity(&self) -> u32 {
-        self.total_quantity
+        self.stock_quantity
     }
 
     pub fn reserved_quantity(&self) -> u32 {
@@ -292,7 +286,7 @@ impl Stock {
     pub fn adjust(&mut self, adjustment: StockAdjustment) -> Result<(), DomainError> {
         match adjustment {
             StockAdjustment::Increase(amount) => {
-                self.total_quantity = self.total_quantity.saturating_add(amount);
+                self.stock_quantity = self.stock_quantity.saturating_add(amount);
             }
             StockAdjustment::Decrease(amount) => {
                 if amount > self.available_quantity() {
@@ -301,7 +295,7 @@ impl Stock {
                         available: self.available_quantity(),
                     });
                 }
-                self.total_quantity -= amount;
+                self.stock_quantity -= amount;
             }
         }
         Ok(())
