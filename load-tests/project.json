@@ -1,0 +1,43 @@
+{
+  "name": "load-tests",
+  "projectType": "application",
+  "sourceRoot": "load-tests/src",
+  "targets": {
+    "stress:light": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "k6 run --env RPS=20 src/stress-test.js",
+        "cwd": "load-tests"
+      }
+    },
+    "stress:medium": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "k6 run --env RPS=50 src/stress-test.js",
+        "cwd": "load-tests"
+      }
+    },
+    "stress:high": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "k6 run --env RPS=100 src/stress-test.js",
+        "cwd": "load-tests"
+      }
+    },
+    "stress:heavy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "k6 run --env RPS=500 src/stress-test.js",
+        "cwd": "load-tests"
+      }
+    },
+    "stress:extreme": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "k6 run --env RPS=1000 src/stress-test.js",
+        "cwd": "load-tests"
+      }
+    }
+  },
+  "tags": ["scope:load-tests", "type:testing"]
+} 
