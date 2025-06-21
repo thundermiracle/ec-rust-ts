@@ -1,10 +1,9 @@
 use axum::{
-    Router,
-    middleware,
-    response::Response,
+    http::HeaderValue, middleware, response::Response, Router
 };
 use clap::{Parser, Subcommand};
 use std::sync::Arc;
+use tower_http::cors::{CorsLayer, Any};
 
 pub use error::{Error, Result};
 
@@ -44,8 +43,15 @@ async fn main() -> anyhow::Result<()> {
     
     match cli.command.unwrap_or(Commands::Serve) {
         Commands::Serve => {
+            // CORS設定を作成
+            let cors = CorsLayer::new()
+                .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
+                .allow_methods(Any)
+                .allow_headers(Any);
+
             let app = Router::new()
                 .merge(interface_adapters::products::routes())
+                .layer(cors)  // CORSレイヤーを追加
                 .layer(middleware::map_response(main_response_mapper))
                 .with_state(container);  // アプリケーション状態としてコンテナを追加
 

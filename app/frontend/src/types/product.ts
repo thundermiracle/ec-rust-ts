@@ -1,30 +1,25 @@
-export interface Product {
+export interface ProductListItem {
   id: string;
   name: string;
   price: number;
   salePrice?: number;
-  images: string[];
+  image: string;
   category: string;
-  subcategory?: string;
-  description: string;
-  material?: string;
-  dimensions?: string;
   colors: string[];
-  isOnSale?: boolean;
-  isSoldOut?: boolean;
-  isBestSeller?: boolean;
-  isQuickShip?: boolean;
-  variants?: ProductVariant[];
+  isOnSale: boolean;
+  isBestSeller: boolean;
+  isQuickShip: boolean;
+  isSoldOut: boolean;
+  stock: number;
 }
 
-export interface ProductVariant {
-  id: string;
-  name: string;
-  price: number;
-  salePrice?: number;
-  color: string;
-  image: string;
-  isAvailable: boolean;
+export interface ProductList {
+  products: ProductListItem[];
+  totalCount: number;
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export interface Category {

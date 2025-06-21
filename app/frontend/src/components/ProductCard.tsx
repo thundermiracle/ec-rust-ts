@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Product } from '../types/product';
+import { ProductListItem } from '../types/product';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageIcon } from 'lucide-react';
 
 interface ProductCardProps {
-  product: Product;
+  product: ProductListItem;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
@@ -24,9 +24,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="relative overflow-hidden bg-muted rounded-lg transition-transform duration-300 group-hover:scale-[1.02]">
           {/* Product Image */}
           <div className="aspect-square relative">
-            {product.images[0] ? (
+            {product.image ? (
               <Image
-                src={product.images[0]}
+                src={product.image}
                 alt={product.name}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -81,10 +81,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     {formatPrice(product.price)}
                   </span>
                 </>
-              ) : product.variants && product.variants.length > 0 ? (
-                <span className="text-sm font-semibold text-foreground">
-                  {formatPrice(Math.min(...product.variants.map(v => v.price)))} - {formatPrice(Math.max(...product.variants.map(v => v.price)))}
-                </span>
               ) : (
                 <span className="text-sm font-semibold text-foreground">
                   {formatPrice(product.price)}

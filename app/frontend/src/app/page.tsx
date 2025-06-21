@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { products } from '../data/mockData';
 import ProductCard from '../components/ProductCard';
 import Sidebar from '../components/Sidebar';
-import { Product } from '../types/product';
 import { Button } from '@/components/ui/button';
+import { useGetProductsQuery } from '@/lib/api';
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedFeatured, setSelectedFeatured] = useState<string | null>(null);
+  const { data } = useGetProductsQuery();
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product: Product) => {
+    return data?.products?.filter((product) => {
       // Category filter
       if (selectedCategory && product.category !== selectedCategory) {
         return false;
@@ -36,16 +36,12 @@ export default function Home() {
           case 'Walnut Desk':
             if (product.category !== 'desks' || !product.colors.includes('Walnut')) return false;
             break;
-          case 'Latest Artifacts':
-            // For demo purposes, show products with variants
-            if (!product.variants || product.variants.length === 0) return false;
-            break;
         }
       }
 
       return true;
     });
-  }, [selectedCategory, selectedColor, selectedFeatured]);
+  }, [data?.products, selectedCategory, selectedColor, selectedFeatured]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
@@ -78,19 +74,19 @@ export default function Home() {
           {/* Product Count */}
           <div className="mb-6">
             <p className="text-sm text-muted-foreground">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+              {filteredProducts?.length} {filteredProducts?.length === 1 ? 'product' : 'products'}
             </p>
           </div>
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product: Product) => (
+            {filteredProducts?.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
 
           {/* No products message */}
-          {filteredProducts.length === 0 && (
+          {filteredProducts?.length === 0 && (
             <div className="text-center py-16">
               <p className="text-muted-foreground text-lg mb-4">No products found matching your filters.</p>
               <Button
