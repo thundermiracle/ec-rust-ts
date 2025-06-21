@@ -1,4 +1,4 @@
-import { Product, Category } from '../types/product';
+import { Category } from '../types/product';
 
 export const categories: Category[] = [
   {
@@ -74,7 +74,7 @@ export const colors = [
   'Beige',
 ];
 
-export const products: Product[] = [
+export const products = [
   {
     id: 'desk-walnut-1',
     name: 'Desk - Walnut',

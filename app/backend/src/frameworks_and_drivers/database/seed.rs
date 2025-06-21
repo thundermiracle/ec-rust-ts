@@ -23,6 +23,10 @@ pub async fn run_seeds() -> Result<()> {
     seed_categories(pool).await?;
     println!("📂 Categories seeded");
     
+    // サンプル商品を挿入
+    seed_sample_products().await?;
+    println!("🛍️  Sample products seeded");
+    
     println!("✅ All seed data inserted successfully!");
     Ok(())
 }
@@ -38,9 +42,9 @@ async fn seed_system_tags(pool: &SqlitePool) -> Result<()> {
     ];
     
     for (slug, name, priority) in tags {
-        sqlx::query(
+        let result = sqlx::query(
             r#"
-            INSERT OR IGNORE INTO tags (slug, name, priority, is_system)
+            INSERT OR REPLACE INTO tags (slug, name, priority, is_system)
             VALUES (?, ?, ?, TRUE)
             "#
         )
@@ -49,7 +53,15 @@ async fn seed_system_tags(pool: &SqlitePool) -> Result<()> {
         .bind(priority)
         .execute(pool)
         .await?;
+        
+        println!("    ✓ Tag inserted: {} (affected rows: {})", slug, result.rows_affected());
     }
+    
+    // 挿入されたタグを確認
+    let tag_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tags")
+        .fetch_one(pool)
+        .await?;
+    println!("    ℹ️  Total tags in database: {}", tag_count);
     
     Ok(())
 }
@@ -133,160 +145,239 @@ pub async fn seed_sample_products() -> Result<()> {
     
     println!("🛍️  Seeding sample products from mockData...");
     
-    // シンプル商品（単一SKU）
-    let simple_products = [
-        // Desk Organizer
-        (
-            "Desk Organizer", 
-            "Minimalist desk organizer", 
-            "accessories", // category_slug
-            false, // is_best_seller
-            false, // is_quick_ship
-            vec![
-                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
-                ("DO-BAMBOO-001", "Natural Bamboo", "Natural Bamboo", "Bamboo", "W20×D15×H8cm", 4500, None::<i64>, 25)
-            ]
-        ),
-        // Pendant Light
-        (
-            "Pendant Light", 
-            "Modern pendant light with brass finish", 
-            "lighting", // category_slug
-            false, // is_best_seller
-            true, // is_quick_ship
-            vec![
-                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
-                ("PL-BRASS-001", "Brass Finish", "Brass", "Brass and Glass", "8\" x 8\" x 12\"", 36000, None::<i64>, 20)
-            ]
-        ),
+    // 商品配列 (重複を削除して整理)
+    let products = [
+        // シンプル商品（単一SKU）
+        ("Lift - Walnut", "Monitor stand with storage space underneath", "monitor-risers", false, true, 
+         vec![("LIFT-WALNUT-001", "Standard", "Walnut", "Walnut Wood", "24\" x 10\" x 6\"", 39000, None::<i64>, 20)]),
+        ("Monument - Charcoal", "Phone stand with minimalist design", "accessories", false, true, 
+         vec![("MONUMENT-CHARCOAL-001", "Standard", "Charcoal", "Metal", "4\" x 4\" x 6\"", 9000, None::<i64>, 35)]),
+        ("Shelf - Black", "Wall-mounted shelf with modern black finish", "wall-shelves", false, true, 
+         vec![("SHELF-BLACK-001", "Standard", "Black", "Metal", "24\" x 8\" x 2\"", 11500, None::<i64>, 25)]),
+        ("Large Stand - Walnut", "Large monitor stand with walnut finish", "monitor-risers", false, false, 
+         vec![("STAND-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "30\" x 12\" x 8\"", 15000, None::<i64>, 15)]),
+        ("Mini Shelf - White", "Compact wall shelf in white finish", "wall-shelves", false, true, 
+         vec![("MINI-SHELF-WHITE", "Compact", "White", "Metal", "12\" x 6\" x 2\"", 6000, None::<i64>, 30)]),
+        ("Table Light - Black", "Minimalist table lamp with adjustable brightness", "lighting", false, false, 
+         vec![("TABLE-LIGHT-BLACK", "Standard", "Black", "Metal and LED", "6\" x 6\" x 18\"", 32000, None::<i64>, 18)]),
+        ("Bench - Whitewash Oak", "Modern bench with whitewash oak finish", "bench-consoles", true, false, 
+         vec![("BENCH-WHITEWASH-OAK", "Standard", "Whitewash Oak", "Whitewash Oak Wood", "48\" x 16\" x 18\"", 230000, None::<i64>, 8)]),
+        ("Table - Black Oak", "Dining table with black oak finish", "tables", false, false, 
+         vec![("TABLE-BLACK-OAK", "Standard", "Black Oak", "Black Oak Wood", "72\" x 36\" x 30\"", 280000, None::<i64>, 0)]),
+        ("TUK - Black", "Premium bookshelf speakers with wireless connectivity", "audio", false, false, 
+         vec![("TUK-BLACK-001", "Standard", "Black", "Wood and Metal", "8\" x 11\" x 13\"", 80000, None::<i64>, 12)]),
+        ("Coffee Table - Walnut", "Modern coffee table with clean walnut finish", "tables", true, false, 
+         vec![("COFFEE-TABLE-WALNUT", "Standard", "Walnut", "Walnut Wood", "40\" x 20\" x 16\"", 120000, None::<i64>, 10)]),
+        ("Bookshelf - White Oak", "Five-tier bookshelf with white oak finish", "wall-shelves", false, false, 
+         vec![("BOOKSHELF-WHITE-OAK", "Five-tier", "White Oak", "White Oak Wood", "32\" x 12\" x 72\"", 89000, Some(75000), 14)]),
+        ("Pendant Light - Brass", "Modern pendant light with brass finish", "lighting", false, true, 
+         vec![("PENDANT-BRASS-001", "Standard", "Brass", "Brass and Glass", "8\" x 8\" x 12\"", 24000, None::<i64>, 22)]),
+        ("Side Table - Black Oak", "Compact side table with black oak finish", "side-tables", false, true, 
+         vec![("SIDE-TABLE-BLACK-OAK", "Compact", "Black Oak", "Black Oak Wood", "18\" x 18\" x 24\"", 38000, None::<i64>, 16)]),
+        ("Floor Lamp - White", "Minimalist floor lamp with adjustable head", "lighting", false, false, 
+         vec![("FLOOR-LAMP-WHITE", "Adjustable", "White", "Metal and Fabric", "12\" x 12\" x 60\"", 45000, None::<i64>, 10)]),
+        ("Wireless Charger - Oak", "Wireless charging pad with oak veneer", "accessories", false, true, 
+         vec![("WIRELESS-CHARGER-OAK", "Standard", "White Oak", "Oak Veneer and Electronics", "4\" x 4\" x 0.5\"", 12000, None::<i64>, 40)]),
+        ("Storage Bench - Gray", "Storage bench with soft gray upholstery", "bench-consoles", false, false, 
+         vec![("STORAGE-BENCH-GRAY", "With Storage", "Gray", "Fabric and Wood Frame", "36\" x 16\" x 18\"", 56000, None::<i64>, 12)]),
+        ("Wall Clock - Black", "Minimalist wall clock with black frame", "accessories", false, true, 
+         vec![("WALL-CLOCK-BLACK", "Standard", "Black", "Metal and Glass", "12\" x 12\" x 2\"", 8500, None::<i64>, 28)]),
+        
+        // 複数SKU商品
+        ("Desk - Walnut", "Minimalist walnut desk with clean lines and modern design", "desks", true, false, 
+         vec![("DESK-WALNUT-SMALL", "Small", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 179000, Some(179000), 15),
+              ("DESK-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 229000, Some(179000), 8)]),
+        ("Form Armchair Swivel - Upholstered", "Comfortable swivel armchair with premium upholstery", "seating", false, false, 
+         vec![("FORM-CHAIR-BLACK", "Black Upholstery", "Black", "Fabric and Metal", "28\" x 28\" x 32\"", 134500, Some(134500), 6),
+              ("FORM-CHAIR-GRAY", "Gray Upholstery", "Gray", "Fabric and Metal", "28\" x 28\" x 32\"", 171500, Some(134500), 4)]),
+        ("Desk - White Oak", "Modern desk with white oak finish", "desks", false, false, 
+         vec![("DESK-WHITE-OAK-SMALL", "Small", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 179000, Some(179000), 12),
+              ("DESK-WHITE-OAK-LARGE", "Large", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 219000, Some(179000), 7)]),
+        ("Office Chair - Black", "Ergonomic office chair with leather upholstery", "seating", false, false, 
+         vec![("OFFICE-CHAIR-BLACK-STD", "Standard Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 68000, None::<i64>, 10),
+              ("OFFICE-CHAIR-BLACK-TALL", "Tall Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 72000, None::<i64>, 8)]),
+        ("Dining Chair - Walnut", "Modern dining chair with walnut frame", "seating", true, false, 
+         vec![("DINING-CHAIR-WALNUT-BEIGE", "Beige Cushion", "Beige", "Walnut Wood and Fabric", "18\" x 20\" x 32\"", 32000, None::<i64>, 20),
+              ("DINING-CHAIR-WALNUT-GRAY", "Gray Cushion", "Gray", "Walnut Wood and Fabric", "18\" x 20\" x 32\"", 34000, None::<i64>, 15)]),
     ];
     
-    // 複数SKU商品
-    let multi_sku_products = [
-        // Coffee Table - 複数SKU
-        (
-            "Coffee Table", 
-            "Round coffee table", 
-            "tables", // category_slug
-            true, // is_best_seller
-            false, // is_quick_ship
-            vec![
-                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
-                ("CT-WALNUT-SMALL", "Small – Walnut", "Walnut", "Solid Walnut", "Diameter: 80cm, Height: 45cm", 160000, None::<i64>, 8),
-                ("CT-WALNUT-LARGE", "Large – Walnut", "Walnut", "Solid Walnut", "Diameter: 100cm, Height: 45cm", 180000, None::<i64>, 5),
-                ("CT-OAK-SMALL", "Small – White Oak", "White Oak", "Solid Oak", "Diameter: 80cm, Height: 45cm", 160000, None::<i64>, 12),
-                ("CT-OAK-LARGE", "Large – White Oak", "White Oak", "Solid Oak", "Diameter: 100cm, Height: 45cm", 180000, None::<i64>, 7)
-            ]
-        ),
-        // Form Armchair - 複数SKU
-        (
-            "Form Armchair Swivel", 
-            "Comfortable swivel armchair with premium upholstery", 
-            "seating", // category_slug
-            false, // is_best_seller
-            false, // is_quick_ship
-            vec![
-                // SKU: (sku_code, name, color_name, material, dimensions, base_price, sale_price, stock_quantity)
-                ("FA-BLACK-STD", "Black Upholstery", "Black", "Fabric and Metal", "Standard", 201750, Some(180000), 4),
-                ("FA-GRAY-STD", "Gray Upholstery", "Gray", "Fabric and Metal", "Standard", 201750, Some(180000), 4)
-            ]
-        ),
-    ];
-    
-    // すべての商品を処理（シンプルと複数SKU）
-    for products in [simple_products, multi_sku_products].iter() {
-        for (name, description, category_slug, is_best_seller, is_quick_ship, skus) in products.iter() {
-            // カテゴリーIDを取得
-            let category_id: String = sqlx::query_scalar(
-                "SELECT id FROM categories WHERE slug = ?"
+    let mut product_index = 0;
+    for (name, description, category_slug, is_best_seller, is_quick_ship, skus) in products.iter() {
+        // カテゴリーIDを取得
+        let category_id: String = sqlx::query_scalar(
+            "SELECT id FROM categories WHERE slug = ?"
+        )
+        .bind(category_slug)
+        .fetch_one(pool)
+        .await?;
+        
+        // 商品IDを生成
+        let product_id = Uuid::new_v4().to_string();
+        
+        // 商品を挿入
+        sqlx::query(
+            r#"
+            INSERT OR IGNORE INTO products (
+                id, name, description, category_id,
+                is_best_seller, is_quick_ship
             )
-            .bind(category_slug)
-            .fetch_one(pool)
-            .await?;
-            
-            // 商品IDを生成
-            let product_id = Uuid::new_v4().to_string();
-            
-            // 商品を挿入
+            VALUES (?, ?, ?, ?, ?, ?)
+            "#
+        )
+        .bind(&product_id)
+        .bind(name)
+        .bind(description)
+        .bind(&category_id)
+        .bind(is_best_seller)
+        .bind(is_quick_ship)
+        .execute(pool)
+        .await?;
+        
+        // サンプル画像を挿入
+        for i in 0..2 {
             sqlx::query(
                 r#"
-                INSERT INTO products (
-                    id, name, description, category_id,
-                    is_best_seller, is_quick_ship
-                )
-                VALUES (?, ?, ?, ?, ?, ?)
-                "#
-            )
-            .bind(&product_id)
-            .bind(name)
-            .bind(description)
-            .bind(&category_id)
-            .bind(is_best_seller)
-            .bind(is_quick_ship)
-            .execute(pool)
-            .await?;
-            
-            // サンプル画像を挿入
-            sqlx::query(
-                r#"
-                INSERT INTO product_images (
+                INSERT OR IGNORE INTO product_images (
                     product_id, image_url, alt_text, display_order
                 )
-                VALUES (?, ?, ?, 0)
+                VALUES (?, ?, ?, ?)
                 "#
             )
             .bind(&product_id)
-            .bind(format!("https://picsum.photos/id/{}/800/800", 100 + skus.len() as i64))
-            .bind(format!("Image of {}", name))
+            .bind(format!("https://picsum.photos/id/{}/800/800", product_index + i))
+            .bind(format!("Image {} of {}", i + 1, name))
+            .bind(i as i64)
             .execute(pool)
             .await?;
+        }
+        
+        println!("  ✓ Product created: {} (ID: {})", name, product_id);
+        
+        // 各SKUを挿入
+        let mut sku_index = 0;
+        for (sku_code, sku_name, color_name, material, dimensions, base_price, sale_price, stock_quantity) in skus {
+            // 色IDを取得（エラーハンドリングを改善）
+            let color_id: Option<i64> = sqlx::query_scalar(
+                "SELECT id FROM colors WHERE name = ?"
+            )
+            .bind(color_name)
+            .fetch_optional(pool)
+            .await?;
             
-            println!("  ✓ Product created: {} (ID: {})", name, product_id);
+            let color_id = match color_id {
+                Some(id) => id,
+                None => {
+                    println!("    ⚠️  Warning: Color '{}' not found, skipping SKU {}", color_name, sku_code);
+                    continue;
+                }
+            };
             
-            // 各SKUを挿入
-            for (sku_code, sku_name, color_name, material, dimensions, base_price, sale_price, stock_quantity) in skus {
-                // 色IDを取得
-                let color_id: i64 = sqlx::query_scalar(
-                    "SELECT id FROM colors WHERE name = ?"
+            // SKUを挿入
+            let sku_id = Uuid::new_v4().to_string();
+            
+            sqlx::query(
+                r#"
+                INSERT OR IGNORE INTO skus (
+                    id, product_id, sku_code, name,
+                    color_id, material, dimensions,
+                    base_price, sale_price, 
+                    stock_quantity, reserved_quantity, low_stock_threshold,
+                    image_url
                 )
-                .bind(color_name)
-                .fetch_one(pool)
-                .await?;
-                
-                // SKUを挿入
-                let sku_id = Uuid::new_v4().to_string();
-                
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5, ?)
+                "#
+            )
+            .bind(&sku_id)
+            .bind(&product_id)
+            .bind(sku_code)
+            .bind(sku_name)
+            .bind(color_id)
+            .bind(material)
+            .bind(dimensions)
+            .bind(base_price)
+            .bind(sale_price)
+            .bind(stock_quantity)
+            .bind(format!("https://picsum.photos/id/{}/800/800", product_index + 5 + sku_index))
+            .execute(pool)
+            .await?;
+            sku_index += 1;
+            println!("    ↳ SKU created: {} (ID: {})", sku_name, sku_id);
+        }
+        product_index += 20;
+
+        // 商品に対するタグを挿入
+        if *is_best_seller {
+            if let Some(best_seller_tag_id) = sqlx::query_scalar::<_, i64>(
+                "SELECT id FROM tags WHERE slug = 'best_seller'"
+            )
+            .fetch_optional(pool)
+            .await? {
                 sqlx::query(
-                    r#"
-                    INSERT INTO skus (
-                        id, product_id, sku_code, name,
-                        color_id, material, dimensions,
-                        base_price, sale_price, 
-                        stock_quantity, reserved_quantity, low_stock_threshold,
-                        image_url
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5, ?)
-                    "#
+                    "INSERT INTO product_tags (product_id, tag_id) VALUES (?, ?)"
                 )
-                .bind(&sku_id)
                 .bind(&product_id)
-                .bind(sku_code)
-                .bind(sku_name)
-                .bind(color_id)
-                .bind(material)
-                .bind(dimensions)
-                .bind(base_price)
-                .bind(sale_price)
-                .bind(stock_quantity)
-                .bind(format!("https://picsum.photos/id/{}/800/800", 200 + *base_price % 100))
+                .bind(best_seller_tag_id)
                 .execute(pool)
                 .await?;
-                
-                println!("    ↳ SKU created: {} (ID: {})", sku_name, sku_id);
+                println!("    ↳ Best seller tag added");
+            }
+        }
+        
+        if *is_quick_ship {
+            if let Some(quick_ship_tag_id) = sqlx::query_scalar::<_, i64>(
+                "SELECT id FROM tags WHERE slug = 'quick_ship'"
+            )
+            .fetch_optional(pool)
+            .await? {
+                sqlx::query(
+                    "INSERT INTO product_tags (product_id, tag_id) VALUES (?, ?)"
+                )
+                .bind(&product_id)
+                .bind(quick_ship_tag_id)
+                .execute(pool)
+                .await?;
+                println!("    ↳ Quick ship tag added");
+            }
+        }
+        
+        // 売り切れ商品にタグを追加
+        if *name == "Table - Black Oak" {
+            if let Some(sold_out_tag_id) = sqlx::query_scalar::<_, i64>(
+                "SELECT id FROM tags WHERE slug = 'sold_out'"
+            )
+            .fetch_optional(pool)
+            .await? {
+                sqlx::query(
+                    "INSERT INTO product_tags (product_id, tag_id) VALUES (?, ?)"
+                )
+                .bind(&product_id)
+                .bind(sold_out_tag_id)
+                .execute(pool)
+                .await?;
+                println!("    ↳ Sold out tag added");
+            }
+        }
+        
+        // セール商品にタグを追加（sale_priceが設定されている商品）
+        let has_sale = skus.iter().any(|(_, _, _, _, _, _, sale_price, _)| sale_price.is_some());
+        if has_sale {
+            if let Some(on_sale_tag_id) = sqlx::query_scalar::<_, i64>(
+                "SELECT id FROM tags WHERE slug = 'on_sale'"
+            )
+            .fetch_optional(pool)
+            .await? {
+                sqlx::query(
+                    "INSERT INTO product_tags (product_id, tag_id) VALUES (?, ?)"
+                )
+                .bind(&product_id)
+                .bind(on_sale_tag_id)
+                .execute(pool)
+                .await?;
+                println!("    ↳ On sale tag added");
             }
         }
     }
     
     println!("✅ Sample products seeded successfully!");
     Ok(())
-} 
+}
