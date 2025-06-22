@@ -25,18 +25,11 @@ impl ProductPresenter {
         ProductResponse {
             id: product_view_model.id,
             name: product_view_model.name,
-            price: product_view_model.price,
-            sale_price: product_view_model.sale_price,
             images: product_view_model.images,
             category: product_view_model.category,
             description: product_view_model.description,
-            material: product_view_model.material,
-            dimensions: product_view_model.dimensions,
-            colors: product_view_model.colors,
-            is_on_sale: Some(product_view_model.is_on_sale).filter(|&val| val),
-            is_best_seller: Some(product_view_model.is_best_seller).filter(|&val| val),
-            is_quick_ship: Some(product_view_model.is_quick_ship).filter(|&val| val),
-            is_sold_out: Some(product_view_model.is_sold_out).filter(|&val| val),
+            is_best_seller: product_view_model.is_best_seller,
+            is_quick_ship: product_view_model.is_quick_ship,
             variants,
         }
     }
@@ -51,11 +44,18 @@ impl ProductPresenter {
     fn present_variant(variant_view_model: VariantViewModel) -> VariantResponse {
         VariantResponse {
             id: variant_view_model.id,
+            sku_code: variant_view_model.sku_code,
             name: variant_view_model.name,
-            price: variant_view_model.price,
             color: variant_view_model.color,
-            image: variant_view_model.image.unwrap_or_default(),
-            is_available: variant_view_model.is_available,
+            material: variant_view_model.material,
+            dimensions: variant_view_model.dimensions,
+            price: variant_view_model.price,
+            sale_price: variant_view_model.sale_price,
+            // stock_quantity: variant_view_model.stock_quantity,
+            display_order: variant_view_model.display_order,
+            image: variant_view_model.image,
+            is_on_sale: variant_view_model.is_on_sale,
+            is_sold_out: variant_view_model.is_sold_out,
         }
     }
 }
@@ -70,17 +70,10 @@ mod tests {
         let product_view_model = ProductViewModel::new(
             "desk-walnut-1".to_string(),
             "Desk - Walnut".to_string(),
-            2290,
-            Some(1790),
             vec!["image1.jpg".to_string(), "image2.jpg".to_string()],
             "desks".to_string(),
             "A beautiful walnut desk".to_string(),
-            Some("Walnut Wood".to_string()),
-            Some("48\" x 24\" x 30\"".to_string()),
-            vec!["Walnut".to_string(), "Black Oak".to_string()],
             true,
-            true,
-            false,
             false,
             vec![],
         );
@@ -91,18 +84,11 @@ mod tests {
         // Then: 正しく変換されている
         assert_eq!(product_response.id, "desk-walnut-1");
         assert_eq!(product_response.name, "Desk - Walnut");
-        assert_eq!(product_response.price, 2290);
-        assert_eq!(product_response.sale_price, Some(1790));
         assert_eq!(product_response.images.len(), 2);
         assert_eq!(product_response.category, "desks");
         assert_eq!(product_response.description, "A beautiful walnut desk");
-        assert_eq!(product_response.material, Some("Walnut Wood".to_string()));
-        assert_eq!(product_response.dimensions, Some("48\" x 24\" x 30\"".to_string()));
-        assert_eq!(product_response.colors.len(), 2);
-        assert_eq!(product_response.is_on_sale, Some(true));
-        assert_eq!(product_response.is_best_seller, Some(true));
-        assert_eq!(product_response.is_quick_ship, None); // false値はNoneになる
-        assert_eq!(product_response.is_sold_out, None);   // false値はNoneになる
+        assert!(product_response.is_best_seller);
+        assert!(!product_response.is_quick_ship);
         assert!(product_response.variants.is_empty());
     }
 
@@ -111,37 +97,40 @@ mod tests {
         // Given: variantsを含むProductViewModelの作成
         let variant1 = VariantViewModel::new(
             "variant-1".to_string(),
+            "SKU001".to_string(),
             "Small".to_string(),
-            1790,
             "Walnut".to_string(),
+            "Wood".to_string(),
+            "24x12x30".to_string(),
+            1790,
+            Some(1590),
+            10,
+            1,
             Some("variant1.jpg".to_string()),
-            true,
         );
 
         let variant2 = VariantViewModel::new(
             "variant-2".to_string(),
+            "SKU002".to_string(),
             "Large".to_string(),
-            2290,
             "Black Oak".to_string(),
+            "Wood".to_string(),
+            "48x24x30".to_string(),
+            2290,
             None,
-            false,
+            0,
+            2,
+            None,
         );
 
         let product_view_model = ProductViewModel::new(
             "desk-walnut-1".to_string(),
             "Desk - Walnut".to_string(),
-            1790,
-            None,
             vec!["image1.jpg".to_string()],
             "desks".to_string(),
             "A beautiful walnut desk".to_string(),
-            Some("Walnut Wood".to_string()),
-            Some("48\" x 24\" x 30\"".to_string()),
-            vec!["Walnut".to_string(), "Black Oak".to_string()],
-            false,
             false,
             true,
-            false,
             vec![variant1, variant2],
         );
 
@@ -153,25 +142,37 @@ mod tests {
         
         let first_variant = &product_response.variants[0];
         assert_eq!(first_variant.id, "variant-1");
+        assert_eq!(first_variant.sku_code, "SKU001");
         assert_eq!(first_variant.name, "Small");
         assert_eq!(first_variant.price, 1790);
         assert_eq!(first_variant.color, "Walnut");
-        assert_eq!(first_variant.image, "variant1.jpg");
-        assert!(first_variant.is_available);
+        assert_eq!(first_variant.material, "Wood");
+        assert_eq!(first_variant.dimensions, "24x12x30");
+        assert_eq!(first_variant.sale_price, Some(1590));
+        // assert_eq!(first_variant.stock_quantity, 10);
+        assert_eq!(first_variant.display_order, 1);
+        assert_eq!(first_variant.image, Some("variant1.jpg".to_string()));
+        assert!(first_variant.is_on_sale);
+        assert!(!first_variant.is_sold_out);
 
         let second_variant = &product_response.variants[1];
         assert_eq!(second_variant.id, "variant-2");
+        assert_eq!(second_variant.sku_code, "SKU002");
         assert_eq!(second_variant.name, "Large");
         assert_eq!(second_variant.price, 2290);
         assert_eq!(second_variant.color, "Black Oak");
-        assert_eq!(second_variant.image, ""); // None -> 空文字列
-        assert!(!second_variant.is_available);
+        assert_eq!(second_variant.material, "Wood");
+        assert_eq!(second_variant.dimensions, "48x24x30");
+        assert_eq!(second_variant.sale_price, None);
+        // assert_eq!(second_variant.stock_quantity, 0);
+        assert_eq!(second_variant.display_order, 2);
+        assert_eq!(second_variant.image, None);
+        assert!(!second_variant.is_on_sale);
+        assert!(second_variant.is_sold_out);
 
-        // フラグの確認
-        assert_eq!(product_response.is_on_sale, None);     // false値はNoneになる
-        assert_eq!(product_response.is_best_seller, None); // false値はNoneになる
-        assert_eq!(product_response.is_quick_ship, Some(true));
-        assert_eq!(product_response.is_sold_out, None);   // false値はNoneになる
+        // プロダクトレベルのフラグの確認
+        assert!(!product_response.is_best_seller);
+        assert!(product_response.is_quick_ship);
     }
 
     #[test]
@@ -179,11 +180,16 @@ mod tests {
         // Given: VariantViewModelの作成
         let variant_view_model = VariantViewModel::new(
             "variant-test".to_string(),
+            "SKU003".to_string(),
             "Medium".to_string(),
-            2000,
             "Walnut".to_string(),
+            "Wood".to_string(),
+            "36x18x30".to_string(),
+            2000,
+            Some(1800),
+            5,
+            1,
             Some("test.jpg".to_string()),
-            true,
         );
 
         // When: VariantPresenterで変換
@@ -191,11 +197,18 @@ mod tests {
 
         // Then: 正しく変換されている
         assert_eq!(variant_response.id, "variant-test");
+        assert_eq!(variant_response.sku_code, "SKU003");
         assert_eq!(variant_response.name, "Medium");
         assert_eq!(variant_response.price, 2000);
         assert_eq!(variant_response.color, "Walnut");
-        assert_eq!(variant_response.image, "test.jpg");
-        assert!(variant_response.is_available);
+        assert_eq!(variant_response.material, "Wood");
+        assert_eq!(variant_response.dimensions, "36x18x30");
+        assert_eq!(variant_response.sale_price, Some(1800));
+        // assert_eq!(variant_response.stock_quantity, 5);
+        assert_eq!(variant_response.display_order, 1);
+        assert_eq!(variant_response.image, Some("test.jpg".to_string()));
+        assert!(variant_response.is_on_sale);
+        assert!(!variant_response.is_sold_out);
     }
 
     #[test]
@@ -203,22 +216,34 @@ mod tests {
         // Given: imageがNoneのVariantViewModel
         let variant_view_model = VariantViewModel::new(
             "variant-no-image".to_string(),
+            "SKU004".to_string(),
             "No Image".to_string(),
-            1500,
             "Black Oak".to_string(),
+            "Wood".to_string(),
+            "20x10x25".to_string(),
+            1500,
             None,
-            false,
+            0,
+            1,
+            None,
         );
 
         // When: VariantPresenterで変換
         let variant_response = ProductPresenter::present_variant(variant_view_model);
 
-        // Then: imageは空文字列になる
+        // Then: imageはNoneのまま
         assert_eq!(variant_response.id, "variant-no-image");
+        assert_eq!(variant_response.sku_code, "SKU004");
         assert_eq!(variant_response.name, "No Image");
         assert_eq!(variant_response.price, 1500);
         assert_eq!(variant_response.color, "Black Oak");
-        assert_eq!(variant_response.image, ""); // None -> 空文字列
-        assert!(!variant_response.is_available);
+        assert_eq!(variant_response.material, "Wood");
+        assert_eq!(variant_response.dimensions, "20x10x25");
+        assert_eq!(variant_response.sale_price, None);
+        // assert_eq!(variant_response.stock_quantity, 0);
+        assert_eq!(variant_response.display_order, 1);
+        assert_eq!(variant_response.image, None);
+        assert!(!variant_response.is_on_sale);
+        assert!(variant_response.is_sold_out);
     }
 }

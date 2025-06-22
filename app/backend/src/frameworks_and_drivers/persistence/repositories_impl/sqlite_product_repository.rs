@@ -66,6 +66,7 @@ impl ProductRepository for SqliteProductRepository {
             r#"
             SELECT 
                 s.id,
+                s.sku_code,
                 s.name,
                 s.dimensions,
                 s.material,
@@ -121,16 +122,11 @@ impl ProductRepository for SqliteProductRepository {
 
         // バリアント情報を構築
         let mut variants = Vec::new();
-        let mut min_price: Option<u32> = None;
-        let mut has_sale_price = false;
-        let mut sale_price: Option<u32> = None;
-        let mut colors = Vec::new();
-        let mut materials = Vec::new();
-        let mut dimensions = Vec::new();
-        let mut all_sold_out = true;
 
         for sku_row in sku_rows {
             let sku_id: String = sku_row.try_get("id")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_code: String = sku_row.try_get("sku_code")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let sku_name: String = sku_row.try_get("name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
@@ -141,6 +137,8 @@ impl ProductRepository for SqliteProductRepository {
             let stock_quantity: i64 = sku_row.try_get("stock_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let reserved_quantity: i64 = sku_row.try_get("reserved_quantity")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let display_order: i64 = sku_row.try_get("display_order")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let sku_image_url: Option<String> = sku_row.try_get("image_url")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
@@ -153,51 +151,25 @@ impl ProductRepository for SqliteProductRepository {
 
             // 在庫確認
             let available_stock = (stock_quantity - reserved_quantity).max(0) as u32;
-            let is_available = available_stock > 0;
-            if is_available {
-                all_sold_out = false;
-            }
 
             // 価格計算（JPYは最小単位で保存されているため100で割る）
-            let variant_price = (base_price / 100) as u32;
-            let variant_sale_price = sku_sale_price.map(|p| (p / 100) as u32);
+            let variant_price = base_price as u32;
+            let variant_sale_price = sku_sale_price.map(|p| p  as u32);
 
-            // 最小価格の更新
-            let current_price = variant_sale_price.unwrap_or(variant_price);
-            min_price = Some(min_price.map_or(current_price, |existing| existing.min(current_price)));
-
-            // セール価格があるかチェック
-            if variant_sale_price.is_some() {
-                has_sale_price = true;
-                if sale_price.is_none() {
-                    sale_price = variant_sale_price;
-                }
-            }
-
-            // バリアント作成
+            // バリアント作成 - VariantViewModelの構造体フィールドに直接設定
             variants.push(VariantViewModel::new(
                 sku_id,
+                sku_code,
                 sku_name,
+                color_name,
+                sku_material.unwrap_or_default(),
+                sku_dimensions.unwrap_or_default(),
                 variant_price,
-                color_name.clone(),
+                variant_sale_price,
+                available_stock,
+                display_order as u32,
                 sku_image_url,
-                is_available,
             ));
-
-            // 色、素材、寸法の収集
-            if !colors.contains(&color_name) {
-                colors.push(color_name);
-            }
-            if let Some(material) = sku_material.clone() {
-                if !materials.contains(&material) {
-                    materials.push(material);
-                }
-            }
-            if let Some(dim) = sku_dimensions.clone() {
-                if !dimensions.contains(&dim) {
-                    dimensions.push(dim);
-                }
-            }
         }
 
         // 画像URLリストを構築
@@ -207,24 +179,17 @@ impl ProductRepository for SqliteProductRepository {
             .collect::<Result<Vec<String>, _>>()
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
-        // ProductViewModelを構築
-        let product_view_model = ProductViewModel::new(
-            product_id_str,
+        // ProductViewModelを構築 - 新しい構造に合わせて直接フィールド設定
+        let product_view_model = ProductViewModel {
+            id: product_id_str,
             name,
-            min_price.unwrap_or(0),
-            if has_sale_price { sale_price } else { None },
             images,
-            category_name,
+            category: category_name,
             description,
-            materials.first().cloned(), // 最初の素材を代表として使用
-            dimensions.first().cloned(), // 最初の寸法を代表として使用
-            colors,
-            has_sale_price,
             is_best_seller,
             is_quick_ship,
-            all_sold_out,
             variants,
-        );
+        };
 
         Ok(Some(product_view_model))
     }
@@ -361,8 +326,8 @@ impl ProductRepository for SqliteProductRepository {
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // 価格計算（JPYは最小単位で保存されているため100で割る）
-            let product_price = (base_price / 100) as u32;
-            let sale_price_converted = sale_price.map(|p| (p / 100) as u32);
+            let product_price = base_price as u32;
+            let sale_price_converted = sale_price.map(|p| p as u32);
             let available_stock = (stock_quantity - reserved_quantity).max(0) as u32;
 
             let product_summary = ProductSummaryViewModel::new(
