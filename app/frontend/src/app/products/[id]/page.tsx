@@ -151,9 +151,9 @@ export default function ProductDetail() {
             </Card>
 
             {/* Thumbnail Images */}
-            {product.images.length > 1 && !selectedVariant && (
+            {allImages.length > 1 && (
               <div className="flex gap-4">
-                {product.images.map((image: string, index: number) => (
+                {allImages.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
