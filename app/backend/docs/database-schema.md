@@ -63,6 +63,7 @@ erDiagram
         int stock_quantity
         int reserved_quantity
         int low_stock_threshold
+        int display_order
         string image_url
         timestamp created_at
         timestamp updated_at
@@ -201,6 +202,7 @@ Stock keeping units that represent sellable items with specific attributes.
 | `stock_quantity`      | INTEGER NOT NULL DEFAULT 0             | Total available stock                             |
 | `reserved_quantity`   | INTEGER NOT NULL DEFAULT 0             | Reserved for pending orders                       |
 | `low_stock_threshold` | INTEGER NOT NULL DEFAULT 5             | Alert threshold                                   |
+| `display_order`       | INTEGER NOT NULL DEFAULT 0             | Manual display priority (0 = highest priority)    |
 | `image_url`           | TEXT                                   | SKU‑specific image URL                            |
 | `created_at`          | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Creation timestamp                       |
 | `updated_at`          | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Last update timestamp                    |
@@ -210,7 +212,8 @@ Stock keeping units that represent sellable items with specific attributes.
 ```sql
 CONSTRAINT positive_prices CHECK (base_price >= 0),
 CONSTRAINT positive_stock CHECK (stock_quantity >= 0),
-CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity)
+CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity),
+CONSTRAINT positive_display_order CHECK (display_order >= 0)
 ```
 
 **Indexes**
@@ -222,6 +225,7 @@ CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity)
 * `idx_skus_material` on `material` WHERE `material IS NOT NULL`
 * `idx_skus_stock` on `stock_quantity, reserved_quantity`
 * `idx_skus_price` on `base_price, sale_price`
+* `idx_skus_display_order` on `(product_id, display_order)`
 * `idx_skus_low_stock` on `stock_quantity, reserved_quantity, low_stock_threshold` WHERE `stock_quantity - reserved_quantity <= low_stock_threshold AND stock_quantity - reserved_quantity > 0`
 
 <hr />
@@ -335,7 +339,7 @@ BEGIN
 END $$;
 ```
 
-### 3. Product with Multiple SKUs
+### 3. Product with Multiple SKUs with Display Ordering
 
 ```sql
 -- Create categories
@@ -364,50 +368,96 @@ BEGIN
     );
 END $$;
 
--- Add SKUs with different colors and sizes
+-- Add SKUs with strategic display ordering
 DO $$
 DECLARE
     product_id UUID;
 BEGIN
     SELECT id INTO product_id FROM products WHERE name = 'Coffee Table';
     
-    -- SKUs with different colors and sizes
+    -- SKUs with strategic display ordering (most popular/recommended first)
     INSERT INTO skus (
         id, product_id, sku_code, name,
-        color_id, dimensions, material, base_price, stock_quantity
+        color_id, dimensions, material, base_price, stock_quantity, display_order
     ) VALUES
-    (gen_random_uuid(),
-        product_id,
-        'CT-WALNUT-SMALL', 'Small – Walnut',
-        (SELECT id FROM colors WHERE name = 'Walnut'),
-        'Diameter: 80cm, Height: 45cm',
-        'Solid Walnut',
-        160000, 8),
-    (gen_random_uuid(),
-        product_id,
-        'CT-WALNUT-LARGE', 'Large – Walnut',
-        (SELECT id FROM colors WHERE name = 'Walnut'),
-        'Diameter: 100cm, Height: 45cm',
-        'Solid Walnut',
-        180000, 5),
+    -- Most popular size/color combination (display_order = 1)
     (gen_random_uuid(),
         product_id,
         'CT-OAK-SMALL', 'Small – White Oak',
         (SELECT id FROM colors WHERE name = 'White Oak'),
         'Diameter: 80cm, Height: 45cm',
         'Solid Oak',
-        160000, 12),
+        160000, 12, 1),
+    -- Second most popular (display_order = 2)
+    (gen_random_uuid(),
+        product_id,
+        'CT-WALNUT-SMALL', 'Small – Walnut',
+        (SELECT id FROM colors WHERE name = 'Walnut'),
+        'Diameter: 80cm, Height: 45cm',
+        'Solid Walnut',
+        160000, 8, 2),
+    -- Larger sizes (display_order = 3, 4)
     (gen_random_uuid(),
         product_id,
         'CT-OAK-LARGE', 'Large – White Oak',
         (SELECT id FROM colors WHERE name = 'White Oak'),
         'Diameter: 100cm, Height: 45cm',
         'Solid Oak',
-        180000, 7);
+        180000, 7, 3),
+    (gen_random_uuid(),
+        product_id,
+        'CT-WALNUT-LARGE', 'Large – Walnut',
+        (SELECT id FROM colors WHERE name = 'Walnut'),
+        'Diameter: 100cm, Height: 45cm',
+        'Solid Walnut',
+        180000, 5, 4);
 END $$;
 ```
 
 ---
+
+## Migration Scripts
+
+### Adding display_order to existing SKUs table
+
+```sql
+-- Step 1: Add the display_order column
+ALTER TABLE skus ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0;
+
+-- Step 2: Add constraint
+ALTER TABLE skus ADD CONSTRAINT positive_display_order CHECK (display_order >= 0);
+
+-- Step 3: Create index for performance
+CREATE INDEX idx_skus_display_order ON skus (product_id, display_order);
+
+-- Step 4: Set initial display_order values based on business logic
+-- (Optional: Set initial values based on price or existing name ordering)
+WITH ranked_skus AS (
+    SELECT 
+        id,
+        ROW_NUMBER() OVER (
+            PARTITION BY product_id 
+            ORDER BY 
+                CASE WHEN stock_quantity - reserved_quantity > 0 THEN 0 ELSE 1 END,
+                COALESCE(sale_price, base_price) ASC,
+                name ASC
+        ) as rn
+    FROM skus
+)
+UPDATE skus 
+SET display_order = ranked_skus.rn
+FROM ranked_skus 
+WHERE skus.id = ranked_skus.id;
+```
+
+### Rollback Migration (if needed)
+
+```sql
+-- Remove the display_order column and related constraints/indexes
+DROP INDEX IF EXISTS idx_skus_display_order;
+ALTER TABLE skus DROP CONSTRAINT IF EXISTS positive_display_order;
+ALTER TABLE skus DROP COLUMN IF EXISTS display_order;
+```
 
 ## Timestamp Handling
 
@@ -521,6 +571,105 @@ SELECT
 FROM skus s
 WHERE s.product_id = ?
 ORDER BY s.name;
+```
+
+### 4. SKU Display Ordering Strategies
+
+#### **Hybrid Approach (Recommended)**
+
+Combines manual `display_order` with intelligent business logic fallbacks:
+
+```sql
+-- Product detail page with optimized SKU ordering
+SELECT
+  s.id,
+  s.sku_code,
+  s.name,
+  s.dimensions,
+  s.material,
+  s.base_price,
+  s.sale_price,
+  (s.stock_quantity - s.reserved_quantity) AS available_stock,
+  c.name AS color_name,
+  c.hex AS color_hex,
+  s.display_order
+FROM skus s
+JOIN colors c ON c.id = s.color_id
+WHERE s.product_id = ?
+ORDER BY 
+  -- 1. Manual display order (0 = highest priority)
+  s.display_order ASC,
+  -- 2. Stock availability (in-stock items first)
+  CASE WHEN s.stock_quantity - s.reserved_quantity > 0 THEN 0 ELSE 1 END,
+  -- 3. Price (lowest first for better conversion)
+  COALESCE(s.sale_price, s.base_price) ASC,
+  -- 4. Dimensions (consistent size ordering)
+  s.dimensions ASC,
+  -- 5. Color (consistent color ordering)
+  c.name ASC;
+```
+
+#### **Smart Default Ordering**
+
+For cases where `display_order` is not set (all SKUs have display_order = 0):
+
+```sql
+-- Business logic-based ordering
+WITH sku_priority AS (
+  SELECT 
+    s.*,
+    c.name AS color_name,
+    c.hex AS color_hex,
+    -- Priority scoring
+    CASE 
+      WHEN s.stock_quantity - s.reserved_quantity <= 0 THEN 3  -- Out of stock (lowest priority)
+      WHEN s.stock_quantity - s.reserved_quantity <= s.low_stock_threshold THEN 2  -- Low stock
+      ELSE 1  -- In stock (highest priority)
+    END AS stock_priority,
+    -- Size ordering (extract numeric values for proper sorting)
+    CASE 
+      WHEN s.dimensions SIMILAR TO '%[0-9]+%' THEN 
+        CAST(SUBSTRING(s.dimensions FROM '[0-9]+') AS INTEGER)
+      ELSE 999
+    END AS size_numeric
+  FROM skus s
+  JOIN colors c ON c.id = s.color_id
+  WHERE s.product_id = ?
+)
+SELECT 
+  id, sku_code, name, dimensions, material, 
+  base_price, sale_price, available_stock, 
+  color_name, color_hex
+FROM sku_priority
+ORDER BY 
+  stock_priority ASC,           -- In-stock items first
+  base_price ASC,              -- Cheaper options first
+  size_numeric ASC,            -- Smaller to larger sizes
+  color_name ASC;              -- Consistent color ordering
+```
+
+#### **Admin Interface Ordering**
+
+For administrative purposes where all SKUs need to be visible:
+
+```sql
+-- Admin view with drag-and-drop reordering capability
+SELECT
+  s.id,
+  s.sku_code,
+  s.name,
+  s.display_order,
+  (s.stock_quantity - s.reserved_quantity) AS available_stock,
+  c.name AS color_name,
+  CASE 
+    WHEN s.stock_quantity - s.reserved_quantity <= 0 THEN 'out_of_stock'
+    WHEN s.stock_quantity - s.reserved_quantity <= s.low_stock_threshold THEN 'low_stock'
+    ELSE 'in_stock'
+  END AS stock_status
+FROM skus s
+JOIN colors c ON c.id = s.color_id
+WHERE s.product_id = ?
+ORDER BY s.display_order ASC, s.name ASC;
 ```
 
 ---

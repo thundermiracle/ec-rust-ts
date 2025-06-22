@@ -144,6 +144,7 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             stock_quantity INTEGER DEFAULT 0,
             reserved_quantity INTEGER DEFAULT 0,
             low_stock_threshold INTEGER DEFAULT 5,
+            display_order INTEGER NOT NULL DEFAULT 0,
             image_url TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -151,7 +152,8 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             FOREIGN KEY (color_id) REFERENCES colors(id) ON DELETE RESTRICT,
             CONSTRAINT positive_prices CHECK (base_price >= 0),
             CONSTRAINT positive_stock CHECK (stock_quantity >= 0),
-            CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity)
+            CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity),
+            CONSTRAINT positive_display_order CHECK (display_order >= 0)
         )
         "#
     )
@@ -174,6 +176,8 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_price ON skus(base_price, sale_price)")
         .execute(pool).await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_low_stock ON skus(stock_quantity, reserved_quantity, low_stock_threshold) WHERE stock_quantity - reserved_quantity <= low_stock_threshold AND stock_quantity - reserved_quantity > 0")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_display_order ON skus(product_id, display_order)")
         .execute(pool).await?;
 
     // 商品画像テーブル

@@ -13,6 +13,7 @@ pub struct SKU {
     sale_price: Option<Money>,
     stock: Stock,
     status: SKUStatus,
+    display_order: u32,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -46,6 +47,28 @@ impl SKU {
         base_price: Money,
         initial_stock: u32,
     ) -> Result<Self, DomainError> {
+        Self::create_with_display_order(
+            id,
+            product_id,
+            sku_code,
+            name,
+            variant_attributes,
+            base_price,
+            initial_stock,
+            0, // Default display order
+        )
+    }
+
+    pub fn create_with_display_order(
+        id: SKUId,
+        product_id: ProductId,
+        sku_code: SKUCode,
+        name: SKUName,
+        variant_attributes: VariantAttributes,
+        base_price: Money,
+        initial_stock: u32,
+        display_order: u32,
+    ) -> Result<Self, DomainError> {
         let stock = Stock::new(initial_stock, 0)?;
 
         Ok(Self {
@@ -58,6 +81,7 @@ impl SKU {
             sale_price: None,
             stock,
             status: SKUStatus::Active,
+            display_order,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         })
@@ -132,6 +156,17 @@ impl SKU {
 
     pub fn discontinue(&mut self) {
         self.status = SKUStatus::Discontinued;
+        self.updated_at = Utc::now();
+    }
+
+    // 表示順序管理
+    pub fn set_display_order(&mut self, order: u32) {
+        self.display_order = order;
+        self.updated_at = Utc::now();
+    }
+
+    pub fn move_to_front(&mut self) {
+        self.display_order = 0;
         self.updated_at = Utc::now();
     }
 
@@ -245,6 +280,10 @@ impl SKU {
 
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+
+    pub fn display_order(&self) -> u32 {
+        self.display_order
     }
 }
 

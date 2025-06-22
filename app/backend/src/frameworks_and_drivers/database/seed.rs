@@ -147,58 +147,58 @@ pub async fn seed_sample_products() -> Result<()> {
     
     // 商品配列 (重複を削除して整理)
     let products = [
-        // シンプル商品（単一SKU）
+        // シンプル商品（単一SKU） - (sku_code, name, color, material, dimensions, base_price, sale_price, stock, display_order)
         ("Lift - Walnut", "Monitor stand with storage space underneath", "monitor-risers", false, true, 
-         vec![("LIFT-WALNUT-001", "Standard", "Walnut", "Walnut Wood", "24\" x 10\" x 6\"", 39000, None::<i64>, 20)]),
+         vec![("LIFT-WALNUT-001", "Standard", "Walnut", "Walnut Wood", "24\" x 10\" x 6\"", 39000, None::<i64>, 20, 1)]),
         ("Monument - Charcoal", "Phone stand with minimalist design", "accessories", false, true, 
-         vec![("MONUMENT-CHARCOAL-001", "Standard", "Charcoal", "Metal", "4\" x 4\" x 6\"", 9000, None::<i64>, 35)]),
+         vec![("MONUMENT-CHARCOAL-001", "Standard", "Charcoal", "Metal", "4\" x 4\" x 6\"", 9000, None::<i64>, 35, 1)]),
         ("Shelf - Black", "Wall-mounted shelf with modern black finish", "wall-shelves", false, true, 
-         vec![("SHELF-BLACK-001", "Standard", "Black", "Metal", "24\" x 8\" x 2\"", 11500, None::<i64>, 25)]),
+         vec![("SHELF-BLACK-001", "Standard", "Black", "Metal", "24\" x 8\" x 2\"", 11500, None::<i64>, 25, 1)]),
         ("Large Stand - Walnut", "Large monitor stand with walnut finish", "monitor-risers", false, false, 
-         vec![("STAND-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "30\" x 12\" x 8\"", 15000, None::<i64>, 15)]),
+         vec![("STAND-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "30\" x 12\" x 8\"", 15000, None::<i64>, 15, 1)]),
         ("Mini Shelf - White", "Compact wall shelf in white finish", "wall-shelves", false, true, 
-         vec![("MINI-SHELF-WHITE", "Compact", "White", "Metal", "12\" x 6\" x 2\"", 6000, None::<i64>, 30)]),
+         vec![("MINI-SHELF-WHITE", "Compact", "White", "Metal", "12\" x 6\" x 2\"", 6000, None::<i64>, 30, 1)]),
         ("Table Light - Black", "Minimalist table lamp with adjustable brightness", "lighting", false, false, 
-         vec![("TABLE-LIGHT-BLACK", "Standard", "Black", "Metal and LED", "6\" x 6\" x 18\"", 32000, None::<i64>, 18)]),
+         vec![("TABLE-LIGHT-BLACK", "Standard", "Black", "Metal and LED", "6\" x 6\" x 18\"", 32000, None::<i64>, 18, 1)]),
         ("Bench - Whitewash Oak", "Modern bench with whitewash oak finish", "bench-consoles", true, false, 
-         vec![("BENCH-WHITEWASH-OAK", "Standard", "Whitewash Oak", "Whitewash Oak Wood", "48\" x 16\" x 18\"", 230000, None::<i64>, 8)]),
+         vec![("BENCH-WHITEWASH-OAK", "Standard", "Whitewash Oak", "Whitewash Oak Wood", "48\" x 16\" x 18\"", 230000, None::<i64>, 8, 1)]),
         ("Table - Black Oak", "Dining table with black oak finish", "tables", false, false, 
-         vec![("TABLE-BLACK-OAK", "Standard", "Black Oak", "Black Oak Wood", "72\" x 36\" x 30\"", 280000, None::<i64>, 0)]),
+         vec![("TABLE-BLACK-OAK", "Standard", "Black Oak", "Black Oak Wood", "72\" x 36\" x 30\"", 280000, None::<i64>, 0, 1)]),
         ("TUK - Black", "Premium bookshelf speakers with wireless connectivity", "audio", false, false, 
-         vec![("TUK-BLACK-001", "Standard", "Black", "Wood and Metal", "8\" x 11\" x 13\"", 80000, None::<i64>, 12)]),
+         vec![("TUK-BLACK-001", "Standard", "Black", "Wood and Metal", "8\" x 11\" x 13\"", 80000, None::<i64>, 12, 1)]),
         ("Coffee Table - Walnut", "Modern coffee table with clean walnut finish", "tables", true, false, 
-         vec![("COFFEE-TABLE-WALNUT", "Standard", "Walnut", "Walnut Wood", "40\" x 20\" x 16\"", 120000, None::<i64>, 10)]),
+         vec![("COFFEE-TABLE-WALNUT", "Standard", "Walnut", "Walnut Wood", "40\" x 20\" x 16\"", 120000, None::<i64>, 10, 1)]),
         ("Bookshelf - White Oak", "Five-tier bookshelf with white oak finish", "wall-shelves", false, false, 
-         vec![("BOOKSHELF-WHITE-OAK", "Five-tier", "White Oak", "White Oak Wood", "32\" x 12\" x 72\"", 89000, Some(75000), 14)]),
+         vec![("BOOKSHELF-WHITE-OAK", "Five-tier", "White Oak", "White Oak Wood", "32\" x 12\" x 72\"", 89000, Some(75000), 14, 1)]),
         ("Pendant Light - Brass", "Modern pendant light with brass finish", "lighting", false, true, 
-         vec![("PENDANT-BRASS-001", "Standard", "Brass", "Brass and Glass", "8\" x 8\" x 12\"", 24000, None::<i64>, 22)]),
+         vec![("PENDANT-BRASS-001", "Standard", "Brass", "Brass and Glass", "8\" x 8\" x 12\"", 24000, None::<i64>, 22, 1)]),
         ("Side Table - Black Oak", "Compact side table with black oak finish", "side-tables", false, true, 
-         vec![("SIDE-TABLE-BLACK-OAK", "Compact", "Black Oak", "Black Oak Wood", "18\" x 18\" x 24\"", 38000, None::<i64>, 16)]),
+         vec![("SIDE-TABLE-BLACK-OAK", "Compact", "Black Oak", "Black Oak Wood", "18\" x 18\" x 24\"", 38000, None::<i64>, 16, 1)]),
         ("Floor Lamp - White", "Minimalist floor lamp with adjustable head", "lighting", false, false, 
-         vec![("FLOOR-LAMP-WHITE", "Adjustable", "White", "Metal and Fabric", "12\" x 12\" x 60\"", 45000, None::<i64>, 10)]),
+         vec![("FLOOR-LAMP-WHITE", "Adjustable", "White", "Metal and Fabric", "12\" x 12\" x 60\"", 45000, None::<i64>, 10, 1)]),
         ("Wireless Charger - Oak", "Wireless charging pad with oak veneer", "accessories", false, true, 
-         vec![("WIRELESS-CHARGER-OAK", "Standard", "White Oak", "Oak Veneer and Electronics", "4\" x 4\" x 0.5\"", 12000, None::<i64>, 40)]),
+         vec![("WIRELESS-CHARGER-OAK", "Standard", "White Oak", "Oak Veneer and Electronics", "4\" x 4\" x 0.5\"", 12000, None::<i64>, 40, 1)]),
         ("Storage Bench - Gray", "Storage bench with soft gray upholstery", "bench-consoles", false, false, 
-         vec![("STORAGE-BENCH-GRAY", "With Storage", "Gray", "Fabric and Wood Frame", "36\" x 16\" x 18\"", 56000, None::<i64>, 12)]),
+         vec![("STORAGE-BENCH-GRAY", "With Storage", "Gray", "Fabric and Wood Frame", "36\" x 16\" x 18\"", 56000, None::<i64>, 12, 1)]),
         ("Wall Clock - Black", "Minimalist wall clock with black frame", "accessories", false, true, 
-         vec![("WALL-CLOCK-BLACK", "Standard", "Black", "Metal and Glass", "12\" x 12\" x 2\"", 8500, None::<i64>, 28)]),
+         vec![("WALL-CLOCK-BLACK", "Standard", "Black", "Metal and Glass", "12\" x 12\" x 2\"", 8500, None::<i64>, 28, 1)]),
         
-        // 複数SKU商品
+        // 複数SKU商品 - より戦略的なdisplay_order設定
         ("Desk - Walnut", "Minimalist walnut desk with clean lines and modern design", "desks", true, false, 
-         vec![("DESK-WALNUT-SMALL", "Small", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 179000, Some(160000), 15),
-              ("DESK-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 229000, Some(179000), 8)]),
+         vec![("DESK-WALNUT-SMALL", "Small", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 179000, Some(160000), 15, 1),  // 人気サイズを優先
+              ("DESK-WALNUT-LARGE", "Large", "Walnut", "Walnut Wood", "48\" x 24\" x 30\"", 229000, Some(179000), 8, 2)]),
         ("Form Armchair Swivel - Upholstered", "Comfortable swivel armchair with premium upholstery", "seating", false, false, 
-         vec![("FORM-CHAIR-BLACK", "Black Upholstery", "Black", "Fabric and Metal", "28\" x 28\" x 32\"", 134500, Some(134500), 6),
-              ("FORM-CHAIR-GRAY", "Gray Upholstery", "Gray", "Fabric and Metal", "28\" x 28\" x 32\"", 171500, Some(99999), 4)]),
+         vec![("FORM-CHAIR-BLACK", "Black Upholstery", "Black", "Fabric and Metal", "28\" x 28\" x 32\"", 134500, Some(134500), 6, 1),  // より手頃な価格を優先
+              ("FORM-CHAIR-GRAY", "Gray Upholstery", "Gray", "Fabric and Metal", "28\" x 28\" x 32\"", 171500, Some(99999), 4, 2)]),
         ("Desk - White Oak", "Modern desk with white oak finish", "desks", false, false, 
-         vec![("DESK-WHITE-OAK-SMALL", "Small", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 179000, Some(159000), 12),
-              ("DESK-WHITE-OAK-LARGE", "Large", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 219000, Some(179000), 7)]),
+         vec![("DESK-WHITE-OAK-SMALL", "Small", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 179000, Some(159000), 12, 1),  // 人気サイズを優先
+              ("DESK-WHITE-OAK-LARGE", "Large", "White Oak", "White Oak Wood", "48\" x 24\" x 30\"", 219000, Some(179000), 7, 2)]),
         ("Office Chair - Black", "Ergonomic office chair with leather upholstery", "seating", false, false, 
-         vec![("OFFICE-CHAIR-BLACK-STD", "Standard Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 68000, None::<i64>, 10),
-              ("OFFICE-CHAIR-BLACK-TALL", "Tall Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 72000, None::<i64>, 8)]),
+         vec![("OFFICE-CHAIR-BLACK-STD", "Standard Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 68000, None::<i64>, 10, 1),  // 標準サイズを優先
+              ("OFFICE-CHAIR-BLACK-TALL", "Tall Height", "Black", "Leather and Metal", "26\" x 26\" x 42\"", 72000, None::<i64>, 8, 2)]),
         ("Dining Chair - Walnut", "Modern dining chair with walnut frame", "seating", true, false, 
-         vec![("DINING-CHAIR-WALNUT-BEIGE", "Beige Cushion", "Beige", "Walnut Wood and Fabric", "18\" x 20\" x 32\"", 32000, None::<i64>, 20),
-              ("DINING-CHAIR-WALNUT-GRAY", "Gray Cushion", "Gray", "Walnut Wood and Fabric", "18\" x 20\" x 32\"", 34000, None::<i64>, 15)]),
+         vec![("DINING-CHAIR-WALNUT-BEIGE", "Beige Cushion", "Beige", "Walnut Wood and Fabric", "18\" x 20\" x 32\"", 32000, None::<i64>, 20, 1),  // ベージュを優先（汎用性）
+              ("DINING-CHAIR-WALNUT-GRAY", "Gray Cushion", "Gray", "Walnut Wood and Fabric", "18\" x 20\" x 32\"", 34000, None::<i64>, 15, 2)]),
     ];
     
     let mut product_index = 0;
@@ -255,7 +255,7 @@ pub async fn seed_sample_products() -> Result<()> {
         
         // 各SKUを挿入
         let mut sku_index = 0;
-        for (sku_code, sku_name, color_name, material, dimensions, base_price, sale_price, stock_quantity) in skus {
+        for (sku_code, sku_name, color_name, material, dimensions, base_price, sale_price, stock_quantity, display_order) in skus {
             // 色IDを取得（エラーハンドリングを改善）
             let color_id: Option<i64> = sqlx::query_scalar(
                 "SELECT id FROM colors WHERE name = ?"
@@ -282,9 +282,9 @@ pub async fn seed_sample_products() -> Result<()> {
                     color_id, material, dimensions,
                     base_price, sale_price, 
                     stock_quantity, reserved_quantity, low_stock_threshold,
-                    image_url
+                    display_order, image_url
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5, ?, ?)
                 "#
             )
             .bind(&sku_id)
@@ -297,6 +297,7 @@ pub async fn seed_sample_products() -> Result<()> {
             .bind(base_price)
             .bind(sale_price)
             .bind(stock_quantity)
+            .bind(display_order)
             .bind(format!("https://picsum.photos/id/{}/800/800", product_index + 5 + sku_index))
             .execute(pool)
             .await?;
@@ -359,7 +360,7 @@ pub async fn seed_sample_products() -> Result<()> {
         }
         
         // セール商品にタグを追加（sale_priceが設定されている商品）
-        let has_sale = skus.iter().any(|(_, _, _, _, _, _, sale_price, _)| sale_price.is_some());
+        let has_sale = skus.iter().any(|(_, _, _, _, _, _, sale_price, _, _)| sale_price.is_some());
         if has_sale {
             if let Some(on_sale_tag_id) = sqlx::query_scalar::<_, i64>(
                 "SELECT id FROM tags WHERE slug = 'on_sale'"

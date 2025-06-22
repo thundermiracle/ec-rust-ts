@@ -16,6 +16,7 @@ pub struct SKUEntity {
     pub stock_quantity: i64,
     pub reserved_quantity: i64,
     pub low_stock_threshold: Option<i64>,
+    pub display_order: i64,
     pub image_url: Option<String>,
     pub created_at: String,
     pub updated_at: String,

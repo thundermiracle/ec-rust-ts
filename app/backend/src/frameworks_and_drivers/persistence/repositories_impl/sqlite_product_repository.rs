@@ -61,7 +61,7 @@ impl ProductRepository for SqliteProductRepository {
             None => return Ok(None),
         };
 
-        // SKU情報（バリアント）を取得
+        // SKU情報（バリアント）を取得 - display_orderを使用したハイブリッドソート
         let sku_rows = sqlx::query(
             r#"
             SELECT 
@@ -73,13 +73,19 @@ impl ProductRepository for SqliteProductRepository {
                 s.sale_price,
                 s.stock_quantity,
                 s.reserved_quantity,
+                s.display_order,
                 s.image_url,
                 c.name as color_name,
                 c.hex as color_hex
             FROM skus s
             JOIN colors c ON c.id = s.color_id
             WHERE s.product_id = ?
-            ORDER BY s.name
+            ORDER BY 
+                s.display_order ASC,
+                CASE WHEN s.stock_quantity - s.reserved_quantity > 0 THEN 0 ELSE 1 END,
+                COALESCE(s.sale_price, s.base_price) ASC,
+                s.dimensions ASC,
+                c.name ASC
             "#
         )
         .bind(&product_id_str)
@@ -236,7 +242,14 @@ impl ProductRepository for SqliteProductRepository {
                     s.sale_price,
                     s.stock_quantity,
                     s.reserved_quantity,
-                    ROW_NUMBER() OVER (PARTITION BY s.product_id ORDER BY s.id) as rn
+                    ROW_NUMBER() OVER (
+                        PARTITION BY s.product_id 
+                        ORDER BY 
+                            s.display_order ASC,
+                            CASE WHEN s.stock_quantity - s.reserved_quantity > 0 THEN 0 ELSE 1 END,
+                            s.base_price ASC,
+                            s.id ASC
+                    ) as rn
                 FROM skus s
             )
             SELECT 
