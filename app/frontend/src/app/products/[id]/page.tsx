@@ -21,15 +21,8 @@ export default function ProductDetail() {
   const { data: product, isLoading, error } = useGetProductQuery(productId);
   
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
   const [quantity, setQuantity] = useState(1);
-
-  // プロダクトデータが取得できたら、デフォルトのバリアントを設定
-  useState(() => {
-    if (product?.variants && product.variants.length > 0 && !selectedVariant) {
-      setSelectedVariant(product.variants[0]);
-    }
-  });
 
   // ローディング状態
   if (isLoading) {
@@ -88,15 +81,11 @@ export default function ProductDetail() {
     );
   }
 
-  const formatPrice = (price: number) => `$${price.toLocaleString()}`;
+  const formatPrice = (price: number) => `¥${price.toLocaleString()}`;
+  const selectedVariant = product.variants[selectedVariantIndex];
   
-  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
-  const currentSalePrice = selectedVariant ? selectedVariant.salePrice : product.salePrice;
-  const currentImage = selectedVariant ? selectedVariant.image : product.images[selectedImage];
-
-  const discountPercentage = currentSalePrice 
-    ? Math.round(((currentPrice - currentSalePrice) / currentPrice) * 100)
-    : 0;
+  const allImages = product.images.concat([selectedVariant.image ?? '']).filter(Boolean);
+  const allColors = product.variants.map((variant: ProductVariant) => variant.color);
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,9 +106,9 @@ export default function ProductDetail() {
           <div className="space-y-4">
             {/* Main Image */}
             <Card className="aspect-square relative overflow-hidden border-0 shadow-none bg-muted">
-              {currentImage || product.images[selectedImage] ? (
+              {allImages[selectedImage] ? (
                 <Image
-                  src={currentImage || product.images[selectedImage]}
+                  src={allImages[selectedImage]}
                   alt={product.name}
                   fill
                   className="object-cover rounded-lg"
@@ -133,23 +122,28 @@ export default function ProductDetail() {
 
               {/* Status Badges */}
               <div className="absolute top-4 left-4 flex flex-col gap-2">
-                {product.isSoldOut && (
-                  <Badge variant="destructive">
-                    Sold Out
-                  </Badge>
+                {selectedVariant.isSoldOut && (
+                  <Badge variant="destructive">Sold Out</Badge>
                 )}
-                {product.isOnSale && !product.isSoldOut && (
+                {selectedVariant.salePrice && (
                   <Badge className="bg-green-600 hover:bg-green-700">
-                    -{discountPercentage}% OFF
+                    -
+                    {Math.round(
+                      ((selectedVariant.price - selectedVariant.salePrice) /
+                        selectedVariant.price) *
+                        100
+                    )}
+                    % OFF
                   </Badge>
                 )}
                 {product.isBestSeller && (
-                  <Badge variant="default">
-                    Best Seller
-                  </Badge>
+                  <Badge variant="default">Best Seller</Badge>
                 )}
                 {product.isQuickShip && (
-                  <Badge variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700">
+                  <Badge
+                    variant="secondary"
+                    className="bg-blue-600 text-white hover:bg-blue-700"
+                  >
                     Quick Ship
                   </Badge>
                 )}
@@ -164,7 +158,9 @@ export default function ProductDetail() {
                     key={index}
                     onClick={() => setSelectedImage(index)}
                     className={`w-20 h-20 relative bg-gray-50 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImage === index ? 'border-black' : 'border-transparent hover:border-gray-300'
+                      selectedImage === index
+                        ? "border-black"
+                        : "border-transparent hover:border-gray-300"
                     }`}
                   >
                     <Image
@@ -182,81 +178,113 @@ export default function ProductDetail() {
           {/* Product Info */}
           <div className="space-y-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-4">{product.name}</h1>
-              
+              <h1 className="text-3xl font-bold text-foreground mb-4">
+                {product.name}
+              </h1>
+
               {/* Price */}
               <div className="flex items-center gap-4 mb-6">
-                {currentSalePrice ? (
+                {selectedVariant.salePrice ? (
                   <>
                     <span className="text-2xl font-bold text-foreground">
-                      {formatPrice(currentSalePrice)}
+                      {formatPrice(selectedVariant.salePrice)}
                     </span>
                     <span className="text-xl text-muted-foreground line-through">
-                      {formatPrice(currentPrice)}
+                      {formatPrice(selectedVariant.price)}
                     </span>
                     <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                      Save {formatPrice(currentPrice - currentSalePrice)}
+                      Save{" "}
+                      {formatPrice(
+                        selectedVariant.price - selectedVariant.salePrice
+                      )}
                     </Badge>
                   </>
                 ) : (
                   <span className="text-2xl font-bold text-foreground">
-                    {formatPrice(currentPrice)}
+                    {formatPrice(selectedVariant.price)}
                   </span>
                 )}
               </div>
 
-              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+              <p className="text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
             </div>
 
             {/* Variants */}
             {product.variants && product.variants.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium text-foreground mb-4">Options</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">
+                  Options
+                </h3>
                 <div className="space-y-2">
-                  {product.variants.map((variant: ProductVariant) => (
-                    <Card
-                      key={variant.id}
-                      className={`cursor-pointer transition-colors ${
-                        selectedVariant?.id === variant.id
-                          ? 'border-foreground bg-muted/50'
-                          : variant.isAvailable
-                          ? 'hover:border-muted-foreground'
-                          : 'bg-muted/50 cursor-not-allowed'
-                      }`}
-                      onClick={() => variant.isAvailable && setSelectedVariant(variant)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <span className={`font-medium ${!variant.isAvailable ? 'text-muted-foreground' : ''}`}>
-                            {variant.name}
-                          </span>
-                          <span className={`font-bold ${!variant.isAvailable ? 'text-muted-foreground' : ''}`}>
-                            {variant.salePrice ? formatPrice(variant.salePrice) : formatPrice(variant.price)}
-                          </span>
-                        </div>
-                        {!variant.isAvailable && (
-                          <span className="text-sm text-muted-foreground">Out of stock</span>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {product.variants.map(
+                    (variant: ProductVariant, index: number) => (
+                      <Card
+                        key={variant.id}
+                        className={`cursor-pointer transition-colors ${
+                          selectedVariant?.id === variant.id
+                            ? "border-foreground bg-muted/50"
+                            : variant.isSoldOut
+                            ? "bg-muted/50 cursor-not-allowed"
+                            : "hover:border-muted-foreground"
+                        }`}
+                        onClick={() =>
+                          !variant.isSoldOut && setSelectedVariantIndex(index)
+                        }
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <span
+                              className={`font-medium ${
+                                variant.isSoldOut ? "text-muted-foreground" : ""
+                              }`}
+                            >
+                              {variant.name}
+                            </span>
+                            <span
+                              className={`font-bold ${
+                                variant.isSoldOut ? "text-muted-foreground" : ""
+                              }`}
+                            >
+                              {variant.salePrice
+                                ? formatPrice(variant.salePrice)
+                                : formatPrice(variant.price)}
+                            </span>
+                          </div>
+                          {variant.isSoldOut && (
+                            <span className="text-sm text-muted-foreground">
+                              Out of stock
+                            </span>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  )}
                 </div>
               </div>
             )}
 
             {/* Colors */}
-            {product.colors.length > 0 && (
+            {allColors.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium text-foreground mb-4">Available Colors</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">
+                  Available Colors
+                </h3>
                 <div className="flex gap-3">
-                  {product.colors.map((color: string, index: number) => (
-                    <div key={index} className="flex flex-col items-center gap-2">
+                  {allColors.map((color: string, index: number) => (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center gap-2"
+                    >
                       <div
                         className="w-10 h-10 rounded-full border-2 border-border shadow-sm"
                         style={{ backgroundColor: getColorValue(color) }}
                         title={color}
                       />
-                      <span className="text-xs text-muted-foreground">{color}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {color}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -266,10 +294,16 @@ export default function ProductDetail() {
             {/* Quantity and Add to Cart */}
             <div className="space-y-6">
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-foreground mb-2">
+                <label
+                  htmlFor="quantity"
+                  className="block text-sm font-medium text-foreground mb-2"
+                >
                   Quantity
                 </label>
-                <Select value={quantity.toString()} onValueChange={(value) => setQuantity(Number(value))}>
+                <Select
+                  value={quantity.toString()}
+                  onValueChange={(value) => setQuantity(Number(value))}
+                >
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
@@ -284,14 +318,15 @@ export default function ProductDetail() {
               </div>
 
               <Button
-                disabled={product.isSoldOut || (!!selectedVariant && !selectedVariant.isAvailable)}
+                disabled={
+                  selectedVariant.isSoldOut
+                }
                 size="lg"
                 className="w-full"
               >
-                {product.isSoldOut || (!!selectedVariant && !selectedVariant.isAvailable)
-                  ? 'Out of Stock'
-                  : 'Add to Cart'
-                }
+                {selectedVariant.isSoldOut
+                  ? "Out of Stock"
+                  : "Add to Cart"}
               </Button>
             </div>
 
@@ -299,23 +334,31 @@ export default function ProductDetail() {
 
             {/* Product Details */}
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">Product Details</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">
+                Product Details
+              </h3>
               <div className="space-y-3 text-sm text-muted-foreground">
-                {product.material && (
+                {selectedVariant.material && (
                   <div className="flex justify-between">
                     <span>Material:</span>
-                    <span className="text-foreground">{product.material}</span>
+                    <span className="text-foreground">
+                      {selectedVariant.material}
+                    </span>
                   </div>
                 )}
-                {product.dimensions && (
+                {selectedVariant.dimensions && (
                   <div className="flex justify-between">
                     <span>Dimensions:</span>
-                    <span className="text-foreground">{product.dimensions}</span>
+                    <span className="text-foreground">
+                      {selectedVariant.dimensions}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Category:</span>
-                  <span className="text-foreground capitalize">{product.category.replace('-', ' ')}</span>
+                  <span className="text-foreground capitalize">
+                    {product.category.replace("-", " ")}
+                  </span>
                 </div>
               </div>
             </div>

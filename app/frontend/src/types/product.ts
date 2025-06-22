@@ -6,11 +6,10 @@ export interface ProductListItem {
   image: string;
   category: string;
   colors: string[];
-  isOnSale: boolean;
-  isBestSeller: boolean;
-  isQuickShip: boolean;
-  isSoldOut: boolean;
-  stock: number;
+  isOnSale?: boolean;
+  isBestSeller?: boolean;
+  isQuickShip?: boolean;
+  isSoldOut?: boolean;
 }
 
 export interface ProductList {
@@ -32,27 +31,25 @@ export interface Category {
 export interface Product {
   id: string;
   name: string;
-  price: number;
-  salePrice?: number;
   images: string[];
   category: string;
   description: string;
-  material?: string;
-  dimensions?: string;
-  colors: string[];
-  isOnSale?: boolean;
-  isBestSeller?: boolean;
-  isQuickShip?: boolean;
-  isSoldOut?: boolean;
+  isBestSeller: boolean;
+  isQuickShip: boolean;
   variants: ProductVariant[];
 }
 
 export interface ProductVariant {
   id: string;
+  skuCode: string;
   name: string;
+  color: string;
+  material: string;
+  dimensions: string;
   price: number;
   salePrice?: number;
-  color: string;
-  image: string;
-  isAvailable: boolean;
+  displayOrder: number;
+  image?: string;
+  isOnSale: boolean;
+  isSoldOut: boolean;
 }
