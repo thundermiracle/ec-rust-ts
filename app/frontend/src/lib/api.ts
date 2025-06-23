@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import type { Product, ProductList } from '../types/product'
+import type { Product, ProductList, CategoryList } from '../types/product'
 
 // APIエンドポイントのベースURL（バックエンドのURLに合わせて調整してください）
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
@@ -15,7 +15,7 @@ export const api = createApi({
       return headers
     },
   }),
-  tagTypes: ['Product', 'User'], // キャッシュタグの定義
+  tagTypes: ['Product', 'Category', 'User'], // キャッシュタグの定義
   endpoints: (builder) => ({
     // 商品関連のエンドポイント例
     getProducts: builder.query<ProductList, void>({
@@ -26,6 +26,10 @@ export const api = createApi({
       query: (id) => `/products/${id}`,
       providesTags: (result, error, id) => [{ type: 'Product', id }],
     }),
+    getCategories: builder.query<CategoryList, void>({
+      query: () => '/categories',
+      providesTags: ['Category'],
+    }),
   }),
 })
 
@@ -33,6 +37,7 @@ export const api = createApi({
 export const {
   useGetProductsQuery,
   useGetProductQuery,
+  useGetCategoriesQuery,
 } = api
 
  

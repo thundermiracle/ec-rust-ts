@@ -25,7 +25,13 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  parentId?: string;
+  displayOrder: number;
   subcategories?: Category[];
+}
+
+export interface CategoryList {
+  categories: Category[];
 }
 
 export interface Product {

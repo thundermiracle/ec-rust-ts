@@ -1,7 +1,8 @@
 'use client';
 
-import { categories, colors, featuredCategories } from '../data/mockData';
+import { colors, featuredCategories } from '../data/mockData';
 import { Category } from '../types/product';
+import { useGetCategoriesQuery } from '../lib/api';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -52,6 +53,15 @@ const Sidebar = ({
   onClearFilters,
 }: SidebarProps) => {
   const hasFilters = selectedCategory || selectedColor || selectedFeatured;
+  
+  // APIを使用してカテゴリを取得
+  const { 
+    data: categoriesData, 
+    isLoading: categoriesLoading, 
+    error: categoriesError 
+  } = useGetCategoriesQuery();
+  
+  const categories = categoriesData?.categories || [];
 
   return (
     <aside className="w-72 flex-shrink-0 bg-background border-r h-screen sticky top-16 overflow-y-auto">
@@ -93,6 +103,19 @@ const Sidebar = ({
                 >
                   All Products
                 </Button>
+                
+                {categoriesLoading && (
+                  <div className="px-2 py-2 text-sm text-muted-foreground">
+                    Loading categories...
+                  </div>
+                )}
+                
+                {categoriesError && (
+                  <div className="px-2 py-2 text-sm text-red-500">
+                    Failed to load categories
+                  </div>
+                )}
+                
                 {categories.map((category: Category) => (
                   <Button
                     key={category.id}
