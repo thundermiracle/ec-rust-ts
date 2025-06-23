@@ -6,7 +6,7 @@ use crate::infrastructure::Container;
 use crate::error::Result;
 use crate::presentation::products::{ProductListPresenter, ProductListResponse};
 
-/// Get Product Controller - 商品詳細取得の単一責任
+/// Get Product List Controller - 商品リスト取得の単一責任
 /// Clean Architecture: 1つのユースケースに対して1つのController
 pub struct GetProductListController;
 
@@ -17,17 +17,17 @@ impl GetProductListController {
             .route("/products", get(Self::handle))
     }
 
-    /// GET /products/{id} - 商品詳細取得処理
-    /// 統合されたリッチな商品情報を返す
+    /// GET /products - 商品リスト取得処理
+    /// 統合されたリッチな商品リスト情報を返す
     async fn handle(
         State(container): State<Arc<Container>>,
     ) -> Result<Json<ProductListResponse>> {
         println!("->> GetProductListController::handle");
         
-        let get_product_list_usecase = container.create_get_product_list_usecase();
+        let dispatcher = container.get_dispatcher();
         
-        let product_list = get_product_list_usecase
-            .get_all()
+        let product_list = dispatcher
+            .execute_get_product_list_query()
             .await?; // ApplicationErrorからErrorへの自動変換を利用
             
         println!("->> GetProductListController::handle - success for product_list");

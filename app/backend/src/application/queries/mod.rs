@@ -1,3 +1,5 @@
-pub mod get_product_query;
+pub mod handlers;
+pub mod models;
 
-pub use self::get_product_query::GetProductQuery;
+pub use handlers::*;
+pub use models::*;

@@ -1,3 +1,5 @@
-mod buy_product_command;
+pub mod handlers;
+pub mod models;
 
-pub use self::buy_product_command::BuyProductCommand;
+pub use handlers::*;
+pub use models::*;

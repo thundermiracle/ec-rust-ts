@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::infrastructure::Container;
 use crate::error::Result;
-use crate::application::queries::GetProductQuery;
+use crate::application::GetProductQuery;
 use crate::presentation::products::presenters::ProductPresenter;
 use crate::presentation::products::responses::ProductResponse;
 
@@ -27,10 +27,10 @@ impl GetProductController {
     ) -> Result<Json<ProductResponse>> {
         println!("->> GetProductController::handle - product_id: {}", id);
         
-        let get_product_usecase = container.create_get_product_usecase();
+        let dispatcher = container.get_dispatcher();
         
-        let product_detail = get_product_usecase
-            .get_by_id(GetProductQuery::new(id.clone()))
+        let product_detail = dispatcher
+            .execute_get_product_query(GetProductQuery::new(id.clone()))
             .await?; // ApplicationErrorからErrorへの自動変換を利用
             
         println!("->> GetProductController::handle - success for product_id: {}", id);
