@@ -1,4 +1,5 @@
-pub mod products;
+mod products;
+mod categories;
+mod routes;
 
-pub use products::controllers::GetProductController;
-pub use products::presenters::ProductPresenter; 
+pub use routes::routes;

@@ -6,7 +6,7 @@ pub mod dto;
 pub mod dispatcher;
 
 pub use error::{ApplicationError, RepositoryError};
-pub use dto::{ProductDTO, ProductListDTO};
+pub use dto::{ProductDTO, ProductListDTO, CategoryListDTO};
 pub use dispatcher::Dispatcher;
 pub use commands::{BuyProductCommand, BuyProductHandler};
-pub use queries::{GetProductQuery, GetProductHandler, GetProductListHandler};
+pub use queries::{GetProductQuery, GetProductHandler, GetProductListHandler, GetCategoryListHandler};

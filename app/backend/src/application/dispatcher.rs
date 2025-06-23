@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use crate::application::commands::handlers::BuyProductHandler;
-use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler};
+use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler};
 use crate::application::commands::models::BuyProductCommand;
 use crate::application::queries::models::GetProductQuery;
 use crate::application::error::ApplicationError;
-use crate::application::dto::{ProductDTO, ProductListDTO};
+use crate::application::dto::{ProductDTO, ProductListDTO, CategoryListDTO};
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
 /// 
@@ -18,6 +18,7 @@ pub struct Dispatcher {
     // クエリハンドラ
     get_product_handler: Arc<GetProductHandler>,
     get_product_list_handler: Arc<GetProductListHandler>,
+    get_category_list_handler: Arc<GetCategoryListHandler>,
 }
 
 impl Dispatcher {
@@ -25,11 +26,13 @@ impl Dispatcher {
         buy_product_handler: Arc<BuyProductHandler>,
         get_product_handler: Arc<GetProductHandler>,
         get_product_list_handler: Arc<GetProductListHandler>,
+        get_category_list_handler: Arc<GetCategoryListHandler>,
     ) -> Self {
         Self {
             buy_product_handler,
             get_product_handler,
             get_product_list_handler,
+            get_category_list_handler,
         }
     }
 
@@ -46,5 +49,10 @@ impl Dispatcher {
     /// 商品リスト取得クエリを実行
     pub async fn execute_get_product_list_query(&self) -> Result<ProductListDTO, ApplicationError> {
         self.get_product_list_handler.handle().await
+    }
+
+    /// カテゴリリスト取得クエリを実行
+    pub async fn execute_get_category_list_query(&self) -> Result<CategoryListDTO, ApplicationError> {
+        self.get_category_list_handler.handle().await
     }
 } 

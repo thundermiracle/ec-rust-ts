@@ -1,5 +1,7 @@
 mod product_dto;
 mod product_list_dto;
+mod category_list_dto;
 
 pub use self::product_dto::{ProductDTO, VariantDTO};
 pub use self::product_list_dto::{ProductListDTO, ProductSummaryDTO};
+pub use self::category_list_dto::{CategoryListDTO, CategoryDTO};

@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use crate::infrastructure::database::repositories_impl::SqliteProductRepository;
+use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository};
 use crate::application::repositories::ProductRepository;
 use crate::application::{
     Dispatcher,
     BuyProductHandler,
     GetProductHandler, 
-    GetProductListHandler
+    GetProductListHandler,
+    GetCategoryListHandler
 };
 
 /// コンテナはアプリケーションの依存関係を管理します
@@ -23,17 +24,20 @@ impl Container {
     pub fn new() -> Self {
         // リポジトリの実装をインスタンス化
         let product_repository = Arc::new(SqliteProductRepository::new());
+        let category_repository = Arc::new(SqliteCategoryRepository::new());
         
         // ハンドラを作成
         let buy_product_handler = Arc::new(BuyProductHandler::new(product_repository.clone()));
         let get_product_handler = Arc::new(GetProductHandler::new(product_repository.clone()));
         let get_product_list_handler = Arc::new(GetProductListHandler::new(product_repository.clone()));
+        let get_category_list_handler = Arc::new(GetCategoryListHandler::new(category_repository.clone()));
         
         // ディスパッチャを作成
         let dispatcher = Arc::new(Dispatcher::new(
             buy_product_handler,
             get_product_handler, 
             get_product_list_handler,
+            get_category_list_handler,
         ));
         
         Self {

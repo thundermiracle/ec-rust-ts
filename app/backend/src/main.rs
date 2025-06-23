@@ -50,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
                 .allow_headers(Any);
 
             let app = Router::new()
-                .merge(presentation::products::routes())
+                .merge(presentation::routes())
                 .layer(cors)  // CORSレイヤーを追加
                 .layer(middleware::map_response(main_response_mapper))
                 .with_state(container);  // アプリケーション状態としてコンテナを追加

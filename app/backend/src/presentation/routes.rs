@@ -1,0 +1,12 @@
+use crate::presentation::products::routes as products_routes;
+use crate::presentation::categories::routes as categories_routes;
+
+use axum::Router;
+use std::sync::Arc;
+use crate::infrastructure::Container;
+
+pub fn routes() -> Router<Arc<Container>> {
+    Router::new()
+        .merge(products_routes())
+        .merge(categories_routes())
+}
