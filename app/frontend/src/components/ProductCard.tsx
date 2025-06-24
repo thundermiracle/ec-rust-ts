@@ -2,13 +2,26 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ProductListItem } from '../types/product';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageIcon } from 'lucide-react';
 
+// ProductCardコンポーネントで必要なプロパティのみを定義
+interface ProductCardProduct {
+  id: string;
+  name: string;
+  price: number;
+  salePrice?: number;
+  image: string;
+  colors: string[];
+  isSoldOut?: boolean;
+  isOnSale?: boolean;
+  isBestSeller?: boolean;
+  isQuickShip?: boolean;
+}
+
 interface ProductCardProps {
-  product: ProductListItem;
+  product: ProductCardProduct;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {

@@ -1,7 +1,6 @@
 'use client';
 
 import { colors, featuredCategories } from '@/data/mockData';
-import { Category } from '@/types/product';
 import { useGetCategoryListQuery } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -116,7 +115,7 @@ const Sidebar = ({
                   </div>
                 )}
                 
-                {categories.map((category: Category) => (
+                {categories.map((category) => (
                   <Button
                     key={category.id}
                     variant="ghost"

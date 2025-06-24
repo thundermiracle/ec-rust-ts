@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ProductVariant } from '@/types/product';
 import { useGetProductQuery } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -85,7 +84,7 @@ export default function ProductDetail() {
   const selectedVariant = product.variants[selectedVariantIndex];
   
   const allImages = product.images.concat([selectedVariant.image ?? '']).filter(Boolean);
-  const allColors = product.variants.map((variant: ProductVariant) => variant.color);
+  const allColors = product.variants.map((variant) => variant.color);
 
   return (
     <div className="min-h-screen bg-background">
@@ -219,7 +218,7 @@ export default function ProductDetail() {
                 </h3>
                 <div className="space-y-2">
                   {product.variants.map(
-                    (variant: ProductVariant, index: number) => (
+                    (variant, index: number) => (
                       <Card
                         key={variant.id}
                         className={`cursor-pointer transition-colors ${
