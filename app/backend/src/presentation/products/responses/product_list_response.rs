@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// 商品一覧のHTTPレスポンス用DTO
 /// Clean Architecture: Interface Adapters層
 /// TypeScriptのProduct型と整合性を取った構造
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductListResponse {
     /// 商品一覧
@@ -22,7 +23,7 @@ pub struct ProductListResponse {
 
 /// 商品のHTTPレスポンス用DTO
 /// TypeScriptのProduct型に対応
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductListItemResponse {
     /// 商品ID
@@ -33,8 +34,9 @@ pub struct ProductListItemResponse {
     pub price: u32,
     /// セール価格（円）
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub sale_price: Option<u32>,
-    /// 商品画像URL一覧
+    /// 商品画像URL
     pub image: String,
     /// カテゴリー名
     pub category: String,
@@ -42,15 +44,19 @@ pub struct ProductListItemResponse {
     pub colors: Vec<String>,
     /// セール中かどうか
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub is_on_sale: Option<bool>,
     /// ベストセラー商品かどうか
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub is_best_seller: Option<bool>,
     /// 即配送可能かどうか
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub is_quick_ship: Option<bool>,
     /// 売り切れかどうか
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub is_sold_out: Option<bool>,
 }
 

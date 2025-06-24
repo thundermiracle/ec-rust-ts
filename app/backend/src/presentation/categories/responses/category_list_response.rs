@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// カテゴリリストのHTTPレスポンス用DTO
 /// Clean Architecture: Interface Adapters層
 /// TypeScriptのCategory型と整合性を取った構造
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CategoryListResponse {
     /// カテゴリ一覧
@@ -12,7 +13,7 @@ pub struct CategoryListResponse {
 
 /// カテゴリのHTTPレスポンス用DTO
 /// TypeScriptのCategory型に対応
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CategoryResponse {
     /// カテゴリID
@@ -23,6 +24,7 @@ pub struct CategoryResponse {
     pub slug: String,
     /// 親カテゴリID（階層構造の場合）
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
     pub parent_id: Option<String>,
     /// 表示順序
     pub display_order: u32,

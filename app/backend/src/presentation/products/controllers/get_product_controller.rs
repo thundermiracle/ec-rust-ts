@@ -7,6 +7,7 @@ use crate::error::Result;
 use crate::application::GetProductQuery;
 use crate::presentation::products::presenters::ProductPresenter;
 use crate::presentation::products::responses::ProductResponse;
+use crate::presentation::ErrorResponse;
 
 /// Get Product Controller - 商品詳細取得の単一責任
 /// Clean Architecture: 1つのユースケースに対して1つのController
@@ -16,24 +17,38 @@ impl GetProductController {
     /// このControllerのルート定義
     pub fn routes() -> Router<Arc<Container>> {
         Router::new()
-            .route("/products/{id}", get(Self::handle))
+            .route("/products/{id}", get(handle))
     }
+}
 
-    /// GET /products/{id} - 商品詳細取得処理
-    /// 統合されたリッチな商品情報を返す
-    async fn handle(
-        State(container): State<Arc<Container>>,
-        Path(id): Path<String>
-    ) -> Result<Json<ProductResponse>> {
-        println!("->> GetProductController::handle - product_id: {}", id);
+/// GET /products/{id} - 商品詳細取得処理
+/// 統合されたリッチな商品情報を返す
+#[utoipa::path(
+    get,
+    path = "/products/{id}",
+    operation_id = "get_product",
+    params(
+        ("id" = String, Path, description = "商品ID", example = "product-123")
+    ),
+    responses(
+        (status = 200, description = "商品詳細の取得成功", body = ProductResponse),
+        (status = 404, description = "商品が見つかりません", body = ErrorResponse),
+        (status = 500, description = "内部サーバーエラー", body = ErrorResponse)
+    ),
+    tag = "Products"
+)]
+pub async fn handle(
+    State(container): State<Arc<Container>>,
+    Path(id): Path<String>
+) -> Result<Json<ProductResponse>> {
+    println!("->> GetProductController::handle - product_id: {}", id);
+    
+    let dispatcher = container.get_dispatcher();
+    
+    let product_detail = dispatcher
+        .execute_get_product_query(GetProductQuery::new(id.clone()))
+        .await?; // ApplicationErrorからErrorへの自動変換を利用
         
-        let dispatcher = container.get_dispatcher();
-        
-        let product_detail = dispatcher
-            .execute_get_product_query(GetProductQuery::new(id.clone()))
-            .await?; // ApplicationErrorからErrorへの自動変換を利用
-            
-        println!("->> GetProductController::handle - success for product_id: {}", id);
-        Ok(Json(ProductPresenter::present(product_detail)))
-    }
+    println!("->> GetProductController::handle - success for product_id: {}", id);
+    Ok(Json(ProductPresenter::present(product_detail)))
 } 
