@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ProductVariant } from '../../../types/product';
-import { useGetProductQuery } from '../../../lib/api';
+import { ProductVariant } from '@/types/product';
+import { useGetProductQuery } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -18,7 +18,7 @@ export default function ProductDetail() {
   const productId = params.id;
   
   // RTK Queryを使用してプロダクトデータを取得
-  const { data: product, isLoading, error } = useGetProductQuery(productId);
+  const { data: product, isLoading, error } = useGetProductQuery({id: productId});
   
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
@@ -61,7 +61,7 @@ export default function ProductDetail() {
   }
 
   // プロダクトが見つからない場合
-  if (!product) {
+  if (!product || !product.variants) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">

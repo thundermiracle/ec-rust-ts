@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import ProductCard from '../components/ProductCard';
-import Sidebar from '../components/Sidebar';
+import ProductCard from '@/components/ProductCard';
+import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
-import { useGetProductsQuery } from '@/lib/api';
+import { useGetProductListQuery } from '@/store';
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedFeatured, setSelectedFeatured] = useState<string | null>(null);
-  const { data } = useGetProductsQuery();
+  const { data } = useGetProductListQuery();
 
   const filteredProducts = useMemo(() => {
     return data?.products?.filter((product) => {

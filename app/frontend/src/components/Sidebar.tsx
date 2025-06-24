@@ -1,8 +1,8 @@
 'use client';
 
-import { colors, featuredCategories } from '../data/mockData';
-import { Category } from '../types/product';
-import { useGetCategoriesQuery } from '../lib/api';
+import { colors, featuredCategories } from '@/data/mockData';
+import { Category } from '@/types/product';
+import { useGetCategoryListQuery } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -59,7 +59,7 @@ const Sidebar = ({
     data: categoriesData, 
     isLoading: categoriesLoading, 
     error: categoriesError 
-  } = useGetCategoriesQuery();
+  } = useGetCategoryListQuery();
   
   const categories = categoriesData?.categories || [];
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "../components/Header";
-import { ReduxProvider } from "../lib/providers";
+import Header from "@/components/Header";
+import { ReduxProvider } from "@/store";
 
 export const metadata: Metadata = {
   title: "ARTIFOX - Minimalist Furniture",
