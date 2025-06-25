@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import SidebarSkeleton from '@/components/SidebarSkeleton';
 
 interface SidebarProps {
   selectedCategory: string | null;
@@ -90,9 +91,7 @@ const Sidebar = ({
                 </Button>
                 
                 {categoriesLoading && (
-                  <div className="px-2 py-2 text-sm text-muted-foreground">
-                    Loading categories...
-                  </div>
+                  <SidebarSkeleton count={8} />
                 )}
                 
                 {categoriesError && (
@@ -154,9 +153,7 @@ const Sidebar = ({
             <AccordionContent className="pb-2">
               <div className="space-y-1 pt-4">
                 {colorsLoading && (
-                  <div className="px-2 py-2 text-sm text-muted-foreground">
-                    Loading colors...
-                  </div>
+                  <SidebarSkeleton count={5} showColorCircle={true} />
                 )}
                 
                 {colorsError && (
