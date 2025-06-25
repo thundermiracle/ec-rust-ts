@@ -33,8 +33,8 @@ export default function Home() {
           case 'Best Sellers':
             if (!product.isBestSeller) return false;
             break;
-          case 'Walnut Desk':
-            if (product.category !== 'desks' || !product.colors.includes('Walnut')) return false;
+          case 'On Sale':
+            if (!product.isOnSale) return false;
             break;
         }
       }

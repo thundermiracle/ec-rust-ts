@@ -1,6 +1,5 @@
 'use client';
 
-import { featuredCategories } from '@/data/mockData';
 import { useGetCategoryListQuery, useGetColorListQuery } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,6 +10,12 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import SidebarSkeleton from '@/components/SidebarSkeleton';
+
+const featuredCategories = [
+  'Quick Ship',
+  'Best Sellers',
+  'On Sale',
+];
 
 interface SidebarProps {
   selectedCategory: string | null;
@@ -69,56 +74,11 @@ const Sidebar = ({
           </>
         )}
 
-        <Accordion type="multiple" defaultValue={['collections', 'featured', 'color']} className="w-full">
-          {/* Collections */}
-          <AccordionItem value="collections" className="border-none">
-            <AccordionTrigger className="text-xs font-bold text-foreground uppercase tracking-widest hover:no-underline py-3 px-0">
-              Collections
-            </AccordionTrigger>
-            <AccordionContent className="pb-2">
-              <div className="space-y-1 pt-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onCategoryChange(null)}
-                  className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
-                    !selectedCategory 
-                      ? 'text-foreground font-medium bg-muted/50' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                  }`}
-                >
-                  All Products
-                </Button>
-                
-                {categoriesLoading && (
-                  <SidebarSkeleton count={8} />
-                )}
-                
-                {categoriesError && (
-                  <div className="px-2 py-2 text-sm text-red-500">
-                    Failed to load categories
-                  </div>
-                )}
-                
-                {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onCategoryChange(category.id)}
-                    className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
-                      selectedCategory === category.id
-                        ? 'text-foreground font-medium bg-muted/50'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                    }`}
-                  >
-                    {category.name}
-                  </Button>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
+        <Accordion
+          type="multiple"
+          defaultValue={["collections", "featured", "color"]}
+          className="w-full"
+        >
           {/* Featured */}
           <AccordionItem value="featured" className="border-none">
             <AccordionTrigger className="text-xs font-bold text-foreground uppercase tracking-widest hover:no-underline py-3 px-0 mt-4">
@@ -131,14 +91,65 @@ const Sidebar = ({
                     key={featured}
                     variant="ghost"
                     size="sm"
-                    onClick={() => onFeaturedChange(featured === selectedFeatured ? null : featured)}
+                    onClick={() =>
+                      onFeaturedChange(
+                        featured === selectedFeatured ? null : featured
+                      )
+                    }
                     className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
                       selectedFeatured === featured
-                        ? 'text-foreground font-medium bg-muted/50'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                        ? "text-foreground font-medium bg-muted/50"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     }`}
                   >
                     {featured}
+                  </Button>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Collections */}
+          <AccordionItem value="collections" className="border-none">
+            <AccordionTrigger className="text-xs font-bold text-foreground uppercase tracking-widest hover:no-underline py-3 px-0">
+              Collections
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="space-y-1 pt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onCategoryChange(null)}
+                  className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
+                    !selectedCategory
+                      ? "text-foreground font-medium bg-muted/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  }`}
+                >
+                  All Products
+                </Button>
+
+                {categoriesLoading && <SidebarSkeleton count={8} />}
+
+                {categoriesError && (
+                  <div className="px-2 py-2 text-sm text-red-500">
+                    Failed to load categories
+                  </div>
+                )}
+
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onCategoryChange(category.id)}
+                    className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
+                      selectedCategory === category.id
+                        ? "text-foreground font-medium bg-muted/50"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                    }`}
+                  >
+                    {category.name}
                   </Button>
                 ))}
               </div>
@@ -155,30 +166,34 @@ const Sidebar = ({
                 {colorsLoading && (
                   <SidebarSkeleton count={5} showColorCircle={true} />
                 )}
-                
+
                 {colorsError && (
                   <div className="px-2 py-2 text-sm text-red-500">
                     Failed to load colors
                   </div>
                 )}
-                
+
                 {colors.map((color) => (
                   <Button
                     key={color.id}
                     variant="ghost"
                     size="sm"
-                    onClick={() => onColorChange(color.name === selectedColor ? null : color.name)}
+                    onClick={() =>
+                      onColorChange(
+                        color.name === selectedColor ? null : color.name
+                      )
+                    }
                     className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
                       selectedColor === color.name
-                        ? 'text-foreground font-medium bg-muted/50'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                        ? "text-foreground font-medium bg-muted/50"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className="w-3 h-3 rounded-full border border-border shadow-sm flex-shrink-0"
                         style={{
-                          backgroundColor: color.hex
+                          backgroundColor: color.hex,
                         }}
                       />
                       <span>{color.name}</span>
