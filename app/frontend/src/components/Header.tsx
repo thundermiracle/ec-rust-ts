@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, FC } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ShoppingBag, Menu, X } from 'lucide-react';
 
-const Header = () => {
+const Header: FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -98,4 +98,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export { Header }; 

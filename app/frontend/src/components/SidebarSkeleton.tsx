@@ -1,3 +1,4 @@
+import { FC } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface SidebarSkeletonProps {
@@ -5,7 +6,7 @@ interface SidebarSkeletonProps {
   showColorCircle?: boolean;
 }
 
-const SidebarSkeleton = ({ count = 3, showColorCircle = false }: SidebarSkeletonProps) => {
+const SidebarSkeleton: FC<SidebarSkeletonProps> = ({ count = 3, showColorCircle = false }) => {
   return (
     <div className="space-y-1 pt-4">
       {Array.from({ length: count }).map((_, index) => (
@@ -24,4 +25,4 @@ const SidebarSkeleton = ({ count = 3, showColorCircle = false }: SidebarSkeleton
   );
 };
 
-export default SidebarSkeleton; 
+export { SidebarSkeleton }; 

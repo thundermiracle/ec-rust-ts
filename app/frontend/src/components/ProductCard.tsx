@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { FC } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageIcon } from 'lucide-react';
@@ -24,7 +25,7 @@ interface ProductCardProps {
   product: ProductCardProduct;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const formatPrice = (price: number) => `$${price.toLocaleString()}`;
 
   const discountPercentage = product.salePrice 
@@ -148,4 +149,4 @@ const getColorValue = (colorName: string): string => {
   return colorMap[colorName] || '#CCCCCC';
 };
 
-export default ProductCard; 
+export { ProductCard }; 

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import ProductCard from '@/components/ProductCard';
-import Sidebar from '@/components/Sidebar';
+import { ProductCard, Sidebar } from '@/components';
 import { Button } from '@/components/ui/button';
 import { useGetProductListQuery } from '@/store';
 
