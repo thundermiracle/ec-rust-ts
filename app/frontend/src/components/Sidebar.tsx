@@ -1,7 +1,7 @@
 'use client';
 
-import { colors, featuredCategories } from '@/data/mockData';
-import { useGetCategoryListQuery } from '@/store';
+import { featuredCategories } from '@/data/mockData';
+import { useGetCategoryListQuery, useGetColorListQuery } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -21,27 +21,6 @@ interface SidebarProps {
   onClearFilters: () => void;
 }
 
-// Helper function to convert color names to CSS values
-const getColorValue = (colorName: string): string => {
-  const colorMap: { [key: string]: string } = {
-    'Walnut': '#8B4513',
-    'White Oak': '#F5F5DC',
-    'Black Oak': '#2F2F2F',
-    'Whitewash Oak': '#F8F8F8',
-    'Black': '#000000',
-    'White': '#FFFFFF',
-    'Charcoal': '#36454F',
-    'Mist': '#E6E6FA',
-    'Smoke': '#738276',
-    'Sand': '#C2B280',
-    'Gray': '#808080',
-    'Brass': '#B5A642',
-    'Beige': '#F5F5DC',
-  };
-  
-  return colorMap[colorName] || '#CCCCCC';
-};
-
 const Sidebar = ({
   selectedCategory,
   selectedColor,
@@ -59,8 +38,15 @@ const Sidebar = ({
     isLoading: categoriesLoading, 
     error: categoriesError 
   } = useGetCategoryListQuery();
-  
   const categories = categoriesData?.categories || [];
+
+
+  const {
+    data: colorsData,
+    isLoading: colorsLoading,
+    error: colorsError,
+  } = useGetColorListQuery();
+  const colors = colorsData?.colors || [];
 
   return (
     <aside className="w-72 flex-shrink-0 bg-background border-r h-screen sticky top-16 overflow-y-auto">
@@ -167,14 +153,26 @@ const Sidebar = ({
             </AccordionTrigger>
             <AccordionContent className="pb-2">
               <div className="space-y-1 pt-4">
+                {colorsLoading && (
+                  <div className="px-2 py-2 text-sm text-muted-foreground">
+                    Loading colors...
+                  </div>
+                )}
+                
+                {colorsError && (
+                  <div className="px-2 py-2 text-sm text-red-500">
+                    Failed to load colors
+                  </div>
+                )}
+                
                 {colors.map((color) => (
                   <Button
-                    key={color}
+                    key={color.id}
                     variant="ghost"
                     size="sm"
-                    onClick={() => onColorChange(color === selectedColor ? null : color)}
+                    onClick={() => onColorChange(color.name === selectedColor ? null : color.name)}
                     className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
-                      selectedColor === color
+                      selectedColor === color.name
                         ? 'text-foreground font-medium bg-muted/50'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                     }`}
@@ -183,10 +181,10 @@ const Sidebar = ({
                       <div
                         className="w-3 h-3 rounded-full border border-border shadow-sm flex-shrink-0"
                         style={{
-                          backgroundColor: getColorValue(color)
+                          backgroundColor: color.hex
                         }}
                       />
-                      <span>{color}</span>
+                      <span>{color.name}</span>
                     </div>
                   </Button>
                 ))}

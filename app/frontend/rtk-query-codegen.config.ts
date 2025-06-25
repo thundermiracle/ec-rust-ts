@@ -10,6 +10,9 @@ const config: ConfigFile = {
     "./src/store/generatedApi/categoriesApi.ts": {
       filterEndpoints: [/category/i],
     },
+    "./src/store/generatedApi/colorsApi.ts": {
+      filterEndpoints: [/color/i],
+    },
   },
   hooks: true,
   tag: true,

@@ -3,6 +3,7 @@ export {
   useGetProductQuery,
 } from "./generatedApi/productsApi";
 export { useGetCategoryListQuery } from "./generatedApi/categoriesApi";
+export { useGetColorListQuery } from "./generatedApi/colorsApi";
 
 export type {
   ProductResponse,
@@ -13,3 +14,4 @@ export type {
 } from "./generatedApi/productsApi";
 
 export type { CategoryResponse, CategoryListResponse } from "./generatedApi/categoriesApi";
+export type { ColorListItemResponse, ColorListResponse } from "./generatedApi/colorsApi";
