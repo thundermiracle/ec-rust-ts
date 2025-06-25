@@ -1,5 +1,6 @@
 mod products;
 mod categories;
+mod colors;
 mod common;
 mod swagger;
 mod routes;

@@ -10,6 +10,10 @@ use crate::presentation::categories::responses::{
     CategoryListResponse,
     CategoryResponse
 };
+use crate::presentation::colors::{
+    ColorListResponse,
+    ColorListItemResponse
+};
 use crate::presentation::ErrorResponse;
 
 /// OpenAPI仕様書の定義
@@ -20,6 +24,7 @@ use crate::presentation::ErrorResponse;
         crate::presentation::products::controllers::get_product_controller::handle,
         crate::presentation::products::controllers::get_product_list_controller::handle,
         crate::presentation::categories::controllers::get_categorie_list_controller::handle,
+        crate::presentation::colors::controllers::get_color_list_controller::handle,
     ),
     components(
         schemas(
@@ -29,12 +34,15 @@ use crate::presentation::ErrorResponse;
             VariantResponse,
             CategoryListResponse,
             CategoryResponse,
+            ColorListResponse,
+            ColorListItemResponse,
             ErrorResponse
         )
     ),
     tags(
         (name = "Products", description = "商品関連のAPI"),
-        (name = "Categories", description = "カテゴリ関連のAPI")
+        (name = "Categories", description = "カテゴリ関連のAPI"),
+        (name = "Colors", description = "色関連のAPI")
     ),
     info(
         title = "ECサイト API",
