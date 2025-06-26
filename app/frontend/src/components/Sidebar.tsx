@@ -17,6 +17,7 @@ interface SidebarProps {
   onColorChange: (color: string | null) => void;
   onFeaturedChange: (featured: string | null) => void;
   onClearFilters: () => void;
+  isMobile?: boolean;
 }
 
 const Sidebar: FC<SidebarProps> = ({
@@ -27,6 +28,7 @@ const Sidebar: FC<SidebarProps> = ({
   onColorChange,
   onFeaturedChange,
   onClearFilters,
+  isMobile = false,
 }) => {
   const hasFilters = !!(selectedCategory || selectedColor || selectedFeatured);
   
@@ -45,9 +47,17 @@ const Sidebar: FC<SidebarProps> = ({
   } = useGetColorListQuery();
   const colors = colorsData?.colors || [];
 
+  const containerClasses = isMobile 
+    ? "bg-background" 
+    : "w-72 flex-shrink-0 bg-background border-r h-screen sticky top-16 overflow-y-auto";
+
+  const contentClasses = isMobile 
+    ? "p-4 space-y-6" 
+    : "p-8 space-y-8";
+
   return (
-    <aside className="w-72 flex-shrink-0 bg-background border-r h-screen sticky top-16 overflow-y-auto">
-      <div className="p-8 space-y-8">
+    <aside className={containerClasses}>
+      <div className={contentClasses}>
         {/* Clear Filters */}
         <FilterControls 
           hasFilters={hasFilters} 

@@ -33,8 +33,8 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
     : 0;
 
   return (
-    <Card className="group overflow-hidden border-0 shadow-none bg-transparent">
-      <Link href={`/products/${product.id}`}>
+    <Card className="group overflow-hidden border-0 shadow-none bg-transparent h-full">
+      <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         <div className="relative overflow-hidden bg-muted rounded-lg transition-transform duration-300 group-hover:scale-[1.02]">
           {/* Product Image */}
           <div className="aspect-square relative">
@@ -44,33 +44,34 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
                 alt={product.name}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                priority={false}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-muted">
-                <ImageIcon className="w-16 h-16 text-muted-foreground/50" />
+                <ImageIcon className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground/50" />
               </div>
             )}
             
             {/* Status Badges */}
-            <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
               {product.isSoldOut && (
-                <Badge variant="destructive" className="text-xs">
+                <Badge variant="destructive" className="text-xs px-2 py-1">
                   Sold Out
                 </Badge>
               )}
               {product.isOnSale && !product.isSoldOut && (
-                <Badge className="bg-green-600 hover:bg-green-700 text-xs">
+                <Badge className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1">
                   -{discountPercentage}%
                 </Badge>
               )}
               {product.isBestSeller && (
-                <Badge variant="default" className="text-xs">
+                <Badge variant="default" className="text-xs px-2 py-1">
                   Best Seller
                 </Badge>
               )}
               {product.isQuickShip && (
-                <Badge variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 text-xs">
+                <Badge variant="secondary" className="bg-blue-600 text-white hover:bg-blue-700 text-xs px-2 py-1">
                   Quick Ship
                 </Badge>
               )}
@@ -78,10 +79,10 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
           </div>
         </div>
 
-        <CardContent className="p-0 pt-4">
+        <CardContent className="p-0 pt-3 sm:pt-4 flex-1 flex flex-col">
           {/* Product Info */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-foreground group-hover:text-muted-foreground transition-colors line-clamp-2">
+          <div className="space-y-2 flex-1">
+            <h3 className="text-sm font-medium text-foreground group-hover:text-muted-foreground transition-colors line-clamp-2 leading-tight">
               {product.name}
             </h3>
             
@@ -104,11 +105,11 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
 
             {/* Color indicators */}
             {product.colors.length > 0 && (
-              <div className="flex items-center gap-1.5 pt-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 pt-1">
                 {product.colors.slice(0, 4).map((color, index) => (
                   <div
                     key={index}
-                    className="w-4 h-4 rounded-full border-2 border-border shadow-sm"
+                    className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-border shadow-sm flex-shrink-0"
                     style={{
                       backgroundColor: getColorValue(color)
                     }}
