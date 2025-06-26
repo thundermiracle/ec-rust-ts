@@ -64,7 +64,16 @@ export const CartDrawer: React.FC = () => {
                     {item.size && (
                       <p className="text-xs text-muted-foreground">Size: {item.size}</p>
                     )}
-                    <p className="font-semibold text-sm mt-1">¥{item.price.toLocaleString()}</p>
+                    <div className="mt-1">
+                      {item.salePrice ? (
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm text-red-600">¥{item.salePrice.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground line-through">¥{item.price.toLocaleString()}</p>
+                        </div>
+                      ) : (
+                        <p className="font-semibold text-sm">¥{item.price.toLocaleString()}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex flex-col items-end gap-2">

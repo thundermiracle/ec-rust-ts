@@ -18,6 +18,7 @@ interface ProductPurchaseProps {
   selectedVariant: {
     id: string;
     price: number;
+    salePrice?: number;
     image?: string;
     color?: string;
     size?: string;
@@ -40,6 +41,7 @@ export const ProductPurchase: FC<ProductPurchaseProps> = ({
       id: product.id,
       name: product.name,
       price: selectedVariant.price,
+      salePrice: selectedVariant.salePrice,
       image: selectedVariant.image || '',
       skuId: selectedVariant.id,
       color: selectedVariant.color,

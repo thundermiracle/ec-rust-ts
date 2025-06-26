@@ -4,6 +4,7 @@ export interface CartItem {
   id: string;
   name: string;
   price: number;
+  salePrice?: number;
   quantity: number;
   image: string;
   skuId?: string;
@@ -126,6 +127,6 @@ export const selectCartIsOpen = (state: { cart: CartState }) => state.cart.isOpe
 export const selectCartItemsCount = (state: { cart: CartState }) => 
   state.cart.items.reduce((total, item) => total + item.quantity, 0);
 export const selectCartTotal = (state: { cart: CartState }) => 
-  state.cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  state.cart.items.reduce((total, item) => total + ((item.salePrice ?? item.price) * item.quantity), 0);
 
 export default cartSlice.reducer; 

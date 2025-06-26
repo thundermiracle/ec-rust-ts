@@ -102,6 +102,7 @@ export default function ProductDetail() {
               selectedVariant={{
                 id: selectedVariant.id,
                 price: selectedVariant.price,
+                salePrice: selectedVariant.salePrice,
                 image: selectedVariant.image,
                 color: selectedVariant.color,
                 size: selectedVariant.dimensions,
