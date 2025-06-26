@@ -62,9 +62,9 @@ const CategoryFilter: FC<CategoryFilterProps> = ({
               key={category.id}
               variant="ghost"
               size="sm"
-              onClick={() => onCategoryChange(String(category.id))}
+              onClick={() => onCategoryChange(category.name)}
               className={`w-full justify-start px-2 py-2 h-auto font-normal text-sm transition-colors ${
-                selectedCategory === String(category.id)
+                selectedCategory === category.name
                   ? "text-foreground font-medium bg-muted/50"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
               }`}
