@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { ProductCard, Sidebar } from '@/components';
 import { Button } from '@/components/ui/button';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { useGetProductListQuery } from '@/store';
 import { Filter, X } from 'lucide-react';
 
@@ -67,40 +68,29 @@ export default function Home() {
         />
       </div>
 
-      {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm" 
-            onClick={() => setIsSidebarOpen(false)}
-          />
-          
-          {/* Sidebar */}
-          <div className="relative bg-background w-80 h-full overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">Filters</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+      {/* Mobile Filter Drawer */}
+      <div className="lg:hidden">
+        <Drawer open={isSidebarOpen} onOpenChange={setIsSidebarOpen} side="left">
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Filters</DrawerTitle>
+              <DrawerClose onClick={() => setIsSidebarOpen(false)} />
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto">
+              <Sidebar
+                selectedCategory={selectedCategory}
+                selectedColor={selectedColor}
+                selectedFeatured={selectedFeatured}
+                onCategoryChange={setSelectedCategory}
+                onColorChange={setSelectedColor}
+                onFeaturedChange={setSelectedFeatured}
+                onClearFilters={clearFilters}
+                isMobile={true}
+              />
             </div>
-            <Sidebar
-              selectedCategory={selectedCategory}
-              selectedColor={selectedColor}
-              selectedFeatured={selectedFeatured}
-              onCategoryChange={setSelectedCategory}
-              onColorChange={setSelectedColor}
-              onFeaturedChange={setSelectedFeatured}
-              onClearFilters={clearFilters}
-              isMobile={true}
-            />
-          </div>
-        </div>
-      )}
+          </DrawerContent>
+        </Drawer>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 min-w-0">
