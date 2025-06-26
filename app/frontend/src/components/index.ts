@@ -7,4 +7,5 @@ export * from './SidebarSkeleton';
 // Sub-folders
 export * from './Filters';
 export * from './ProductDetail';
-export * from './ui'; 
+export * from './ui';
+export * from './Cart'; 

@@ -95,6 +95,17 @@ export default function ProductDetail() {
               quantity={quantity}
               onQuantityChange={setQuantity}
               isSoldOut={selectedVariant.isSoldOut}
+              product={{
+                id: product.id,
+                name: product.name,
+              }}
+              selectedVariant={{
+                id: selectedVariant.id,
+                price: selectedVariant.price,
+                image: selectedVariant.image,
+                color: selectedVariant.color,
+                size: selectedVariant.dimensions,
+              }}
             />
 
             <Separator />
