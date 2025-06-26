@@ -1,19 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  salePrice?: number;
+// LocalStorageに保存する軽量なカートアイテム
+export interface StoredCartItem {
+  productId: string;
+  skuId: string;  // 必須プロパティ
   quantity: number;
-  image: string;
-  skuId?: string;
-  color?: string;
-  size?: string;
 }
 
 export interface CartState {
-  items: CartItem[];
+  items: StoredCartItem[];
   isOpen: boolean;
 }
 
@@ -25,7 +20,7 @@ const initialState: CartState = {
 // LocalStorage utility functions
 const CART_STORAGE_KEY = 'artifox_cart';
 
-const loadCartFromStorage = (): CartItem[] => {
+const loadCartFromStorage = (): StoredCartItem[] => {
   if (typeof window === 'undefined') return [];
   
   try {
@@ -37,7 +32,7 @@ const loadCartFromStorage = (): CartItem[] => {
   }
 };
 
-const saveCartToStorage = (items: CartItem[]) => {
+const saveCartToStorage = (items: StoredCartItem[]) => {
   if (typeof window === 'undefined') return;
   
   try {
@@ -55,39 +50,39 @@ const cartSlice = createSlice({
       state.items = loadCartFromStorage();
     },
     
-    addToCart: (state, action: PayloadAction<Omit<CartItem, 'quantity'> & { quantity?: number }>) => {
-      const { quantity = 1, ...item } = action.payload;
+    addToCart: (state, action: PayloadAction<{ productId: string; skuId: string; quantity?: number }>) => {
+      const { productId, skuId, quantity = 1 } = action.payload;
       const existingItem = state.items.find(
-        (cartItem) => cartItem.id === item.id && cartItem.skuId === item.skuId
+        (cartItem) => cartItem.productId === productId && cartItem.skuId === skuId
       );
 
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
-        state.items.push({ ...item, quantity });
+        state.items.push({ productId, skuId, quantity });
       }
 
       saveCartToStorage(state.items);
     },
 
-    removeFromCart: (state, action: PayloadAction<{ id: string; skuId?: string }>) => {
-      const { id, skuId } = action.payload;
+    removeFromCart: (state, action: PayloadAction<{ productId: string; skuId: string }>) => {
+      const { productId, skuId } = action.payload;
       state.items = state.items.filter(
-        (item) => !(item.id === id && item.skuId === skuId)
+        (item) => !(item.productId === productId && item.skuId === skuId)
       );
       saveCartToStorage(state.items);
     },
 
-    updateQuantity: (state, action: PayloadAction<{ id: string; skuId?: string; quantity: number }>) => {
-      const { id, skuId, quantity } = action.payload;
+    updateQuantity: (state, action: PayloadAction<{ productId: string; skuId: string; quantity: number }>) => {
+      const { productId, skuId, quantity } = action.payload;
       const item = state.items.find(
-        (cartItem) => cartItem.id === id && cartItem.skuId === skuId
+        (cartItem) => cartItem.productId === productId && cartItem.skuId === skuId
       );
 
       if (item) {
         if (quantity <= 0) {
           state.items = state.items.filter(
-            (cartItem) => !(cartItem.id === id && cartItem.skuId === skuId)
+            (cartItem) => !(cartItem.productId === productId && cartItem.skuId === skuId)
           );
         } else {
           item.quantity = quantity;
@@ -126,7 +121,5 @@ export const selectCartItems = (state: { cart: CartState }) => state.cart.items;
 export const selectCartIsOpen = (state: { cart: CartState }) => state.cart.isOpen;
 export const selectCartItemsCount = (state: { cart: CartState }) => 
   state.cart.items.reduce((total, item) => total + item.quantity, 0);
-export const selectCartTotal = (state: { cart: CartState }) => 
-  state.cart.items.reduce((total, item) => total + ((item.salePrice ?? item.price) * item.quantity), 0);
 
 export default cartSlice.reducer; 

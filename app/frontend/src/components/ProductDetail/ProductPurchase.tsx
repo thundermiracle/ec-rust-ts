@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FC } from 'react';
+import { FC, useCallback } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { addToCart } from '@/store/cartSlice';
 
@@ -10,47 +10,30 @@ interface ProductPurchaseProps {
   quantity: number;
   onQuantityChange: (quantity: number) => void;
   isSoldOut: boolean;
-  // カート追加に必要な商品情報
-  product: {
-    id: string;
-    name: string;
-  };
-  selectedVariant: {
-    id: string;
-    price: number;
-    salePrice?: number;
-    image?: string;
-    color?: string;
-    size?: string;
-  };
+  // カート追加に必要な最小限の情報
+  productId: string;
+  skuId: string;
 }
 
 export const ProductPurchase: FC<ProductPurchaseProps> = ({
   quantity,
   onQuantityChange,
   isSoldOut,
-  product,
-  selectedVariant,
+  productId,
+  skuId,
 }) => {
   const dispatch = useAppDispatch();
 
-  const handleAddToCart = () => {
+  const handleAddToCart = useCallback(() => {
     if (isSoldOut) return;
 
-    const cartItem = {
-      id: product.id,
-      name: product.name,
-      price: selectedVariant.price,
-      salePrice: selectedVariant.salePrice,
-      image: selectedVariant.image || '',
-      skuId: selectedVariant.id,
-      color: selectedVariant.color,
-      size: selectedVariant.size,
+    // カートには productId, skuId, quantity のみ送信
+    dispatch(addToCart({
+      productId,
+      skuId,
       quantity,
-    };
-
-    dispatch(addToCart(cartItem));
-  };
+    }));
+  }, [dispatch, isSoldOut, productId, skuId, quantity]);
 
   return (
     <div className="space-y-6">
