@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use crate::infrastructure::Container;
 use crate::error::Result;
-use crate::presentation::products::{ProductListPresenter, ProductListResponse};
+use crate::presentation::products::presenters::GetProductListPresenter;
+use crate::presentation::products::responses::GetProductListResponse;
 use crate::presentation::ErrorResponse;
 
 /// Get Product List Controller - 商品リスト取得の単一責任
@@ -26,14 +27,14 @@ impl GetProductListController {
     path = "/products",
     operation_id = "get_product_list",
     responses(
-        (status = 200, description = "商品リスト取得成功", body = ProductListResponse),
+        (status = 200, description = "商品リスト取得成功", body = GetProductListResponse),
         (status = 500, description = "内部サーバーエラー", body = ErrorResponse)
     ),
     tag = "Products"
 )]
 pub async fn handle(
     State(container): State<Arc<Container>>,
-) -> Result<Json<ProductListResponse>> {
+) -> Result<Json<GetProductListResponse>> {
     println!("->> GetProductListController::handle");
     
     let dispatcher = container.get_dispatcher();
@@ -43,5 +44,5 @@ pub async fn handle(
         .await?; // ApplicationErrorからErrorへの自動変換を利用
         
     println!("->> GetProductListController::handle - success for product_list");
-    Ok(Json(ProductListPresenter::present(product_list)))
+    Ok(Json(GetProductListPresenter::present(product_list)))
 } 

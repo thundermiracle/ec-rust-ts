@@ -1,7 +1,10 @@
-mod product_response;
-mod product_list_response;
 mod variant_response;
+mod get_product_response;
+mod get_product_list_response;
 
-pub use product_response::ProductResponse;
+// Use Case固有のレスポンス型
+pub use get_product_response::GetProductResponse;
+pub use get_product_list_response::{GetProductListResponse, GetProductListItemResponse};
+
+// 共通で使用されるレスポンス型
 pub use variant_response::VariantResponse;
-pub use product_list_response::{ProductListResponse, ProductListItemResponse};

@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// 商品一覧のHTTPレスポンス用DTO
+/// GET /products API専用の商品一覧レスポンス
 /// Clean Architecture: Interface Adapters層
 /// TypeScriptのProduct型と整合性を取った構造
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ProductListResponse {
+pub struct GetProductListResponse {
     /// 商品一覧
-    pub products: Vec<ProductListItemResponse>,
+    pub products: Vec<GetProductListItemResponse>,
     /// 総件数
     pub total_count: u32,
     /// 現在のページ番号
@@ -21,11 +21,11 @@ pub struct ProductListResponse {
     pub has_previous_page: bool,
 }
 
-/// 商品のHTTPレスポンス用DTO
+/// GET /products API用の商品項目レスポンス
 /// TypeScriptのProduct型に対応
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ProductListItemResponse {
+pub struct GetProductListItemResponse {
     /// 商品ID
     pub id: String,
     /// 商品名
@@ -60,10 +60,10 @@ pub struct ProductListItemResponse {
     pub is_sold_out: Option<bool>,
 }
 
-impl ProductListResponse {
-    /// 新しいProductListResponseを作成
+impl GetProductListResponse {
+    /// 新しいGetProductListResponseを作成
     pub fn new(
-        products: Vec<ProductListItemResponse>,
+        products: Vec<GetProductListItemResponse>,
         total_count: u32,
         page: u32,
         per_page: u32,
@@ -81,8 +81,8 @@ impl ProductListResponse {
     }
 }
 
-impl ProductListItemResponse {
-    /// 新しいProductListItemResponseを作成
+impl GetProductListItemResponse {
+    /// 新しいGetProductListItemResponseを作成
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
@@ -111,4 +111,4 @@ impl ProductListItemResponse {
             is_sold_out,
         }
     }
-}
+} 

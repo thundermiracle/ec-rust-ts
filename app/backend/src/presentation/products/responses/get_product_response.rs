@@ -2,9 +2,9 @@ use serde::Serialize;
 use utoipa::ToSchema;
 use super::variant_response::VariantResponse;
 
-/// API応答用のProduct構造体（ProductDTOに合わせた構造）
+/// GET /products/{id} API専用の商品詳細レスポンス構造体
 #[derive(Debug, Serialize, ToSchema)]
-pub struct ProductResponse {
+pub struct GetProductResponse {
     /// 商品ID
     pub id: String,
     /// 商品名

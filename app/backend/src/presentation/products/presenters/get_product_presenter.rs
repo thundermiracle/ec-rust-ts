@@ -1,20 +1,20 @@
 use crate::application::dto::{ProductDTO, VariantDTO};
-use crate::presentation::products::responses::{ProductResponse, VariantResponse};
+use crate::presentation::products::responses::{VariantResponse, GetProductResponse};
 
-/// ProductPresenter
-/// Clean Architecture: Application層のProductDTOをInterface Adapter層のProductResponseに変換
-/// プレゼンテーション層への出力形式を担当
-pub struct ProductPresenter;
+/// GET /products/{id} API専用プレゼンター
+/// Clean Architecture: Application層のProductDTOをInterface Adapter層のGetProductResponseに変換
+/// GET /products/{id} 専用のプレゼンテーション層
+pub struct GetProductPresenter;
 
-impl ProductPresenter {
-    /// ProductDTOをProductResponseに変換
+impl GetProductPresenter {
+    /// ProductDTOをGetProductResponseに変換（GET /products/{id}専用）
     /// 
     /// # Arguments
     /// * `product_dto` - Application層のProductDTO
     /// 
     /// # Returns
-    /// * `ProductResponse` - API応答用の形式に変換されたProductResponse
-    pub fn present(product_dto: ProductDTO) -> ProductResponse {
+    /// * `GetProductResponse` - GET /products/{id} API専用レスポンス
+    pub fn present(product_dto: ProductDTO) -> GetProductResponse {
         // variantsの変換
         let variants: Vec<VariantResponse> = product_dto
             .variants
@@ -22,7 +22,7 @@ impl ProductPresenter {
             .map(Self::present_variant)
             .collect();
 
-        ProductResponse {
+        GetProductResponse {
             id: product_dto.id,
             name: product_dto.name,
             images: product_dto.images,
@@ -65,7 +65,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_present_product_without_variants() {
+    fn test_present_get_product_without_variants() {
         // Given: ProductDTOの作成
         let product_dto = ProductDTO::new(
             "desk-walnut-1".to_string(),
@@ -78,8 +78,8 @@ mod tests {
             vec![],
         );
 
-        // When: ProductPresenterで変換
-        let product_response = ProductPresenter::present(product_dto);
+        // When: GetProductPresenterで変換
+        let product_response = GetProductPresenter::present(product_dto);
 
         // Then: 正しく変換されている
         assert_eq!(product_response.id, "desk-walnut-1");
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_present_product_with_variants() {
+    fn test_present_get_product_with_variants() {
         // Given: variantsを含むProductDTOの作成
         let variant1 = VariantDTO::new(
             "variant-1".to_string(),
@@ -134,8 +134,8 @@ mod tests {
             vec![variant1, variant2],
         );
 
-        // When: ProductPresenterで変換
-        let product_response = ProductPresenter::present(product_dto);
+        // When: GetProductPresenterで変換
+        let product_response = GetProductPresenter::present(product_dto);
 
         // Then: variantsも正しく変換されている
         assert_eq!(product_response.variants.len(), 2);
@@ -193,17 +193,17 @@ mod tests {
         );
 
         // When: VariantPresenterで変換
-        let variant_response = ProductPresenter::present_variant(variant_view_model);
+        let variant_response = GetProductPresenter::present_variant(variant_view_model);
 
         // Then: 正しく変換されている
         assert_eq!(variant_response.id, "variant-test");
         assert_eq!(variant_response.sku_code, "SKU003");
         assert_eq!(variant_response.name, "Medium");
         assert_eq!(variant_response.price, 2000);
+        assert_eq!(variant_response.sale_price, Some(1800));
         assert_eq!(variant_response.color, "Walnut");
         assert_eq!(variant_response.material, "Wood");
         assert_eq!(variant_response.dimensions, "36x18x30");
-        assert_eq!(variant_response.sale_price, Some(1800));
         // assert_eq!(variant_response.stock_quantity, 5);
         assert_eq!(variant_response.display_order, 1);
         assert_eq!(variant_response.image, Some("test.jpg".to_string()));
@@ -213,37 +213,37 @@ mod tests {
 
     #[test]
     fn test_present_variant_without_image() {
-        // Given: imageがNoneのVariantDTO
+        // Given: 画像なしのVariantDTOの作成
         let variant_view_model = VariantDTO::new(
             "variant-no-image".to_string(),
             "SKU004".to_string(),
-            "No Image".to_string(),
-            "Black Oak".to_string(),
+            "XLarge".to_string(),
+            "Oak".to_string(),
             "Wood".to_string(),
-            "20x10x25".to_string(),
-            1500,
+            "60x30x30".to_string(),
+            3000,
             None,
             0,
-            1,
+            3,
             None,
         );
 
         // When: VariantPresenterで変換
-        let variant_response = ProductPresenter::present_variant(variant_view_model);
+        let variant_response = GetProductPresenter::present_variant(variant_view_model);
 
-        // Then: imageはNoneのまま
+        // Then: 正しく変換されている
         assert_eq!(variant_response.id, "variant-no-image");
         assert_eq!(variant_response.sku_code, "SKU004");
-        assert_eq!(variant_response.name, "No Image");
-        assert_eq!(variant_response.price, 1500);
-        assert_eq!(variant_response.color, "Black Oak");
-        assert_eq!(variant_response.material, "Wood");
-        assert_eq!(variant_response.dimensions, "20x10x25");
+        assert_eq!(variant_response.name, "XLarge");
+        assert_eq!(variant_response.price, 3000);
         assert_eq!(variant_response.sale_price, None);
+        assert_eq!(variant_response.color, "Oak");
+        assert_eq!(variant_response.material, "Wood");
+        assert_eq!(variant_response.dimensions, "60x30x30");
         // assert_eq!(variant_response.stock_quantity, 0);
-        assert_eq!(variant_response.display_order, 1);
+        assert_eq!(variant_response.display_order, 3);
         assert_eq!(variant_response.image, None);
         assert!(!variant_response.is_on_sale);
         assert!(variant_response.is_sold_out);
     }
-}
+} 

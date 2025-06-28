@@ -1,6 +1,6 @@
-mod product_presenter;
-mod product_list_presenter;
+mod get_product_presenter;
+mod get_product_list_presenter;
 
-pub use product_presenter::ProductPresenter;
-pub use product_list_presenter::ProductListPresenter;
+pub use get_product_presenter::GetProductPresenter;
+pub use get_product_list_presenter::GetProductListPresenter;
  

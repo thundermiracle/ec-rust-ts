@@ -1,9 +1,9 @@
 use utoipa::OpenApi;
 
 use crate::presentation::products::responses::{
-    ProductResponse, 
-    ProductListResponse, 
-    ProductListItemResponse, 
+    GetProductResponse, 
+    GetProductListResponse, 
+    GetProductListItemResponse, 
     VariantResponse
 };
 use crate::presentation::categories::responses::{
@@ -34,9 +34,9 @@ use crate::presentation::ErrorResponse;
     ),
     components(
         schemas(
-            ProductResponse,
-            ProductListResponse,
-            ProductListItemResponse,
+            GetProductResponse,
+            GetProductListResponse,
+            GetProductListItemResponse,
             VariantResponse,
             CategoryListResponse,
             CategoryResponse,

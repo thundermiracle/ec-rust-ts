@@ -52,5 +52,5 @@ pub async fn handle(
     let variants = dispatcher.execute_find_variants_query(query).await?;
         
     println!("->> FindVariantsController::handle - success for {} variants", variants.len());
-    Ok(Json(FindVariantsPresenter::present_find_variants(variants)))
+    Ok(Json(FindVariantsPresenter::present(variants)))
 }
