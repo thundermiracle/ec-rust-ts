@@ -39,7 +39,11 @@ async fn main() -> anyhow::Result<()> {
     infrastructure::database::db::init_db(database_url).await?;
     
     // 依存関係の解決
-    let container = Arc::new(infrastructure::get_container());
+    let container = Arc::new(
+        infrastructure::get_container()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to initialize container: {}", e))?
+    );
     
     match cli.command.unwrap_or(Commands::Serve) {
         Commands::Serve => {

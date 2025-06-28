@@ -5,7 +5,6 @@ use crate::application::error::RepositoryError;
 use crate::application::repositories::ProductRepository;
 use crate::application::dto::{ProductListDTO, ProductSummaryDTO, ProductDTO, VariantDTO};
 use crate::domain::models::ProductId;
-use crate::infrastructure::database::db::get_db;
 
 /// SQLite実装のProductRepository
 /// Clean Architecture: Frameworks & Drivers層
@@ -15,25 +14,14 @@ pub struct SqliteProductRepository {
 }
 
 impl SqliteProductRepository {
-    pub fn new() -> Self {
-        // データベースプールは実際のクエリ実行時に取得する
-        // 初期化時に非同期で取得することはできないため、プレースホルダーとして空のプールを使用
-        let pool = SqlitePool::connect_lazy("sqlite::memory:").unwrap();
+    pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
-    }
-
-    /// データベースプールを取得（実際のクエリ実行時に使用）
-    async fn get_pool(&self) -> Result<SqlitePool, RepositoryError> {
-        get_db().await
-            .map(|db| db.get_pool().clone())
-            .map_err(|e| RepositoryError::DatabaseConnection(e.to_string()))
     }
 }
 
 #[async_trait]
 impl ProductRepository for SqliteProductRepository {
     async fn find_by_id(&self, id: &ProductId) -> Result<Option<ProductDTO>, RepositoryError> {
-        let pool = self.get_pool().await?;
         let product_id_str = id.value().to_string();
 
         // 商品基本情報とカテゴリー名を取得
@@ -52,7 +40,7 @@ impl ProductRepository for SqliteProductRepository {
             "#
         )
         .bind(&product_id_str)
-        .fetch_optional(&pool)
+        .fetch_optional(&self.pool)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
@@ -90,7 +78,7 @@ impl ProductRepository for SqliteProductRepository {
             "#
         )
         .bind(&product_id_str)
-        .fetch_all(&pool)
+        .fetch_all(&self.pool)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
@@ -104,7 +92,7 @@ impl ProductRepository for SqliteProductRepository {
             "#
         )
         .bind(&product_id_str)
-        .fetch_all(&pool)
+        .fetch_all(&self.pool)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
@@ -195,8 +183,6 @@ impl ProductRepository for SqliteProductRepository {
     }
 
     async fn find_all(&self) -> Result<ProductListDTO, RepositoryError> {
-        let pool = self.get_pool().await?;
-
         // 各商品の最初のSKUのデータを取得（ROW_NUMBERを使用してパフォーマンス最適化）
         let product_rows = sqlx::query(
             r#"
@@ -239,7 +225,7 @@ impl ProductRepository for SqliteProductRepository {
             ORDER BY p.name
             "#
         )
-        .fetch_all(&pool)
+        .fetch_all(&self.pool)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
@@ -285,7 +271,7 @@ impl ProductRepository for SqliteProductRepository {
         }
 
         let color_rows = color_query_builder
-            .fetch_all(&pool)
+            .fetch_all(&self.pool)
             .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 

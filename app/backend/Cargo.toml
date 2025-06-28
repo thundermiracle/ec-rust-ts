@@ -3,6 +3,14 @@ name = "ec-rust-backend"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "ec-rust-backend"
+path = "src/main.rs"
+
+[lib]
+name = "ec_rust_backend"
+path = "src/lib.rs"
+
 [dependencies]
 anyhow = "1"
 axum = "0.8.3"

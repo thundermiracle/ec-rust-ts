@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository};
+use crate::infrastructure::database::db::get_db;
 use crate::application::repositories::{ProductRepository, CategoryRepository, VariantRepository};
 use crate::application::{
     Dispatcher,
@@ -26,13 +27,29 @@ pub struct Container {
 }
 
 impl Container {
-    /// 新しいコンテナを作成します
-    pub fn new() -> Self {
-        // リポジトリの実装をインスタンス化
-        let product_repository = Arc::new(SqliteProductRepository::new());
-        let category_repository = Arc::new(SqliteCategoryRepository::new());
-        let color_repository = Arc::new(SqliteColorRepository::new());
-        let variant_repository = Arc::new(SqliteVariantRepository::new());
+    /// 新しいコンテナを作成します（本番環境用）
+    pub async fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        // データベースプールを取得
+        let db = get_db().await?;
+        let pool = db.get_pool().clone();
+        
+        Self::new_with_pool(pool).await
+    }
+    
+    /// テスト用コンテナを作成します
+    pub async fn new_for_test() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        // テスト用インメモリDB
+        let pool = sqlx::SqlitePool::connect("sqlite::memory:").await?;
+        Self::new_with_pool(pool).await
+    }
+    
+    /// プールを指定してコンテナを作成します
+    async fn new_with_pool(pool: sqlx::SqlitePool) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        // リポジトリの実装をインスタンス化（プールを注入）
+        let product_repository = Arc::new(SqliteProductRepository::new(pool.clone()));
+        let category_repository = Arc::new(SqliteCategoryRepository::new(pool.clone()));
+        let color_repository = Arc::new(SqliteColorRepository::new(pool.clone()));
+        let variant_repository = Arc::new(SqliteVariantRepository::new(pool.clone()));
         
         // ハンドラを作成
         let buy_product_handler = Arc::new(BuyProductHandler::new(product_repository.clone()));
@@ -52,12 +69,12 @@ impl Container {
             find_variants_handler,
         ));
         
-        Self {
+        Ok(Self {
             product_repository,
             category_repository,
             variant_repository,
             dispatcher,
-        }
+        })
     }
     
     /// Dispatcherを取得します
@@ -66,7 +83,12 @@ impl Container {
     }
 }
 
-/// グローバルなコンテナインスタンスを取得します
-pub fn get_container() -> Container {
-    Container::new()
+/// グローバルなコンテナインスタンスを取得します（本番環境用）
+pub async fn get_container() -> Result<Container, Box<dyn std::error::Error + Send + Sync>> {
+    Container::new().await
+}
+
+/// テスト用コンテナインスタンスを取得します
+pub async fn get_test_container() -> Result<Container, Box<dyn std::error::Error + Send + Sync>> {
+    Container::new_for_test().await
 }

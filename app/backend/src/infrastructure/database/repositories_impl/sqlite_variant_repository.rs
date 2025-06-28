@@ -11,8 +11,7 @@ pub struct SqliteVariantRepository {
 }
 
 impl SqliteVariantRepository {
-    pub fn new() -> Self {
-        let pool = SqlitePool::connect_lazy("sqlite::memory:").unwrap();
+    pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
     }
 }
