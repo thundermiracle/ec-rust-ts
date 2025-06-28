@@ -10,7 +10,7 @@ use crate::presentation::categories::responses::{
     GetCategoryListResponse,
     CategoryResponse
 };
-use crate::presentation::colors::{
+use crate::presentation::colors::responses::{
     GetColorListResponse,
     GetColorListItemResponse
 };

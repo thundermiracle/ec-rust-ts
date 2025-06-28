@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository};
 use crate::infrastructure::database::db::get_db;
-use crate::application::repositories::{ProductRepository, CategoryRepository, VariantRepository};
+use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository};
 use crate::application::{
     Dispatcher,
     BuyProductHandler,
@@ -20,6 +20,8 @@ pub struct Container {
     pub product_repository: Arc<dyn ProductRepository + Send + Sync>,
     /// CategoryRepositoryの実装
     pub category_repository: Arc<dyn CategoryRepository + Send + Sync>,
+    /// ColorRepositoryの実装
+    pub color_repository: Arc<dyn ColorRepository + Send + Sync>,
     /// VariantRepositoryの実装
     pub variant_repository: Arc<dyn VariantRepository + Send + Sync>,
     /// CQRSディスパッチャ
@@ -72,6 +74,7 @@ impl Container {
         Ok(Self {
             product_repository,
             category_repository,
+            color_repository,
             variant_repository,
             dispatcher,
         })
