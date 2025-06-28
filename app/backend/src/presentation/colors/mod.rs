@@ -1,14 +1,7 @@
 pub mod controllers;
-mod responses;
-mod presenters;
+pub mod responses;
+pub mod presenters;
+pub mod routes;
 
-pub use responses::{ColorListResponse, ColorListItemResponse};
-
-use std::sync::Arc;
-use axum::Router;
-use crate::infrastructure::Container;
-
-pub fn routes() -> Router<Arc<Container>> {
-    Router::new()
-        .merge(controllers::GetColorListController::routes())
-}
+pub use responses::{GetColorListResponse, GetColorListItemResponse};
+pub use routes::routes;

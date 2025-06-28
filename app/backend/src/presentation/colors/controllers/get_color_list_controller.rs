@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use crate::error::Result;
 use crate::infrastructure::Container;
-use crate::presentation::colors::presenters::ColorListPresenter;
-use crate::presentation::colors::responses::ColorListResponse;
+use crate::presentation::colors::presenters::GetColorListPresenter;
+use crate::presentation::colors::responses::GetColorListResponse;
 use crate::presentation::ErrorResponse;
 
 /// Colors Controller - 色一覧取得
@@ -25,14 +25,14 @@ impl GetColorListController {
     path = "/colors",
     operation_id = "get_color_list",
     responses(
-        (status = 200, description = "色一覧の取得成功", body = ColorListResponse),
+        (status = 200, description = "色一覧の取得成功", body = GetColorListResponse),
         (status = 500, description = "内部サーバーエラー", body = ErrorResponse)
     ),
     tag = "Colors"
 )]
 pub async fn handle(
     State(container): State<Arc<Container>>,
-) -> Result<Json<ColorListResponse>> {
+) -> Result<Json<GetColorListResponse>> {
     println!("->> GetColorListController::handle");
 
     let dispatcher = container.get_dispatcher();
@@ -40,5 +40,5 @@ pub async fn handle(
 
     println!("->> GetColorListController::handle - success for colors");
 
-    Ok(Json(ColorListPresenter::present(colors)))
+    Ok(Json(GetColorListPresenter::present(colors)))
 }

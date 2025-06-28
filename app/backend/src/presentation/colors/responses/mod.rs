@@ -1,3 +1,3 @@
-mod color_list_response;
+mod get_color_list_response;
 
-pub use color_list_response::{ColorListResponse, ColorListItemResponse};
+pub use get_color_list_response::{GetColorListResponse, GetColorListItemResponse};

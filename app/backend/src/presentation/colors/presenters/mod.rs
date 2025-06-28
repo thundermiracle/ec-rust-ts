@@ -1,3 +1,3 @@
-mod color_list_presenter;
+mod get_color_list_presenter;
 
-pub use color_list_presenter::ColorListPresenter;
+pub use get_color_list_presenter::GetColorListPresenter;
