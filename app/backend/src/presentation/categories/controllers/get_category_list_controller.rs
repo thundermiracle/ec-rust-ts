@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::infrastructure::Container;
 use crate::error::Result;
-use crate::presentation::categories::{CategoryListPresenter, CategoryListResponse};
+use crate::presentation::categories::{GetCategoryListPresenter, GetCategoryListResponse};
 use crate::presentation::ErrorResponse;
 
 /// Get Category List Controller - カテゴリリスト取得の単一責任
@@ -26,14 +26,14 @@ impl GetCategoryListController {
     path = "/categories",
     operation_id = "get_category_list",
     responses(
-        (status = 200, description = "カテゴリリスト取得成功", body = CategoryListResponse),
+        (status = 200, description = "カテゴリリスト取得成功", body = GetCategoryListResponse),
         (status = 500, description = "内部サーバーエラー", body = ErrorResponse)
     ),
     tag = "Categories"
 )]
 pub async fn handle(
     State(container): State<Arc<Container>>,
-) -> Result<Json<CategoryListResponse>> {
+) -> Result<Json<GetCategoryListResponse>> {
     println!("->> GetCategoryListController::handle");
     
     let dispatcher = container.get_dispatcher();
@@ -43,5 +43,5 @@ pub async fn handle(
         .await?; // ApplicationErrorからErrorへの自動変換を利用
         
     println!("->> GetCategoryListController::handle - success for category list");
-    Ok(Json(CategoryListPresenter::present(category_list)))
-}
+    Ok(Json(GetCategoryListPresenter::present(category_list)))
+} 

@@ -1,3 +1,3 @@
-mod category_list_presenter;
+mod get_category_list_presenter;
 
-pub use category_list_presenter::CategoryListPresenter; 
+pub use get_category_list_presenter::GetCategoryListPresenter; 

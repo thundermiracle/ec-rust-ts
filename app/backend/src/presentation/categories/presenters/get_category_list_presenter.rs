@@ -1,32 +1,32 @@
 use crate::application::dto::{CategoryListDTO, CategoryDTO};
-use crate::presentation::categories::responses::{CategoryListResponse, CategoryResponse};
+use crate::presentation::categories::responses::{GetCategoryListResponse, CategoryResponse};
 
 /// カテゴリリストプレゼンター
 /// Clean Architecture: Interface Adapters層
 /// アプリケーション層のDTOをHTTPレスポンス用DTOに変換する
-pub struct CategoryListPresenter;
+pub struct GetCategoryListPresenter;
 
-impl CategoryListPresenter {
-    /// CategoryListDTOをCategoryListResponseに変換
+impl GetCategoryListPresenter {
+    /// CategoryListDTOをGetCategoryListResponseに変換
     ///
     /// # Arguments
     /// * `dto` - アプリケーション層から取得したCategoryListDTO
     ///
     /// # Returns
-    /// HTTPレスポンス用のCategoryListResponse
+    /// HTTPレスポンス用のGetCategoryListResponse
     ///
     /// # Example
     /// ```rust
-    /// let response = CategoryListPresenter::present(category_list_dto);
+    /// let response = GetCategoryListPresenter::present(category_list_dto);
     /// ```
-    pub fn present(dto: CategoryListDTO) -> CategoryListResponse {
+    pub fn present(dto: CategoryListDTO) -> GetCategoryListResponse {
         let categories = dto
             .categories
             .into_iter()
             .map(Self::present_category_item)
             .collect();
 
-        CategoryListResponse::new(categories)
+        GetCategoryListResponse::new(categories)
     }
 
     /// CategoryDTOをCategoryResponseに変換
@@ -52,7 +52,7 @@ mod tests {
     use super::*;
     use crate::application::dto::{CategoryListDTO, CategoryDTO};
 
-    /// CategoryListPresenterのテスト
+    /// GetCategoryListPresenterのテスト
     #[test]
     fn test_present_category_list() {
         // Given: CategoryListDTOの作成
@@ -74,8 +74,8 @@ mod tests {
         ];
         let category_list_dto = CategoryListDTO::new(categories);
 
-        // When: CategoryListPresenterで変換
-        let response = CategoryListPresenter::present(category_list_dto);
+        // When: GetCategoryListPresenterで変換
+        let response = GetCategoryListPresenter::present(category_list_dto);
 
         // Then: 正しく変換されている
         assert_eq!(response.categories.len(), 2);
@@ -113,8 +113,8 @@ mod tests {
         ];
         let category_list_dto = CategoryListDTO::new(categories);
 
-        // When: CategoryListPresenterで変換
-        let response = CategoryListPresenter::present(category_list_dto);
+        // When: GetCategoryListPresenterで変換
+        let response = GetCategoryListPresenter::present(category_list_dto);
 
         // Then: 階層構造が正しく変換されている
         assert_eq!(response.categories.len(), 2);

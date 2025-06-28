@@ -7,7 +7,7 @@ use crate::presentation::products::responses::{
     VariantResponse
 };
 use crate::presentation::categories::responses::{
-    CategoryListResponse,
+    GetCategoryListResponse,
     CategoryResponse
 };
 use crate::presentation::colors::{
@@ -28,7 +28,7 @@ use crate::presentation::ErrorResponse;
     paths(
         crate::presentation::products::controllers::get_product_controller::handle,
         crate::presentation::products::controllers::get_product_list_controller::handle,
-        crate::presentation::categories::controllers::get_categorie_list_controller::handle,
+        crate::presentation::categories::controllers::get_category_list_controller::handle,
         crate::presentation::colors::controllers::get_color_list_controller::handle,
         crate::presentation::variants::controllers::find_variants_controller::handle,
     ),
@@ -38,7 +38,7 @@ use crate::presentation::ErrorResponse;
             GetProductListResponse,
             GetProductListItemResponse,
             VariantResponse,
-            CategoryListResponse,
+            GetCategoryListResponse,
             CategoryResponse,
             GetColorListResponse,
             GetColorListItemResponse,

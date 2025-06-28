@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 /// TypeScriptのCategory型と整合性を取った構造
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CategoryListResponse {
+pub struct GetCategoryListResponse {
     /// カテゴリ一覧
     pub categories: Vec<CategoryResponse>,
 }
@@ -30,7 +30,7 @@ pub struct CategoryResponse {
     pub display_order: u32,
 }
 
-impl CategoryListResponse {
+impl GetCategoryListResponse {
     pub fn new(categories: Vec<CategoryResponse>) -> Self {
         Self { categories }
     }
@@ -86,13 +86,13 @@ mod tests {
     }
 
     #[test]
-    fn test_category_list_response_creation() {
+    fn test_get_category_list_response_creation() {
         let categories = vec![
             CategoryResponse::new("desks".to_string(), "Desks".to_string(), "desks".to_string(), None, 1),
             CategoryResponse::new("tables".to_string(), "Tables".to_string(), "tables".to_string(), None, 2),
         ];
 
-        let category_list = CategoryListResponse::new(categories);
+        let category_list = GetCategoryListResponse::new(categories);
         assert_eq!(category_list.categories.len(), 2);
     }
 } 
