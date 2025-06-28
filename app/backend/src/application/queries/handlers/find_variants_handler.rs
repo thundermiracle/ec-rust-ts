@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use crate::application::queries::models::FindVariantsQuery;
 use crate::application::repositories::VariantRepository;
-use crate::application::dto::VariantInfoDTO;
+use crate::application::dto::VariantSummaryDTO;
 use crate::application::error::ApplicationError;
 
 pub struct FindVariantsHandler {
@@ -13,7 +13,7 @@ impl FindVariantsHandler {
         Self { repository }
     }
 
-    pub async fn handle(&self, query: FindVariantsQuery) -> Result<Vec<VariantInfoDTO>, ApplicationError> {
+    pub async fn handle(&self, query: FindVariantsQuery) -> Result<Vec<VariantSummaryDTO>, ApplicationError> {
         if query.sku_ids.is_empty() {
             return Ok(Vec::new());
         }

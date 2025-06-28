@@ -1,11 +1,11 @@
-use crate::application::dto::VariantInfoDTO;
-use crate::presentation::variants::responses::{VariantResponse, VariantsResponse};
+use crate::application::dto::VariantSummaryDTO;
+use crate::presentation::variants::responses::{VariantListItemResponse, VariantListResponse};
 
 pub struct VariantsPresenter;
 
 impl VariantsPresenter {
-    fn present_single(dto: VariantInfoDTO) -> VariantResponse {
-        VariantResponse {
+    fn present_single(dto: VariantSummaryDTO) -> VariantListItemResponse {
+        VariantListItemResponse {
             sku_id: dto.sku_id.value().to_string(),
             price: dto.price,
             sale_price: dto.sale_price,
@@ -15,11 +15,11 @@ impl VariantsPresenter {
         }
     }
 
-    pub fn present(dtos: Vec<VariantInfoDTO>) -> VariantsResponse {
+    pub fn present(dtos: Vec<VariantSummaryDTO>) -> VariantListResponse {
         let variants = dtos.into_iter()
             .map(Self::present_single)
             .collect();
 
-        VariantsResponse { variants }
+        VariantListResponse { variants }
     }
 } 

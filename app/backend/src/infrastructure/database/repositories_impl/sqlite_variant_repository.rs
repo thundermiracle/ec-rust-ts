@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 use crate::application::repositories::VariantRepository;
-use crate::application::dto::VariantInfoDTO;
+use crate::application::dto::VariantSummaryDTO;
 use crate::application::error::{ApplicationError, RepositoryError};
 use crate::domain::models::SKUId;
 
@@ -19,7 +19,7 @@ impl SqliteVariantRepository {
 
 #[async_trait]
 impl VariantRepository for SqliteVariantRepository {
-    async fn find_by_ids(&self, ids: Vec<SKUId>) -> Result<Vec<VariantInfoDTO>, ApplicationError> {
+    async fn find_by_ids(&self, ids: Vec<SKUId>) -> Result<Vec<VariantSummaryDTO>, ApplicationError> {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -63,7 +63,7 @@ impl VariantRepository for SqliteVariantRepository {
             let uuid = Uuid::parse_str(&id_str)
                 .map_err(|e| ApplicationError::Repository(RepositoryError::DatabaseError(format!("Invalid UUID: {}", e))))?;
             
-            let variant = VariantInfoDTO::new(
+            let variant = VariantSummaryDTO::new(
                 SKUId::from_uuid(uuid),
                 row.get("base_price"),
                 row.get("sale_price"),

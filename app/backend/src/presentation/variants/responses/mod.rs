@@ -1,3 +1,3 @@
-mod variants_response;
+mod variant_list_response;
 
-pub use variants_response::*; 
+pub use variant_list_response::*; 

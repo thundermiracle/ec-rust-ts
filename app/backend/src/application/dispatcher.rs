@@ -5,7 +5,7 @@ use crate::application::queries::handlers::{GetProductHandler, GetProductListHan
 use crate::application::commands::models::BuyProductCommand;
 use crate::application::queries::models::GetProductQuery;
 use crate::application::error::ApplicationError;
-use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantInfoDTO};
+use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO};
 use crate::application::queries::{FindVariantsHandler, FindVariantsQuery};
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
@@ -69,7 +69,7 @@ impl Dispatcher {
     }
 
     /// バリアントリスト取得クエリを実行
-    pub async fn execute_find_variants_query(&self, query: FindVariantsQuery) -> Result<Vec<VariantInfoDTO>, ApplicationError> {
+    pub async fn execute_find_variants_query(&self, query: FindVariantsQuery) -> Result<Vec<VariantSummaryDTO>, ApplicationError> {
         self.find_variants_handler.handle(query).await
     }
 } 

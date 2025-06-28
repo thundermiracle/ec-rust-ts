@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use crate::domain::models::SKUId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VariantInfoDTO {
+pub struct VariantSummaryDTO {
     pub sku_id: SKUId,
     pub price: i32,
     pub sale_price: Option<i32>,
@@ -11,7 +11,7 @@ pub struct VariantInfoDTO {
     pub dimensions: Option<String>,
 }
 
-impl VariantInfoDTO {
+impl VariantSummaryDTO {
     pub fn new(
         sku_id: SKUId,
         price: i32,

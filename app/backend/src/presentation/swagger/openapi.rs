@@ -15,7 +15,8 @@ use crate::presentation::colors::{
     ColorListItemResponse
 };
 use crate::presentation::variants::responses::{
-    VariantsResponse
+    VariantListResponse,
+    VariantListItemResponse
 };
 use crate::presentation::ErrorResponse;
 
@@ -40,7 +41,8 @@ use crate::presentation::ErrorResponse;
             CategoryResponse,
             ColorListResponse,
             ColorListItemResponse,
-            VariantsResponse,
+            VariantListResponse,
+            VariantListItemResponse,
             ErrorResponse
         )
     ),

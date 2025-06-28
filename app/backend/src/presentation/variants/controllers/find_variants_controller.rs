@@ -6,7 +6,7 @@ use crate::infrastructure::Container;
 use crate::error::Result;
 use crate::presentation::variants::requests::FindVariantsRequest;
 use crate::presentation::variants::presenters::VariantsPresenter;
-use crate::presentation::variants::responses::VariantsResponse;
+use crate::presentation::variants::responses::VariantListResponse;
 use crate::presentation::ErrorResponse;
 
 /// Get Variants Controller - バリアント詳細取得の単一責任
@@ -29,7 +29,7 @@ impl FindVariantsController {
     operation_id = "find_variants",
     request_body = FindVariantsRequest,
     responses(
-        (status = 200, description = "バリアント詳細の取得成功", body = VariantsResponse),
+        (status = 200, description = "バリアント詳細の取得成功", body = VariantListResponse),
         (status = 400, description = "リクエストが無効です", body = ErrorResponse),
         (status = 500, description = "内部サーバーエラー", body = ErrorResponse)
     ),
@@ -38,7 +38,7 @@ impl FindVariantsController {
 pub async fn handle(
     State(container): State<Arc<Container>>,
     Json(request): Json<FindVariantsRequest>,
-) -> Result<Json<VariantsResponse>> {
+) -> Result<Json<VariantListResponse>> {
     println!("->> FindVariantsController::handle - sku_ids: {:?}", request.sku_ids);
 
     // リクエストからクエリを作成
