@@ -15,9 +15,10 @@ use crate::presentation::colors::{
     ColorListItemResponse
 };
 use crate::presentation::variants::responses::{
-    VariantListResponse,
-    VariantListItemResponse
+    FindVariantsResponse,
+    FindVariantsItemResponse
 };
+use crate::presentation::variants::requests::FindVariantsRequest;
 use crate::presentation::ErrorResponse;
 
 /// OpenAPI仕様書の定義
@@ -41,15 +42,17 @@ use crate::presentation::ErrorResponse;
             CategoryResponse,
             ColorListResponse,
             ColorListItemResponse,
-            VariantListResponse,
-            VariantListItemResponse,
+            FindVariantsResponse,
+            FindVariantsItemResponse,
+            FindVariantsRequest,
             ErrorResponse
         )
     ),
     tags(
         (name = "Products", description = "商品関連のAPI"),
         (name = "Categories", description = "カテゴリ関連のAPI"),
-        (name = "Colors", description = "色関連のAPI")
+        (name = "Colors", description = "色関連のAPI"),
+        (name = "Variants", description = "バリアント関連のAPI")
     ),
     info(
         title = "ECサイト API",

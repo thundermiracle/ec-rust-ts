@@ -1,3 +1,3 @@
-mod variant_list_response;
+mod find_variants_response;
 
-pub use variant_list_response::{VariantListResponse, VariantListItemResponse}; 
+pub use find_variants_response::{FindVariantsResponse, FindVariantsItemResponse}; 

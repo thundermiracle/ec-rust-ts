@@ -2,7 +2,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct VariantListItemResponse {
+pub struct FindVariantsItemResponse {
     #[serde(rename = "skuId")]
     pub sku_id: String,
     pub price: i32,
@@ -18,6 +18,6 @@ pub struct VariantListItemResponse {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct VariantListResponse {
-    pub variants: Vec<VariantListItemResponse>,
-}
+pub struct FindVariantsResponse {
+    pub variants: Vec<FindVariantsItemResponse>,
+} 

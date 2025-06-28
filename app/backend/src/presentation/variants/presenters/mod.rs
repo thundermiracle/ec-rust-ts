@@ -1,3 +1,3 @@
-mod variants_presenter;
+mod find_variants_presenter;
 
-pub use variants_presenter::VariantsPresenter;
+pub use find_variants_presenter::FindVariantsPresenter;

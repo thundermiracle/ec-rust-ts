@@ -5,8 +5,8 @@ use std::sync::Arc;
 use crate::infrastructure::Container;
 use crate::error::Result;
 use crate::presentation::variants::requests::FindVariantsRequest;
-use crate::presentation::variants::presenters::VariantsPresenter;
-use crate::presentation::variants::responses::VariantListResponse;
+use crate::presentation::variants::presenters::FindVariantsPresenter;
+use crate::presentation::variants::responses::FindVariantsResponse;
 use crate::presentation::ErrorResponse;
 
 /// Get Variants Controller - バリアント詳細取得の単一責任
@@ -29,7 +29,7 @@ impl FindVariantsController {
     operation_id = "find_variants",
     request_body = FindVariantsRequest,
     responses(
-        (status = 200, description = "バリアント詳細の取得成功", body = VariantListResponse),
+        (status = 200, description = "バリアント詳細の取得成功", body = FindVariantsResponse),
         (status = 400, description = "リクエストが無効です", body = ErrorResponse),
         (status = 500, description = "内部サーバーエラー", body = ErrorResponse)
     ),
@@ -38,7 +38,7 @@ impl FindVariantsController {
 pub async fn handle(
     State(container): State<Arc<Container>>,
     Json(request): Json<FindVariantsRequest>,
-) -> Result<Json<VariantListResponse>> {
+) -> Result<Json<FindVariantsResponse>> {
     println!("->> FindVariantsController::handle - sku_ids: {:?}", request.sku_ids);
 
     // リクエストからクエリを作成
@@ -52,5 +52,5 @@ pub async fn handle(
     let variants = dispatcher.execute_find_variants_query(query).await?;
         
     println!("->> FindVariantsController::handle - success for {} variants", variants.len());
-    Ok(Json(VariantsPresenter::present(variants)))
+    Ok(Json(FindVariantsPresenter::present_find_variants(variants)))
 }
