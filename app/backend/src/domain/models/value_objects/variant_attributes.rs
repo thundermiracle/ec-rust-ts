@@ -1,5 +1,4 @@
 use crate::domain::models::value_objects::*;
-use crate::domain::error::DomainError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

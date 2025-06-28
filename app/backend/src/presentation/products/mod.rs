@@ -7,7 +7,6 @@ use axum::Router;
 use std::sync::Arc;
 use crate::infrastructure::Container;
 
-pub use controllers::{GetProductController, GetProductListController};
 pub use presenters::ProductListPresenter;
 pub use responses::ProductListResponse;
 
@@ -15,6 +14,6 @@ pub use responses::ProductListResponse;
 /// Clean Architecture: 関連するControllerのルートを統合
 pub fn routes() -> Router<Arc<Container>> {
     Router::new()
-        .merge(GetProductController::routes())
-        .merge(GetProductListController::routes())
+        .merge(controllers::GetProductController::routes())
+        .merge(controllers::GetProductListController::routes())
 }

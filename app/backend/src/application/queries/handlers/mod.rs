@@ -1,8 +1,8 @@
-pub mod get_product_handler;
-pub mod get_product_list_handler;
-pub mod get_category_list_handler;
-pub mod get_color_list_handler;
-pub mod find_variants_handler;
+mod get_product_handler;
+mod get_product_list_handler;
+mod get_category_list_handler;
+mod get_color_list_handler;
+mod find_variants_handler;
 
 pub use get_product_handler::GetProductHandler;
 pub use get_product_list_handler::GetProductListHandler;

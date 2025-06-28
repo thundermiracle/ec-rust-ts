@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use crate::domain::models::SKUId;
 use crate::application::queries::models::FindVariantsQuery;
