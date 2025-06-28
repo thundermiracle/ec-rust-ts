@@ -9,4 +9,4 @@ pub use error::{ApplicationError, RepositoryError};
 pub use dto::{ProductDTO, ProductListDTO, CategoryListDTO, ColorListDTO};
 pub use dispatcher::Dispatcher;
 pub use commands::{BuyProductCommand, BuyProductHandler};
-pub use queries::{GetProductQuery, GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler};
+pub use queries::{GetProductQuery, GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler, FindVariantsHandler};

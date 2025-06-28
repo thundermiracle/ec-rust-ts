@@ -14,6 +14,9 @@ use crate::presentation::colors::{
     ColorListResponse,
     ColorListItemResponse
 };
+use crate::presentation::variants::responses::{
+    VariantsResponse
+};
 use crate::presentation::ErrorResponse;
 
 /// OpenAPI仕様書の定義
@@ -25,6 +28,7 @@ use crate::presentation::ErrorResponse;
         crate::presentation::products::controllers::get_product_list_controller::handle,
         crate::presentation::categories::controllers::get_categorie_list_controller::handle,
         crate::presentation::colors::controllers::get_color_list_controller::handle,
+        crate::presentation::variants::controllers::find_variants_controller::handle,
     ),
     components(
         schemas(
@@ -36,6 +40,7 @@ use crate::presentation::ErrorResponse;
             CategoryResponse,
             ColorListResponse,
             ColorListItemResponse,
+            VariantsResponse,
             ErrorResponse
         )
     ),

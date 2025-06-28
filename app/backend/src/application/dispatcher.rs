@@ -5,7 +5,8 @@ use crate::application::queries::handlers::{GetProductHandler, GetProductListHan
 use crate::application::commands::models::BuyProductCommand;
 use crate::application::queries::models::GetProductQuery;
 use crate::application::error::ApplicationError;
-use crate::application::dto::{ProductDTO, ProductListDTO, CategoryListDTO, ColorListDTO};
+use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantInfoDTO};
+use crate::application::queries::{FindVariantsHandler, FindVariantsQuery};
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
 /// 
@@ -20,6 +21,7 @@ pub struct Dispatcher {
     get_product_list_handler: Arc<GetProductListHandler>,
     get_category_list_handler: Arc<GetCategoryListHandler>,
     get_color_list_handler: Arc<GetColorListHandler>,
+    find_variants_handler: Arc<FindVariantsHandler>,
 }
 
 impl Dispatcher {
@@ -29,6 +31,7 @@ impl Dispatcher {
         get_product_list_handler: Arc<GetProductListHandler>,
         get_category_list_handler: Arc<GetCategoryListHandler>,
         get_color_list_handler: Arc<GetColorListHandler>,
+        find_variants_handler: Arc<FindVariantsHandler>,
     ) -> Self {
         Self {
             buy_product_handler,
@@ -36,6 +39,7 @@ impl Dispatcher {
             get_product_list_handler,
             get_category_list_handler,
             get_color_list_handler,
+            find_variants_handler,
         }
     }
 
@@ -62,5 +66,10 @@ impl Dispatcher {
     /// 色リスト取得クエリを実行
     pub async fn execute_get_color_list_query(&self) -> Result<ColorListDTO, ApplicationError> {
         self.get_color_list_handler.handle().await
+    }
+
+    /// バリアントリスト取得クエリを実行
+    pub async fn execute_find_variants_query(&self, query: FindVariantsQuery) -> Result<Vec<VariantInfoDTO>, ApplicationError> {
+        self.find_variants_handler.handle(query).await
     }
 } 
