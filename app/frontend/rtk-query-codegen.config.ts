@@ -13,6 +13,9 @@ const config: ConfigFile = {
     "./src/store/generatedApi/colorsApi.ts": {
       filterEndpoints: [/color/i],
     },
+    "./src/store/generatedApi/variantsApi.ts": {
+      filterEndpoints: [/variant/i],
+    },
   },
   hooks: true,
   tag: true,

@@ -1,4 +1,5 @@
-import { ProductListItemResponse, VariantResponse } from '@/store/generatedApi/productsApi';
+import { GetProductListItemResponse, VariantResponse } from '@/store/generatedApi/productsApi';
+import { FindVariantsItemResponse } from '@/store/generatedApi/variantsApi';
 import { StoredCartItem } from '@/store/cartSlice';
 
 // UI表示用のカートアイテム
@@ -19,7 +20,7 @@ export interface CartItem {
 // 商品データとカートアイテムを結合してUI表示用のデータを作成
 export const enhanceCartItems = (
   cartItems: StoredCartItem[], 
-  products: ProductListItemResponse[]
+  products: GetProductListItemResponse[]
 ): CartItem[] => {
   return cartItems.map((cartItem) => {
     const product = products.find(p => p.id === cartItem.productId);
@@ -85,6 +86,52 @@ export const enhanceCartItemsWithVariants = (
       material: variant.material,
       dimensions: variant.dimensions,
       isAvailable: !variant.isSoldOut,
+    };
+  });
+};
+
+// バリアントAPIレスポンスを使用してカートアイテムを強化
+export const enhanceCartItemsWithVariantAPI = (
+  cartItems: StoredCartItem[],
+  products: GetProductListItemResponse[],
+  variantDetails: FindVariantsItemResponse[]
+): CartItem[] => {
+  return cartItems.map((cartItem) => {
+    const product = products.find(p => p.id === cartItem.productId);
+    
+    if (!product) {
+      // 商品が見つからない場合（削除された商品）
+      return {
+        ...cartItem,
+        isAvailable: false,
+        name: 'Product not found',
+        price: 0,
+      };
+    }
+
+    // バリアント詳細を検索
+    const variantDetail = variantDetails.find(v => v.skuId === cartItem.skuId);
+    
+    if (!variantDetail) {
+      // バリアントが見つからない場合（削除されたバリアント）
+      return {
+        ...cartItem,
+        name: product.name,
+        image: product.image,
+        isAvailable: false,
+        price: 0,
+      };
+    }
+
+    return {
+      ...cartItem,
+      name: product.name,
+      price: variantDetail.price,
+      salePrice: variantDetail.salePrice,
+      image: variantDetail.image || product.image,
+      material: variantDetail.material,
+      dimensions: variantDetail.dimensions,
+      isAvailable: true, // バリアントが見つかった場合は利用可能
     };
   });
 };

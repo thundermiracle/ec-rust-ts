@@ -22,15 +22,15 @@ const injectedRtkApi = api
   });
 export { injectedRtkApi as enhancedApi };
 export type GetProductListApiResponse =
-  /** status 200 商品リスト取得成功 */ ProductListResponse;
+  /** status 200 商品リスト取得成功 */ GetProductListResponse;
 export type GetProductListApiArg = void;
 export type GetProductApiResponse =
-  /** status 200 商品詳細の取得成功 */ ProductResponse;
+  /** status 200 商品詳細の取得成功 */ GetProductResponse;
 export type GetProductApiArg = {
   /** 商品ID */
   id: string;
 };
-export type ProductListItemResponse = {
+export type GetProductListItemResponse = {
   /** カテゴリー名 */
   category: string;
   /** 利用可能な色一覧 */
@@ -54,7 +54,7 @@ export type ProductListItemResponse = {
   /** セール価格（円） */
   salePrice?: number;
 };
-export type ProductListResponse = {
+export type GetProductListResponse = {
   /** 次のページがあるかどうか */
   hasNextPage: boolean;
   /** 前のページがあるかどうか */
@@ -64,7 +64,7 @@ export type ProductListResponse = {
   /** 1ページあたりの件数 */
   perPage: number;
   /** 商品一覧 */
-  products: ProductListItemResponse[];
+  products: GetProductListItemResponse[];
   /** 総件数 */
   totalCount: number;
 };
@@ -102,7 +102,7 @@ export type VariantResponse = {
   /** SKU商品コード */
   skuCode: string;
 };
-export type ProductResponse = {
+export type GetProductResponse = {
   /** カテゴリー名 */
   category: string;
   /** 商品説明 */

@@ -18,7 +18,7 @@ const injectedRtkApi = api
   });
 export { injectedRtkApi as enhancedApi };
 export type GetCategoryListApiResponse =
-  /** status 200 カテゴリリスト取得成功 */ CategoryListResponse;
+  /** status 200 カテゴリリスト取得成功 */ GetCategoryListResponse;
 export type GetCategoryListApiArg = void;
 export type CategoryResponse = {
   /** 表示順序 */
@@ -32,7 +32,7 @@ export type CategoryResponse = {
   /** カテゴリスラッグ */
   slug: string;
 };
-export type CategoryListResponse = {
+export type GetCategoryListResponse = {
   /** カテゴリ一覧 */
   categories: CategoryResponse[];
 };

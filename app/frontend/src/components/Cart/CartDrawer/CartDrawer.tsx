@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,8 +14,9 @@ import {
   removeFromCart
 } from '@/store/cartSlice';
 import { useGetProductListQuery } from '@/store/generatedApi/productsApi';
+import { useFindVariantsMutation } from '@/store/generatedApi/variantsApi';
 import Image from 'next/image';
-import { enhanceCartItems, calculateCartTotal } from './helper';
+import { enhanceCartItemsWithVariantAPI, calculateCartTotal } from './helper';
 
 export const CartDrawer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -25,12 +26,35 @@ export const CartDrawer: React.FC = () => {
   // 商品リストを取得（カートにある商品の基本情報を取得）
   const { data: productListData, isLoading: isProductListLoading } = useGetProductListQuery();
 
-  // 商品データとカートアイテムを結合
-  const enhancedCartItems = useMemo(() => {
-    if (!productListData?.products) return [];
+  // バリアント詳細を取得するためのmutation
+  const [findVariants, { data: variantsData, isLoading: isVariantsLoading }] = useFindVariantsMutation();
 
-    return enhanceCartItems(cartItems, productListData.products);
-  }, [cartItems, productListData]);
+  // SKU IDsをソートした文字列として管理（変更検知用）
+  const skuIdsKey = useMemo(() => {
+    const uniqueIds = [...new Set(cartItems.map(item => item.skuId))].sort();
+    return uniqueIds.join(',');
+  }, [cartItems]);
+
+  // SKU IDsのキーが変更された時のみバリアント詳細を取得
+  useEffect(() => {
+    if (isOpen && skuIdsKey) {
+      const skuIds = skuIdsKey.split(',').filter(Boolean);
+      if (skuIds.length > 0) {
+        findVariants({ findVariantsRequest: { skuIds } });
+      }
+    }
+  }, [isOpen, skuIdsKey, findVariants]);
+
+  // 商品データとバリアントデータを結合
+  const enhancedCartItems = useMemo(() => {
+    if (!productListData?.products || !variantsData?.variants) return [];
+
+    return enhanceCartItemsWithVariantAPI(
+      cartItems, 
+      productListData.products, 
+      variantsData.variants
+    );
+  }, [cartItems, productListData, variantsData]);
 
   // 合計金額を計算
   const total = useMemo(() => calculateCartTotal(enhancedCartItems), [enhancedCartItems]);
@@ -46,6 +70,8 @@ export const CartDrawer: React.FC = () => {
   const handleRemoveItem = (productId: string, skuId: string) => {
     dispatch(removeFromCart({ productId, skuId }));
   };
+
+  const isLoading = isProductListLoading || isVariantsLoading;
 
   return (
     <Drawer open={isOpen} onOpenChange={handleClose} side="right">
@@ -63,7 +89,7 @@ export const CartDrawer: React.FC = () => {
                 Continue Shopping
               </Button>
             </div>
-          ) : isProductListLoading ? (
+          ) : isLoading ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
               <p className="text-muted-foreground mb-4">Loading cart items...</p>
             </div>
@@ -83,8 +109,14 @@ export const CartDrawer: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm truncate">
                       {item.isAvailable ? item.name : `${item.name} (Unavailable)`}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">SKU: {item.skuId}</p>
+                    </h3>                    
+                    {/* バリアント詳細情報を表示 */}
+                    {item.material && (
+                      <p className="text-xs text-muted-foreground">Material: {item.material}</p>
+                    )}
+                    {item.dimensions && (
+                      <p className="text-xs text-muted-foreground">Dimensions: {item.dimensions}</p>
+                    )}
                     
                     {!item.isAvailable && (
                       <p className="text-xs text-red-500 mt-1">This item is no longer available</p>
@@ -143,7 +175,7 @@ export const CartDrawer: React.FC = () => {
           )}
         </div>
 
-        {cartItems.length > 0 && !isProductListLoading && (
+        {cartItems.length > 0 && !isLoading && (
           <>
             <Separator />
             <div className="p-4 space-y-4">

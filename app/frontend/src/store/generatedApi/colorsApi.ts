@@ -15,15 +15,15 @@ const injectedRtkApi = api
   });
 export { injectedRtkApi as enhancedApi };
 export type GetColorListApiResponse =
-  /** status 200 色一覧の取得成功 */ ColorListResponse;
+  /** status 200 色一覧の取得成功 */ GetColorListResponse;
 export type GetColorListApiArg = void;
-export type ColorListItemResponse = {
+export type GetColorListItemResponse = {
   hex: string;
   id: number;
   name: string;
 };
-export type ColorListResponse = {
-  colors: ColorListItemResponse[];
+export type GetColorListResponse = {
+  colors: GetColorListItemResponse[];
 };
 export type ErrorResponse = {
   /** エラーコード */
