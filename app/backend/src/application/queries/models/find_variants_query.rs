@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::domain::models::SKUId;
+use crate::domain::SKUId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FindVariantsQuery {

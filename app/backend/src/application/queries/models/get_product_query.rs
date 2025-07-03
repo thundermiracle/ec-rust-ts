@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::domain::models::ProductId;
+use crate::domain::ProductId;
 
 
 /// 商品クエリ結果 - API応答に最適化されたDTO

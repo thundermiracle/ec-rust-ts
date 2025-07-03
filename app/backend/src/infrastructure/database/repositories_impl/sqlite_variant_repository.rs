@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::application::repositories::VariantRepository;
 use crate::application::dto::VariantSummaryDTO;
 use crate::application::error::{ApplicationError, RepositoryError};
-use crate::domain::models::SKUId;
+use crate::domain::SKUId;
 
 pub struct SqliteVariantRepository {
     pool: SqlitePool,

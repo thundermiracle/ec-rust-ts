@@ -4,7 +4,7 @@ use sqlx::{Row, SqlitePool};
 use crate::application::error::RepositoryError;
 use crate::application::repositories::ProductRepository;
 use crate::application::dto::{ProductListDTO, ProductSummaryDTO, ProductDTO, VariantDTO};
-use crate::domain::models::ProductId;
+use crate::domain::ProductId;
 
 /// SQLite実装のProductRepository
 /// Clean Architecture: Frameworks & Drivers層

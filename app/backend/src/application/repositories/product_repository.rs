@@ -1,6 +1,6 @@
 use crate::application::error::RepositoryError;
 use crate::application::dto::{ProductListDTO, ProductDTO};
-use crate::domain::models::ProductId;
+use crate::domain::ProductId;
 
 #[async_trait::async_trait]
 pub trait ProductRepository {

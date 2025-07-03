@@ -1,4 +1,4 @@
-use crate::domain::models::value_objects::*;
+use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
 use chrono::{DateTime, Utc};
 

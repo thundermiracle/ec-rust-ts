@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use crate::domain::models::SKUId;
+use crate::domain::SKUId;
 use crate::application::dto::VariantSummaryDTO;
 use crate::application::error::ApplicationError;
 
