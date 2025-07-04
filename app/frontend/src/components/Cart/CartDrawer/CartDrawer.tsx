@@ -189,6 +189,12 @@ export const CartDrawer: React.FC = () => {
                   className="w-full cursor-pointer" 
                   size="lg"
                   disabled={enhancedCartItems.some(item => !item.isAvailable)}
+                  onClick={() => {
+                    if (!enhancedCartItems.some(item => !item.isAvailable)) {
+                      handleClose();
+                      window.location.href = '/checkout';
+                    }
+                  }}
                 >
                   Checkout
                 </Button>
