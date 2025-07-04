@@ -4,7 +4,6 @@ use sqlx::SqlitePool;
 // 統合テストでは直接モジュールを参照
 use ec_rust_backend::infrastructure::database::repositories_impl::SqliteProductRepository;
 use ec_rust_backend::application::repositories::ProductRepository;
-use ec_rust_backend::domain::models::ProductId;
 use ec_rust_backend::infrastructure::di::Container;
 
 /// プール注入型リポジトリのテスト

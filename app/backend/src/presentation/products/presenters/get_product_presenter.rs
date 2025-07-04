@@ -105,6 +105,7 @@ mod tests {
             1790,
             Some(1590),
             10,
+            0,
             1,
             Some("variant1.jpg".to_string()),
         );
@@ -118,6 +119,7 @@ mod tests {
             "48x24x30".to_string(),
             2290,
             None,
+            0,
             0,
             2,
             None,
@@ -188,6 +190,7 @@ mod tests {
             2000,
             Some(1800),
             5,
+            0,
             1,
             Some("test.jpg".to_string()),
         );
@@ -223,6 +226,7 @@ mod tests {
             "60x30x30".to_string(),
             3000,
             None,
+            0,
             0,
             3,
             None,

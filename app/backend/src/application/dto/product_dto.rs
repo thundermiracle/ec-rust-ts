@@ -25,6 +25,7 @@ pub struct VariantDTO {
     pub price: u32,
     pub sale_price: Option<u32>,
     pub stock_quantity: u32,
+    pub reserved_quantity: u32,
     pub display_order: u32,
     pub image: Option<String>,
     pub is_on_sale: bool,
@@ -84,6 +85,7 @@ impl VariantDTO {
         price: u32,
         sale_price: Option<u32>,
         stock_quantity: u32,
+        reserved_quantity: u32,
         display_order: u32,
         image: Option<String>,
     ) -> Self {
@@ -100,6 +102,7 @@ impl VariantDTO {
             price,
             sale_price,
             stock_quantity,
+            reserved_quantity,
             display_order,
             image,
             is_on_sale,
@@ -177,6 +180,7 @@ mod tests {
             Some(1500),
             10,
             1,
+            0,
             Some("image.jpg".to_string()),
         );
 
@@ -202,6 +206,7 @@ mod tests {
             Some(800),
             5,
             1,
+            0,
             None,
         );
 

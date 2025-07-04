@@ -4,11 +4,11 @@ use sqlx::{Row, SqlitePool};
 use crate::application::error::RepositoryError;
 use crate::application::repositories::ProductRepository;
 use crate::application::dto::{ProductListDTO, ProductSummaryDTO, ProductDTO, VariantDTO};
-use crate::domain::ProductId;
+use crate::domain::{ProductId, SKUId};
 
 /// SQLite実装のProductRepository
 /// Clean Architecture: Frameworks & Drivers層
-/// CQRS Query側専用：ProductDTOを直接構築してパフォーマンス重視
+/// ドメインエンティティを構築し、DTOの構築はアプリケーション層で行う
 pub struct SqliteProductRepository {
     pool: SqlitePool,
 }
@@ -137,13 +137,6 @@ impl ProductRepository for SqliteProductRepository {
             let sku_material: Option<String> = sku_row.try_get("material")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
-            // 在庫確認
-            let available_stock = (stock_quantity - reserved_quantity).max(0) as u32;
-
-            // 価格計算（JPYは最小単位で保存されているため100で割る）
-            let variant_price = base_price as u32;
-            let variant_sale_price = sku_sale_price.map(|p| p  as u32);
-
             // バリアント作成 - VariantDTOの構造体フィールドに直接設定
             variants.push(VariantDTO::new(
                 sku_id,
@@ -152,9 +145,10 @@ impl ProductRepository for SqliteProductRepository {
                 color_name,
                 sku_material.unwrap_or_default(),
                 sku_dimensions.unwrap_or_default(),
-                variant_price,
-                variant_sale_price,
-                available_stock,
+                base_price as u32,
+                sku_sale_price.map(|p| p  as u32),
+                stock_quantity as u32,
+                reserved_quantity as u32,
                 display_order as u32,
                 sku_image_url,
             ));
@@ -346,5 +340,100 @@ impl ProductRepository for SqliteProductRepository {
         };
 
         Ok(product_list)
+    }
+
+    async fn find_variants_by_ids(&self, sku_ids: &[SKUId]) -> Result<Vec<VariantDTO>, RepositoryError> {
+        if sku_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // UUIDを文字列に変換
+        let sku_id_strings: Vec<String> = sku_ids
+            .iter()
+            .map(|id| id.value().to_string())
+            .collect();
+
+        // プレースホルダーを動的に生成
+        let placeholders = sku_id_strings.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        
+        let query = format!(
+            r#"
+            SELECT 
+                s.id,
+                s.sku_code,
+                s.name,
+                s.dimensions,
+                s.material,
+                s.base_price,
+                s.sale_price,
+                s.stock_quantity,
+                s.reserved_quantity,
+                s.display_order,
+                s.image_url,
+                c.name as color_name
+            FROM skus s
+            JOIN colors c ON c.id = s.color_id
+            WHERE s.id IN ({})
+            ORDER BY s.display_order ASC, s.sku_code ASC
+            "#,
+            placeholders
+        );
+
+        let mut query_builder = sqlx::query(&query);
+        for sku_id_str in &sku_id_strings {
+            query_builder = query_builder.bind(sku_id_str);
+        }
+
+        let sku_rows = query_builder
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
+        let mut variants = Vec::new();
+
+        for sku_row in sku_rows {
+            let sku_id: String = sku_row.try_get("id")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_code: String = sku_row.try_get("sku_code")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_name: String = sku_row.try_get("name")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let base_price: i64 = sku_row.try_get("base_price")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_sale_price: Option<i64> = sku_row.try_get("sale_price")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let stock_quantity: i64 = sku_row.try_get("stock_quantity")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let reserved_quantity: i64 = sku_row.try_get("reserved_quantity")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let display_order: i64 = sku_row.try_get("display_order")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_image_url: Option<String> = sku_row.try_get("image_url")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let color_name: String = sku_row.try_get("color_name")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_dimensions: Option<String> = sku_row.try_get("dimensions")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let sku_material: Option<String> = sku_row.try_get("material")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+
+            // バリアント作成
+            variants.push(VariantDTO::new(
+                sku_id,
+                sku_code,
+                sku_name,
+                color_name,
+                sku_material.unwrap_or_default(),
+                sku_dimensions.unwrap_or_default(),
+                base_price as u32,
+                sku_sale_price.map(|p| p as u32),
+                stock_quantity as u32,
+                reserved_quantity as u32,
+                display_order as u32,
+                sku_image_url,
+            ));
+        }
+
+        Ok(variants)
     }
 }

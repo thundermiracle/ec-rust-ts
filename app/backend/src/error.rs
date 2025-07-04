@@ -63,6 +63,8 @@ impl From<ApplicationError> for Error {
                 }
             },
             ApplicationError::Validation(_) => Error::BuyProductFailed,
+            ApplicationError::InvalidInput(_) => Error::BuyProductFailed,
+            ApplicationError::NotFound(_) => Error::NotFound,
         }
     }
 }

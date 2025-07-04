@@ -19,6 +19,8 @@ use crate::presentation::variants::responses::{
     FindVariantsItemResponse
 };
 use crate::presentation::variants::requests::FindVariantsRequest;
+use crate::presentation::cart::requests::{CalculateCartRequest, CalculateCartItemRequest};
+use crate::presentation::cart::responses::{CalculateCartResponse, CalculateCartItemResponse};
 use crate::presentation::ErrorResponse;
 
 /// OpenAPI仕様書の定義
@@ -31,6 +33,7 @@ use crate::presentation::ErrorResponse;
         crate::presentation::categories::controllers::get_category_list_controller::handle,
         crate::presentation::colors::controllers::get_color_list_controller::handle,
         crate::presentation::variants::controllers::find_variants_controller::handle,
+        crate::presentation::cart::controllers::calculate_cart_controller::handle,
     ),
     components(
         schemas(
@@ -45,6 +48,10 @@ use crate::presentation::ErrorResponse;
             FindVariantsResponse,
             FindVariantsItemResponse,
             FindVariantsRequest,
+            CalculateCartRequest,
+            CalculateCartItemRequest,
+            CalculateCartResponse,
+            CalculateCartItemResponse,
             ErrorResponse
         )
     ),

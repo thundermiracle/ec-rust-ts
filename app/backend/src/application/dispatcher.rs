@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
-use crate::application::commands::handlers::BuyProductHandler;
+use crate::application::commands::handlers::{BuyProductHandler, CalculateCartHandler};
 use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler};
-use crate::application::commands::models::BuyProductCommand;
+use crate::application::commands::models::{BuyProductCommand, CalculateCartCommand};
 use crate::application::queries::models::GetProductQuery;
 use crate::application::error::ApplicationError;
 use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO};
 use crate::application::queries::{FindVariantsHandler, FindVariantsQuery};
+use crate::infrastructure::database::repositories_impl::SqliteProductRepository;
+use crate::domain::Cart;
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
 /// 
@@ -15,6 +17,7 @@ use crate::application::queries::{FindVariantsHandler, FindVariantsQuery};
 pub struct Dispatcher {
     // コマンドハンドラ
     buy_product_handler: Arc<BuyProductHandler>,
+    calculate_cart_handler: Arc<CalculateCartHandler<SqliteProductRepository>>,
     
     // クエリハンドラ
     get_product_handler: Arc<GetProductHandler>,
@@ -27,6 +30,7 @@ pub struct Dispatcher {
 impl Dispatcher {
     pub fn new(
         buy_product_handler: Arc<BuyProductHandler>,
+        calculate_cart_handler: Arc<CalculateCartHandler<SqliteProductRepository>>,
         get_product_handler: Arc<GetProductHandler>,
         get_product_list_handler: Arc<GetProductListHandler>,
         get_category_list_handler: Arc<GetCategoryListHandler>,
@@ -35,6 +39,7 @@ impl Dispatcher {
     ) -> Self {
         Self {
             buy_product_handler,
+            calculate_cart_handler,
             get_product_handler,
             get_product_list_handler,
             get_category_list_handler,
@@ -46,6 +51,11 @@ impl Dispatcher {
     /// 商品購入コマンドを実行
     pub async fn execute_buy_product_command(&self, command: BuyProductCommand) -> Result<(), ApplicationError> {
         self.buy_product_handler.handle(command).await
+    }
+
+    /// カート計算コマンドを実行
+    pub async fn execute_calculate_cart_command(&self, command: CalculateCartCommand) -> Result<Cart, ApplicationError> {
+        self.calculate_cart_handler.handle(command).await
     }
 
     /// 商品取得クエリを実行

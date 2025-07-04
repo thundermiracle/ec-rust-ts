@@ -10,6 +10,10 @@ pub enum ApplicationError {
     ProductNotFound(String),
     /// バリデーションエラー
     Validation(String),
+    /// 入力値エラー
+    InvalidInput(String),
+    /// リソースが見つからない
+    NotFound(String),
 }
 
 #[derive(Debug)]
@@ -37,6 +41,8 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::Repository(err) => write!(f, "Repository error: {}", err),
             ApplicationError::ProductNotFound(id) => write!(f, "Product not found: {}", id),
             ApplicationError::Validation(msg) => write!(f, "Validation error: {}", msg),
+            ApplicationError::InvalidInput(msg) => write!(f, "Invalid input error: {}", msg),
+            ApplicationError::NotFound(msg) => write!(f, "Not found error: {}", msg),
         }
     }
 }
