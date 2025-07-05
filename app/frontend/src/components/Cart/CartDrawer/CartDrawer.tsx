@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -19,6 +20,7 @@ import Image from 'next/image';
 import { enhanceCartItemsWithVariantAPI, calculateCartTotal } from './helper';
 
 export const CartDrawer: React.FC = () => {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const isOpen = useAppSelector(selectCartIsOpen);
@@ -189,6 +191,12 @@ export const CartDrawer: React.FC = () => {
                   className="w-full cursor-pointer" 
                   size="lg"
                   disabled={enhancedCartItems.some(item => !item.isAvailable)}
+                  onClick={() => {
+                    if (!enhancedCartItems.some(item => !item.isAvailable)) {
+                      handleClose();
+                      router.push('/checkout');
+                    }
+                  }}
                 >
                   Checkout
                 </Button>

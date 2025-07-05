@@ -16,6 +16,9 @@ const config: ConfigFile = {
     "./src/store/generatedApi/variantsApi.ts": {
       filterEndpoints: [/variant/i],
     },
+    "./src/store/generatedApi/cartApi.ts": {
+      filterEndpoints: [/cart/i],
+    },
   },
   hooks: true,
   tag: true,

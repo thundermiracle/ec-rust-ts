@@ -10,11 +10,13 @@ export interface StoredCartItem {
 export interface CartState {
   items: StoredCartItem[];
   isOpen: boolean;
+  initialized: boolean;
 }
 
 const initialState: CartState = {
   items: [],
   isOpen: false,
+  initialized: false,
 };
 
 // LocalStorage utility functions
@@ -48,6 +50,7 @@ const cartSlice = createSlice({
   reducers: {
     initializeCart: (state) => {
       state.items = loadCartFromStorage();
+      state.initialized = true;
     },
     
     addToCart: (state, action: PayloadAction<{ productId: string; skuId: string; quantity?: number }>) => {
@@ -117,9 +120,19 @@ export const {
 } = cartSlice.actions;
 
 // Selectors
-export const selectCartItems = (state: { cart: CartState }) => state.cart.items;
+export const selectCartItems = (state: { cart: CartState }) => {
+  // Lazily load from localStorage if cart has not been initialized yet
+  if (!state.cart.initialized) {
+    return loadCartFromStorage();
+  }
+  return state.cart.items;
+};
+
+export const selectCartInitialized = (state: { cart: CartState }) => state.cart.initialized;
+
 export const selectCartIsOpen = (state: { cart: CartState }) => state.cart.isOpen;
+
 export const selectCartItemsCount = (state: { cart: CartState }) => 
-  state.cart.items.reduce((total, item) => total + item.quantity, 0);
+  selectCartItems(state).reduce((total, item) => total + item.quantity, 0);
 
 export default cartSlice.reducer; 
