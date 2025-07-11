@@ -13,6 +13,6 @@ export const api = createApi({
       return headers
     },
   }),
-  tagTypes: ['Product', 'Category'], // OpenAPI仕様から自動推論される
+  tagTypes: ['Product', 'Category', 'PaymentMethods'], // OpenAPI仕様から自動推論される
   endpoints: () => ({}), // OpenAPI codegenで自動生成
 }) 

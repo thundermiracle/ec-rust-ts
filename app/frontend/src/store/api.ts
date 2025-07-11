@@ -7,6 +7,7 @@ export { useGetColorListQuery } from "./generatedApi/colorsApi";
 export { useGetShippingMethodListQuery } from "./generatedApi/shippingApi";
 export { useFindVariantsMutation } from "./generatedApi/variantsApi";
 export { useCalculateCartMutation } from "./generatedApi/cartApi";
+export { useGetPaymentMethodListQuery } from "./generatedApi/paymentApi";
 
 export type {
   GetProductResponse,

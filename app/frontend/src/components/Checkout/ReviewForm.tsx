@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Shield } from 'lucide-react';
 import { useGetShippingMethodListQuery } from '@/store/api';
-import { PAYMENT_OPTIONS } from './mockData';
+import { useGetPaymentMethodListQuery } from '@/store/generatedApi/paymentApi';
 import { type CheckoutFormData } from '@/lib/validators/checkout';
 
 interface ReviewFormProps {
@@ -18,10 +18,11 @@ interface ReviewFormProps {
 export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
   const { register, control, getValues, formState: { isSubmitting, errors } } = useFormContext<CheckoutFormData>();
   const { data: shippingData } = useGetShippingMethodListQuery();
+  const { data: paymentData } = useGetPaymentMethodListQuery();
   const values = getValues();
 
   const selectedShipping = shippingData?.shippingMethods.find(option => option.id === values.shippingMethod);
-  const selectedPayment = PAYMENT_OPTIONS.find(option => option.id === values.paymentMethod);
+  const selectedPayment = paymentData?.items?.find(option => option.id === values.paymentMethod);
 
   return (
     <Card>

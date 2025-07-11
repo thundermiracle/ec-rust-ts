@@ -16,7 +16,7 @@ export const shippingSchema = z.object({
 
 // 支払い情報のスキーマ
 export const paymentSchema = z.object({
-  paymentMethod: z.enum(['credit', 'konbini', 'bank'], { errorMap: () => ({ message: '支払い方法を選択してください。' }) }),
+  paymentMethod: z.enum(['credit_card', 'cod', 'bank_transfer', 'convenience_store'], { errorMap: () => ({ message: '支払い方法を選択してください。' }) }),
   cardNumber: z.string().optional(),
   expiryDate: z.string().optional(),
   cvc: z.string().optional(),
@@ -36,7 +36,7 @@ export const checkoutSchema = z.object({
     ...paymentSchema.shape,
     ...reviewSchema.shape,
 }).refine(data => {
-    if (data.paymentMethod === 'credit') {
+    if (data.paymentMethod === 'credit_card') {
         return data.cardNumber && data.cardNumber.trim() !== '' &&
                data.expiryDate && data.expiryDate.trim() !== '' &&
                data.cvc && data.cvc.trim() !== '' &&

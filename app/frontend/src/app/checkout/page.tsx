@@ -47,7 +47,7 @@ export default function CheckoutPage() {
       prefecture: '',
       phone: '',
       shippingMethod: 'standard',
-      paymentMethod: 'credit',
+      paymentMethod: 'credit_card',
       cardNumber: '',
       expiryDate: '',
       cvc: '',

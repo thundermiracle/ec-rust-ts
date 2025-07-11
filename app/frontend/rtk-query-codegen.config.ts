@@ -22,6 +22,9 @@ const config: ConfigFile = {
     "./src/store/generatedApi/shippingApi.ts": {
       filterEndpoints: [/shipping/i],
     },
+    "./src/store/generatedApi/paymentApi.ts": {
+      filterEndpoints: [/payment/i],
+    },
   },
   hooks: true,
   tag: true,

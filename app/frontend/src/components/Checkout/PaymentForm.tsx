@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CreditCard } from 'lucide-react';
-import { PAYMENT_OPTIONS } from './mockData';
+import { useGetPaymentMethodListQuery } from '@/store/api';
 import { type PaymentFormData } from '@/lib/validators/checkout';
 import { FormInputField } from '@/components/ui/form-input-field';
 import { FormRadioGroup } from '@/components/ui/form-radio-group';
@@ -17,6 +17,9 @@ interface PaymentFormProps {
 export function PaymentForm({ onPrev, onNext }: PaymentFormProps) {
   const { control, watch } = useFormContext<PaymentFormData>();
   const paymentMethod = watch('paymentMethod');
+  
+  // Fetch payment methods from API
+  const { data: paymentMethods, isLoading, isError } = useGetPaymentMethodListQuery();
 
   return (
     <Card>
@@ -27,18 +30,24 @@ export function PaymentForm({ onPrev, onNext }: PaymentFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <FormRadioGroup
-          name="paymentMethod"
-          label="支払い方法"
-          options={PAYMENT_OPTIONS.map(option => ({
-            id: option.id,
-            label: option.name,
-            description: option.description
-          }))}
-        />
+        {isLoading ? (
+          <div className="text-center py-4">支払い方法を読み込み中...</div>
+        ) : isError ? (
+          <div className="text-center py-4 text-red-600">支払い方法の読み込みに失敗しました</div>
+        ) : (
+          <FormRadioGroup
+            name="paymentMethod"
+            label="支払い方法"
+            options={paymentMethods?.items?.map(option => ({
+              id: option.id,
+              label: option.name || '',
+              description: option.description || ''
+            })) || []}
+          />
+        )}
 
         {/* クレジットカード情報 */}
-        {paymentMethod === 'credit' && (
+        {paymentMethod === 'credit_card' && (
           <div className="space-y-4">
             <FormInputField
               name="cardNumber"
@@ -54,6 +63,66 @@ export function PaymentForm({ onPrev, onNext }: PaymentFormProps) {
               label="カード名義*"
               placeholder="YAMADA TARO"
             />
+          </div>
+        )}
+
+        {/* 代引き情報 */}
+        {paymentMethod === 'cod' && (
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">!</span>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">代引きについて</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• 商品到着時に配送業者へ現金でお支払いください</li>
+                  <li>• 代引き手数料: ¥300〜（税込）</li>
+                  <li>• お釣りのないようご準備をお願いします</li>
+                  <li>• 配達時にご不在の場合は再配達となります</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 銀行振込情報 */}
+        {paymentMethod === 'bank_transfer' && (
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">¥</span>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">銀行振込について</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• ご注文確定後、振込先口座をご案内いたします</li>
+                  <li>• 入金確認後に商品を発送いたします</li>
+                  <li>• 振込手数料はお客様負担となります</li>
+                  <li>• 3営業日以内にお振込みください</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* コンビニ支払い情報 */}
+        {paymentMethod === 'convenience_store' && (
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">C</span>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">コンビニ支払いについて</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• セブンイレブン、ファミリーマート、ローソンでお支払い可能</li>
+                  <li>• 手数料: ¥200（税込）</li>
+                  <li>• お支払い用番号をメールでお送りします</li>
+                  <li>• 支払い期限: 注文から7日以内</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
