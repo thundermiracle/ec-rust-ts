@@ -3,6 +3,7 @@ mod categories;
 mod colors;
 mod variants;
 mod cart;
+mod shipping;
 mod common;
 mod swagger;
 mod routes;

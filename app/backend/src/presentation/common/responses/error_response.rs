@@ -34,4 +34,12 @@ impl ErrorResponse {
             details: Some(details.into()),
         }
     }
+
+    pub fn internal_server_error(message: impl Into<String>) -> Self {
+        Self {
+            code: "INTERNAL_SERVER_ERROR".to_string(),
+            message: message.into(),
+            details: None,
+        }
+    }
 } 

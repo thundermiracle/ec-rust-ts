@@ -128,4 +128,33 @@ impl std::fmt::Display for DeliveryInfoId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ShippingMethodId(String);
+
+impl ShippingMethodId {
+    pub fn new(id: String) -> Result<Self, DomainError> {
+        if id.is_empty() {
+            return Err(DomainError::InvalidProductData(
+                "Shipping method ID cannot be empty".to_string(),
+            ));
+        }
+        if id.len() > 50 {
+            return Err(DomainError::InvalidProductData(
+                "Shipping method ID cannot exceed 50 characters".to_string(),
+            ));
+        }
+        Ok(Self(id))
+    }
+
+    pub fn value(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for ShippingMethodId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 } 

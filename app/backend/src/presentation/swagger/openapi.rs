@@ -21,6 +21,10 @@ use crate::presentation::variants::responses::{
 use crate::presentation::variants::requests::FindVariantsRequest;
 use crate::presentation::cart::requests::{CalculateCartRequest, CalculateCartItemRequest};
 use crate::presentation::cart::responses::{CalculateCartResponse, CalculateCartItemResponse};
+use crate::presentation::shipping::responses::{
+    GetShippingMethodListResponse,
+    GetShippingMethodListItemResponse
+};
 use crate::presentation::ErrorResponse;
 
 /// OpenAPI仕様書の定義
@@ -34,6 +38,7 @@ use crate::presentation::ErrorResponse;
         crate::presentation::colors::controllers::get_color_list_controller::handle,
         crate::presentation::variants::controllers::find_variants_controller::handle,
         crate::presentation::cart::controllers::calculate_cart_controller::handle,
+        crate::presentation::shipping::controllers::get_shipping_method_list_controller::handle,
     ),
     components(
         schemas(
@@ -52,6 +57,8 @@ use crate::presentation::ErrorResponse;
             CalculateCartItemRequest,
             CalculateCartResponse,
             CalculateCartItemResponse,
+            GetShippingMethodListResponse,
+            GetShippingMethodListItemResponse,
             ErrorResponse
         )
     ),
@@ -59,7 +66,8 @@ use crate::presentation::ErrorResponse;
         (name = "Products", description = "商品関連のAPI"),
         (name = "Categories", description = "カテゴリ関連のAPI"),
         (name = "Colors", description = "色関連のAPI"),
-        (name = "Variants", description = "バリアント関連のAPI")
+        (name = "Variants", description = "バリアント関連のAPI"),
+        (name = "Shipping", description = "配送関連のAPI")
     ),
     info(
         title = "ECサイト API",

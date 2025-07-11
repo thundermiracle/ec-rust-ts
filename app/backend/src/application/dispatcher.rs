@@ -5,8 +5,8 @@ use crate::application::queries::handlers::{GetProductHandler, GetProductListHan
 use crate::application::commands::models::{BuyProductCommand, CalculateCartCommand};
 use crate::application::queries::models::GetProductQuery;
 use crate::application::error::ApplicationError;
-use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO};
-use crate::application::queries::{FindVariantsHandler, FindVariantsQuery};
+use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO};
+use crate::application::queries::{FindVariantsHandler, FindVariantsQuery, GetShippingMethodListHandler};
 use crate::infrastructure::database::repositories_impl::SqliteProductRepository;
 use crate::domain::Cart;
 
@@ -25,6 +25,7 @@ pub struct Dispatcher {
     get_category_list_handler: Arc<GetCategoryListHandler>,
     get_color_list_handler: Arc<GetColorListHandler>,
     find_variants_handler: Arc<FindVariantsHandler>,
+    get_shipping_method_list_handler: Arc<GetShippingMethodListHandler>,
 }
 
 impl Dispatcher {
@@ -36,6 +37,7 @@ impl Dispatcher {
         get_category_list_handler: Arc<GetCategoryListHandler>,
         get_color_list_handler: Arc<GetColorListHandler>,
         find_variants_handler: Arc<FindVariantsHandler>,
+        get_shipping_method_list_handler: Arc<GetShippingMethodListHandler>,
     ) -> Self {
         Self {
             buy_product_handler,
@@ -45,6 +47,7 @@ impl Dispatcher {
             get_category_list_handler,
             get_color_list_handler,
             find_variants_handler,
+            get_shipping_method_list_handler,
         }
     }
 
@@ -81,5 +84,10 @@ impl Dispatcher {
     /// バリアントリスト取得クエリを実行
     pub async fn execute_find_variants_query(&self, query: FindVariantsQuery) -> Result<Vec<VariantSummaryDTO>, ApplicationError> {
         self.find_variants_handler.handle(query).await
+    }
+
+    /// 配送方法リスト取得クエリを実行
+    pub async fn execute_get_shipping_method_list_query(&self) -> Result<ShippingMethodListDTO, ApplicationError> {
+        self.get_shipping_method_list_handler.handle().await
     }
 } 

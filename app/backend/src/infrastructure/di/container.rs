@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository};
+use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository, SqliteShippingMethodRepository};
 use crate::infrastructure::database::db::get_db;
-use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository};
+use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository, ShippingMethodRepository};
 use crate::application::{
     Dispatcher,
     BuyProductHandler,
@@ -12,6 +12,7 @@ use crate::application::{
     GetColorListHandler,
     FindVariantsHandler,
 };
+use crate::application::queries::handlers::GetShippingMethodListHandler;
 use crate::application::commands::CalculateCartHandler;
 
 /// コンテナはアプリケーションの依存関係を管理します
@@ -25,6 +26,8 @@ pub struct Container {
     pub color_repository: Arc<dyn ColorRepository + Send + Sync>,
     /// VariantRepositoryの実装
     pub variant_repository: Arc<dyn VariantRepository + Send + Sync>,
+    /// ShippingMethodRepositoryの実装
+    pub shipping_method_repository: Arc<dyn ShippingMethodRepository + Send + Sync>,
     /// CQRSディスパッチャ
     pub dispatcher: Arc<Dispatcher>,
 }
@@ -53,6 +56,7 @@ impl Container {
         let category_repository = Arc::new(SqliteCategoryRepository::new(pool.clone()));
         let color_repository = Arc::new(SqliteColorRepository::new(pool.clone()));
         let variant_repository = Arc::new(SqliteVariantRepository::new(pool.clone()));
+        let shipping_method_repository = Arc::new(SqliteShippingMethodRepository::new(Arc::new(pool.clone())));
         
         // ハンドラを作成
         let buy_product_handler = Arc::new(BuyProductHandler::new(product_repository.clone()));
@@ -62,6 +66,7 @@ impl Container {
         let get_category_list_handler = Arc::new(GetCategoryListHandler::new(category_repository.clone()));
         let get_color_list_handler = Arc::new(GetColorListHandler::new(color_repository.clone()));
         let find_variants_handler = Arc::new(FindVariantsHandler::new(variant_repository.clone()));
+        let get_shipping_method_list_handler = Arc::new(GetShippingMethodListHandler::new(shipping_method_repository.clone()));
         
         // ディスパッチャを作成
         let dispatcher = Arc::new(Dispatcher::new(
@@ -72,6 +77,7 @@ impl Container {
             get_category_list_handler,
             get_color_list_handler,
             find_variants_handler,
+            get_shipping_method_list_handler,
         ));
         
         Ok(Self {
@@ -79,6 +85,7 @@ impl Container {
             category_repository,
             color_repository,
             variant_repository,
+            shipping_method_repository,
             dispatcher,
         })
     }

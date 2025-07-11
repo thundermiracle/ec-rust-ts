@@ -10,7 +10,7 @@ mod phone_number;
 mod personal_info;
 
 pub use self::money::Money;
-pub use self::identifiers::{ProductId, SKUId, CategoryId, ColorId, TagId, DeliveryInfoId};
+pub use self::identifiers::{ProductId, SKUId, CategoryId, ColorId, TagId, DeliveryInfoId, ShippingMethodId};
 pub use self::names::{ProductName, SKUName, SKUCode};
 pub use self::descriptions::Description;
 pub use self::dimensions_material::{Dimensions, Material};

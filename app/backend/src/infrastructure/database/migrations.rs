@@ -14,6 +14,9 @@ pub async fn run_migrations(database_url: &str) -> Result<()> {
     // Phase 3: SKUと商品関連テーブル作成（商品テーブルに依存）
     create_product_related_tables(&pool).await?;
     
+    // Phase 4: 配送方法テーブル作成
+    create_shipping_methods_table(&pool).await?;
+    
     println!("✅ All migrations completed successfully!");
     Ok(())
 }
@@ -226,6 +229,49 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
         .execute(pool).await?;
 
     println!("🔗 Product related tables created (skus, images, product_tags)");
+    Ok(())
+}
+
+/// Phase 4: 配送方法テーブル作成
+async fn create_shipping_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS shipping_methods (
+            id TEXT PRIMARY KEY NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            CONSTRAINT positive_price CHECK (price >= 0),
+            CONSTRAINT positive_sort_order CHECK (sort_order >= 0)
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    // 配送方法インデックス
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_shipping_methods_active ON shipping_methods(is_active) WHERE is_active = 1")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_shipping_methods_sort_order ON shipping_methods(sort_order)")
+        .execute(pool).await?;
+
+    // 初期データ挿入
+    sqlx::query(
+        r#"
+        INSERT OR IGNORE INTO shipping_methods (id, name, description, price, sort_order) VALUES
+        ('standard', '標準配送', '5-7営業日', 500, 1),
+        ('express', '速達配送', '2-3営業日', 1000, 2),
+        ('overnight', '翌日配送', '翌営業日', 2000, 3)
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    println!("🚚 Shipping methods table created with initial data");
     Ok(())
 }
 
