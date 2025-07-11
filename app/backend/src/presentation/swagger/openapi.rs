@@ -25,6 +25,10 @@ use crate::presentation::shipping::responses::{
     GetShippingMethodListResponse,
     GetShippingMethodListItemResponse
 };
+use crate::presentation::payment_methods::responses::{
+    GetPaymentMethodListResponse,
+    PaymentMethodListItemResponse
+};
 use crate::presentation::ErrorResponse;
 
 /// OpenAPI仕様書の定義
@@ -39,6 +43,7 @@ use crate::presentation::ErrorResponse;
         crate::presentation::variants::controllers::find_variants_controller::handle,
         crate::presentation::cart::controllers::calculate_cart_controller::handle,
         crate::presentation::shipping::controllers::get_shipping_method_list_controller::handle,
+        crate::presentation::payment_methods::controllers::get_payment_method_list_controller::handle,
     ),
     components(
         schemas(
@@ -59,6 +64,8 @@ use crate::presentation::ErrorResponse;
             CalculateCartItemResponse,
             GetShippingMethodListResponse,
             GetShippingMethodListItemResponse,
+            GetPaymentMethodListResponse,
+            PaymentMethodListItemResponse,
             ErrorResponse
         )
     ),
@@ -67,7 +74,8 @@ use crate::presentation::ErrorResponse;
         (name = "Categories", description = "カテゴリ関連のAPI"),
         (name = "Colors", description = "色関連のAPI"),
         (name = "Variants", description = "バリアント関連のAPI"),
-        (name = "Shipping", description = "配送関連のAPI")
+        (name = "Shipping", description = "配送関連のAPI"),
+        (name = "PaymentMethods", description = "支払い方法関連のAPI")
     ),
     info(
         title = "ECサイト API",

@@ -17,6 +17,9 @@ pub async fn run_migrations(database_url: &str) -> Result<()> {
     // Phase 4: 配送方法テーブル作成
     create_shipping_methods_table(&pool).await?;
     
+    // Phase 5: 支払い方法テーブル作成
+    create_payment_methods_table(&pool).await?;
+    
     println!("✅ All migrations completed successfully!");
     Ok(())
 }
@@ -272,6 +275,48 @@ async fn create_shipping_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
     .await?;
 
     println!("🚚 Shipping methods table created with initial data");
+    Ok(())
+}
+
+/// Phase 5: 支払い方法テーブル作成
+async fn create_payment_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS payment_methods (
+            id TEXT PRIMARY KEY NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            CONSTRAINT positive_sort_order CHECK (sort_order >= 0)
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    // 支払い方法インデックス
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_payment_methods_active ON payment_methods(is_active) WHERE is_active = 1")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_payment_methods_sort_order ON payment_methods(sort_order)")
+        .execute(pool).await?;
+
+    // 初期データ挿入
+    sqlx::query(
+        r#"
+        INSERT OR IGNORE INTO payment_methods (id, name, description, is_active, sort_order) VALUES
+        ('credit_card', 'クレジットカード', 'VISA、MasterCard、JCB対応', 1, 1),
+        ('cod', '代引き', '商品到着時に現金でお支払い', 1, 2),
+        ('bank_transfer', '銀行振込', '指定口座への事前振込', 1, 3),
+        ('convenience_store', 'コンビニ支払い', 'セブンイレブン、ファミリーマート等', 1, 4)
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    println!("💳 Payment methods table created with initial data");
     Ok(())
 }
 

@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use crate::application::commands::handlers::{BuyProductHandler, CalculateCartHandler};
-use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler};
+use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler, FindVariantsHandler, GetShippingMethodListHandler, GetPaymentMethodListHandler};
 use crate::application::commands::models::{BuyProductCommand, CalculateCartCommand};
-use crate::application::queries::models::GetProductQuery;
+use crate::application::queries::models::{GetProductQuery, FindVariantsQuery};
 use crate::application::error::ApplicationError;
-use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO};
-use crate::application::queries::{FindVariantsHandler, FindVariantsQuery, GetShippingMethodListHandler};
+use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO, PaymentMethodListDTO};
 use crate::infrastructure::database::repositories_impl::SqliteProductRepository;
 use crate::domain::Cart;
 
@@ -26,6 +25,7 @@ pub struct Dispatcher {
     get_color_list_handler: Arc<GetColorListHandler>,
     find_variants_handler: Arc<FindVariantsHandler>,
     get_shipping_method_list_handler: Arc<GetShippingMethodListHandler>,
+    get_payment_method_list_handler: Arc<GetPaymentMethodListHandler>,
 }
 
 impl Dispatcher {
@@ -38,6 +38,7 @@ impl Dispatcher {
         get_color_list_handler: Arc<GetColorListHandler>,
         find_variants_handler: Arc<FindVariantsHandler>,
         get_shipping_method_list_handler: Arc<GetShippingMethodListHandler>,
+        get_payment_method_list_handler: Arc<GetPaymentMethodListHandler>,
     ) -> Self {
         Self {
             buy_product_handler,
@@ -48,6 +49,7 @@ impl Dispatcher {
             get_color_list_handler,
             find_variants_handler,
             get_shipping_method_list_handler,
+            get_payment_method_list_handler,
         }
     }
 
@@ -89,5 +91,10 @@ impl Dispatcher {
     /// 配送方法リスト取得クエリを実行
     pub async fn execute_get_shipping_method_list_query(&self) -> Result<ShippingMethodListDTO, ApplicationError> {
         self.get_shipping_method_list_handler.handle().await
+    }
+
+    /// 支払い方法リスト取得クエリを実行
+    pub async fn execute_get_payment_method_list_query(&self) -> Result<PaymentMethodListDTO, ApplicationError> {
+        self.get_payment_method_list_handler.handle().await
     }
 } 

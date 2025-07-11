@@ -1,0 +1,3 @@
+mod get_payment_method_list_presenter;
+
+pub use get_payment_method_list_presenter::GetPaymentMethodListPresenter;
