@@ -1,6 +1,6 @@
 import { enhanceCartItems, enhanceCartItemsWithVariants, calculateCartTotal, type CartItem } from './helper';
 import { type StoredCartItem } from '@/store/cartSlice';
-import { type ProductListItemResponse, type VariantResponse } from '@/store/generatedApi/productsApi';
+import { type GetProductListItemResponse, type VariantResponse } from '@/store/api';
 
 describe('Cart Helper Functions', () => {
   describe('enhanceCartItems', () => {
@@ -10,7 +10,7 @@ describe('Cart Helper Functions', () => {
       { productId: '3', skuId: 'sku-3', quantity: 3 }, // この商品は存在しない
     ];
 
-    const mockProducts: ProductListItemResponse[] = [
+    const mockProducts: GetProductListItemResponse[] = [
       {
         id: '1',
         name: 'Product 1',

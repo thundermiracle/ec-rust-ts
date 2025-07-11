@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAppSelector } from '@/store/hooks';
 import { selectCartItems } from '@/store/cartSlice';
-import { useGetProductListQuery } from '@/store/generatedApi/productsApi';
-import { useFindVariantsMutation } from '@/store/generatedApi/variantsApi';
-import { useCalculateCartMutation } from '@/store/generatedApi/cartApi';
+import { 
+  useGetProductListQuery, 
+  useFindVariantsMutation, 
+  useCalculateCartMutation, 
+  useGetShippingMethodListQuery 
+} from '@/store/api';
 import { enhanceCartItemsWithVariantAPI } from '@/components/Cart/CartDrawer/helper';
 import { useFormContext } from 'react-hook-form';
-import { SHIPPING_OPTIONS } from '@/components/Checkout';
 import type { CheckoutFormData } from '@/lib/validators/checkout';
 
 // 表示用アイテム型（内部用）
@@ -31,6 +33,9 @@ export function OrderSummary() {
   // react-hook-form から配送方法を取得
   const { watch } = useFormContext<CheckoutFormData>();
   const shippingMethod = watch('shippingMethod');
+
+  // 配送方法リスト取得
+  const { data: shippingData } = useGetShippingMethodListQuery();
 
   // 商品リスト取得
   const { data: productListData, isLoading: isProductListLoading } = useGetProductListQuery();
@@ -84,7 +89,7 @@ export function OrderSummary() {
   }, [cartItems, productListData, variantsData]);
 
   // 配送料計算
-  const selectedShipping = SHIPPING_OPTIONS.find(option => option.id === shippingMethod);
+  const selectedShipping = shippingData?.shippingMethods.find(option => option.id === shippingMethod);
   const shippingCost = selectedShipping?.price || 0;
 
   // 金額計算

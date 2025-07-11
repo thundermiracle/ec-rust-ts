@@ -4,14 +4,17 @@ export {
 } from "./generatedApi/productsApi";
 export { useGetCategoryListQuery } from "./generatedApi/categoriesApi";
 export { useGetColorListQuery } from "./generatedApi/colorsApi";
+export { useGetShippingMethodListQuery } from "./generatedApi/shippingApi";
+export { useFindVariantsMutation } from "./generatedApi/variantsApi";
+export { useCalculateCartMutation } from "./generatedApi/cartApi";
 
 export type {
-  ProductResponse,
-  ProductListResponse,
-  ProductListItemResponse,
+  GetProductResponse,
+  GetProductListResponse,
+  GetProductListItemResponse,
   VariantResponse,
   ErrorResponse,
 } from "./generatedApi/productsApi";
-
-export type { CategoryResponse, CategoryListResponse } from "./generatedApi/categoriesApi";
-export type { ColorListItemResponse, ColorListResponse } from "./generatedApi/colorsApi";
+export type { FindVariantsItemResponse } from "./generatedApi/variantsApi";
+export type { CategoryResponse, GetCategoryListResponse } from "./generatedApi/categoriesApi";
+export type { GetColorListItemResponse, GetColorListResponse } from "./generatedApi/colorsApi";

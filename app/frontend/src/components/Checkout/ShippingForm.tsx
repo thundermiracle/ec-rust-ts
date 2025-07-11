@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Truck } from 'lucide-react';
-import { SHIPPING_OPTIONS } from './mockData';
+import { useGetShippingMethodListQuery } from '@/store/api';
 import { FormInputField } from '@/components/ui/form-input-field';
 import { FormRadioGroup } from '@/components/ui/form-radio-group';
 
@@ -11,6 +11,47 @@ interface ShippingFormProps {
 }
 
 export function ShippingForm({ onNext }: ShippingFormProps) {
+  const { data: shippingData, isLoading, error } = useGetShippingMethodListQuery();
+
+  // ローディング状態やエラーハンドリング
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Truck className="h-5 w-5 mr-2" />
+            配送情報
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">配送方法を読み込み中...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Truck className="h-5 w-5 mr-2" />
+            配送情報
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-center py-8">
+            <p className="text-red-500">配送方法の読み込みに失敗しました</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const shippingOptions = shippingData?.shippingMethods || [];
+
   return (
     <Card>
       <CardHeader>
@@ -44,7 +85,7 @@ export function ShippingForm({ onNext }: ShippingFormProps) {
         <FormRadioGroup
           name="shippingMethod"
           label="配送方法"
-          options={SHIPPING_OPTIONS.map(option => ({
+          options={shippingOptions.map(option => ({
             id: option.id,
             label: option.name,
             description: `${option.description} - ¥${option.price.toLocaleString()}`

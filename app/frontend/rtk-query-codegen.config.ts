@@ -19,6 +19,9 @@ const config: ConfigFile = {
     "./src/store/generatedApi/cartApi.ts": {
       filterEndpoints: [/cart/i],
     },
+    "./src/store/generatedApi/shippingApi.ts": {
+      filterEndpoints: [/shipping/i],
+    },
   },
   hooks: true,
   tag: true,

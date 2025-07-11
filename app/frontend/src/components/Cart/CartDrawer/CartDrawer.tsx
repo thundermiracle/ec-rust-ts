@@ -14,8 +14,7 @@ import {
   updateQuantity, 
   removeFromCart
 } from '@/store/cartSlice';
-import { useGetProductListQuery } from '@/store/generatedApi/productsApi';
-import { useFindVariantsMutation } from '@/store/generatedApi/variantsApi';
+import { useGetProductListQuery, useFindVariantsMutation } from '@/store/api';
 import Image from 'next/image';
 import { enhanceCartItemsWithVariantAPI, calculateCartTotal } from './helper';
 

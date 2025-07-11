@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Shield } from 'lucide-react';
-import { SHIPPING_OPTIONS, PAYMENT_OPTIONS } from './mockData';
+import { useGetShippingMethodListQuery } from '@/store/api';
+import { PAYMENT_OPTIONS } from './mockData';
 import { type CheckoutFormData } from '@/lib/validators/checkout';
 
 interface ReviewFormProps {
@@ -16,9 +17,10 @@ interface ReviewFormProps {
 // TODO: totalを動くようにする
 export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
   const { register, control, getValues, formState: { isSubmitting, errors } } = useFormContext<CheckoutFormData>();
+  const { data: shippingData } = useGetShippingMethodListQuery();
   const values = getValues();
 
-  const selectedShipping = SHIPPING_OPTIONS.find(option => option.id === values.shippingMethod);
+  const selectedShipping = shippingData?.shippingMethods.find(option => option.id === values.shippingMethod);
   const selectedPayment = PAYMENT_OPTIONS.find(option => option.id === values.paymentMethod);
 
   return (

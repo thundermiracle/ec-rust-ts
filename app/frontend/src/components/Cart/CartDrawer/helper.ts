@@ -1,5 +1,5 @@
-import { GetProductListItemResponse, VariantResponse } from '@/store/generatedApi/productsApi';
-import { FindVariantsItemResponse } from '@/store/generatedApi/variantsApi';
+import { GetProductListItemResponse, VariantResponse } from '@/store/api';
+import { FindVariantsItemResponse } from '@/store/api';
 import { StoredCartItem } from '@/store/cartSlice';
 
 // UI表示用のカートアイテム
