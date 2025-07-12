@@ -52,33 +52,6 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
         Ok(ShippingMethodListDTO::new(methods))
     }
 
-    async fn find_by_id_dto(&self, id: &str) -> Result<Option<ShippingMethodDTO>, RepositoryError> {
-        let row = sqlx::query(
-            r#"
-            SELECT id, name, description, price, is_active
-            FROM shipping_methods
-            WHERE id = ? AND is_active = 1
-            "#
-        )
-        .bind(id)
-        .fetch_optional(self.pool.as_ref())
-        .await
-        .map_err(|e| RepositoryError::DatabaseError(e.to_string()))?;
-
-        match row {
-            Some(row) => {
-                let dto = ShippingMethodDTO {
-                    id: row.get("id"),
-                    name: row.get("name"),
-                    description: row.get("description"),
-                    price: row.get::<i64, _>("price") as u32,
-                };
-                Ok(Some(dto))
-            }
-            None => Ok(None),
-        }
-    }
-
     async fn find_by_id(&self, id: &str) -> Result<Option<ShippingMethod>, RepositoryError> {
         let row = sqlx::query(
             r#"

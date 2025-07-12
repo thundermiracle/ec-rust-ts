@@ -35,15 +35,6 @@ impl CategoryDTO {
         }
     }
 
-    /// ルートカテゴリかどうかを判定
-    pub fn is_root(&self) -> bool {
-        self.parent_id.is_none()
-    }
-
-    /// サブカテゴリかどうかを判定
-    pub fn is_subcategory(&self) -> bool {
-        self.parent_id.is_some()
-    }
 }
 
 #[cfg(test)]

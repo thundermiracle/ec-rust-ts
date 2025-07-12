@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::application::commands::handlers::{BuyProductHandler, CalculateCartHandler};
+use crate::application::commands::handlers::CalculateCartHandler;
 use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler, FindVariantsHandler, GetShippingMethodListHandler, GetPaymentMethodListHandler};
-use crate::application::commands::models::{BuyProductCommand, CalculateCartCommand};
+use crate::application::commands::models::CalculateCartCommand;
 use crate::application::queries::models::{GetProductQuery, FindVariantsQuery};
 use crate::application::error::ApplicationError;
 use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO, PaymentMethodListDTO, CalculateCartResultDto};
@@ -13,7 +13,6 @@ use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, Product
 /// これにより、プレゼンテーション層はビジネスロジックの詳細を知る必要がなくなります。
 pub struct Dispatcher {
     // コマンドハンドラ
-    buy_product_handler: Arc<BuyProductHandler>,
     calculate_cart_handler: Arc<CalculateCartHandler>,
     
     // クエリハンドラ
@@ -28,7 +27,6 @@ pub struct Dispatcher {
 
 impl Dispatcher {
     pub fn new(
-        buy_product_handler: Arc<BuyProductHandler>,
         calculate_cart_handler: Arc<CalculateCartHandler>,
         get_product_handler: Arc<GetProductHandler>,
         get_product_list_handler: Arc<GetProductListHandler>,
@@ -39,7 +37,6 @@ impl Dispatcher {
         get_payment_method_list_handler: Arc<GetPaymentMethodListHandler>,
     ) -> Self {
         Self {
-            buy_product_handler,
             calculate_cart_handler,
             get_product_handler,
             get_product_list_handler,
@@ -49,11 +46,6 @@ impl Dispatcher {
             get_shipping_method_list_handler,
             get_payment_method_list_handler,
         }
-    }
-
-    /// 商品購入コマンドを実行
-    pub async fn execute_buy_product_command(&self, command: BuyProductCommand) -> Result<(), ApplicationError> {
-        self.buy_product_handler.handle(command).await
     }
 
     /// カート計算コマンドを実行

@@ -8,4 +8,4 @@ pub use error::DomainError;
 pub use entities::*;
 pub use value_objects::*;
 pub use aggregates::*;
-pub use services::*;
+// Services module is empty for now

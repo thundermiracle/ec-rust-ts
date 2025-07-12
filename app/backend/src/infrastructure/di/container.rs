@@ -5,7 +5,6 @@ use crate::infrastructure::database::db::get_db;
 use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository, ShippingMethodRepository, PaymentMethodRepository};
 use crate::application::{
     Dispatcher,
-    BuyProductHandler,
     GetProductHandler, 
     GetProductListHandler,
     GetCategoryListHandler,
@@ -62,7 +61,6 @@ impl Container {
         let payment_method_repository = Arc::new(SqlitePaymentMethodRepository::new(pool.clone()));
         
         // ハンドラを作成
-        let buy_product_handler = Arc::new(BuyProductHandler::new(product_repository.clone()));
         let calculate_cart_handler = Arc::new(CalculateCartHandler::new(product_repository.clone(), shipping_method_repository.clone(), payment_method_repository.clone()));
         let get_product_handler = Arc::new(GetProductHandler::new(product_repository.clone()));
         let get_product_list_handler = Arc::new(GetProductListHandler::new(product_repository.clone()));
@@ -74,7 +72,6 @@ impl Container {
         
         // ディスパッチャを作成
         let dispatcher = Arc::new(Dispatcher::new(
-            buy_product_handler,
             calculate_cart_handler,
             get_product_handler, 
             get_product_list_handler,

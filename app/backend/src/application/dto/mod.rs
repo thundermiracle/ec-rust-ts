@@ -14,4 +14,4 @@ pub use self::color_list_dto::{ColorListDTO, ColorDTO};
 pub use self::variant_summary_dto::VariantSummaryDTO;
 pub use self::shipping_method_list_dto::{ShippingMethodDTO, ShippingMethodListDTO};
 pub use self::payment_method_list_dto::{PaymentMethodListDTO, PaymentMethodDTO};
-pub use self::calculate_cart_result_dto::{CalculateCartResultDto, CalculatedCartItemDto};
+pub use self::calculate_cart_result_dto::CalculateCartResultDto;

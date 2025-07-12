@@ -10,12 +10,12 @@ mod phone_number;
 mod personal_info;
 
 pub use self::money::Money;
-pub use self::identifiers::{ProductId, SKUId, CategoryId, ColorId, TagId, DeliveryInfoId, ShippingMethodId};
+pub use self::identifiers::{ProductId, SKUId, CategoryId, ColorId, DeliveryInfoId, ShippingMethodId};
 pub use self::names::{ProductName, SKUName, SKUCode};
 pub use self::descriptions::Description;
 pub use self::dimensions_material::{Dimensions, Material};
 pub use self::variant_attributes::VariantAttributes; 
-pub use self::address::{Address, AddressError};
-pub use self::email::{Email, EmailError};
-pub use self::phone_number::{PhoneNumber, PhoneNumberError};
-pub use self::personal_info::{PersonalInfo, FirstName, LastName, PersonalInfoError};
+pub use self::address::Address;
+pub use self::email::Email;
+pub use self::phone_number::PhoneNumber;
+pub use self::personal_info::PersonalInfo;

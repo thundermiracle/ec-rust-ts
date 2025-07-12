@@ -1,6 +1,7 @@
 use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
-use crate::domain::{SKU, StockAdjustment, ProductImage, Tag};
+use crate::domain::{SKU, ProductImage, Tag};
+use crate::domain::entities::sku::StockAdjustment;
 use chrono::{DateTime, Utc};
 use std::collections::HashSet;
 

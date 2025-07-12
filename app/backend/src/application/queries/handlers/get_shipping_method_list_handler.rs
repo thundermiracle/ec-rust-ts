@@ -44,14 +44,6 @@ mod tests {
             Ok(self.methods.clone())
         }
 
-        async fn find_by_id_dto(&self, id: &str) -> Result<Option<ShippingMethodDTO>, RepositoryError> {
-            let method = self.methods.methods
-                .iter()
-                .find(|m| m.id == id)
-                .cloned();
-            Ok(method)
-        }
-
         async fn find_by_id(&self, id: &str) -> Result<Option<ShippingMethod>, RepositoryError> {
             // テスト用の簡易実装
             // 実際の実装では適切なドメインエンティティを返す

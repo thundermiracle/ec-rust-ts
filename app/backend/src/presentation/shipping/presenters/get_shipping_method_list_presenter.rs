@@ -1,4 +1,4 @@
-use crate::application::dto::{ShippingMethodListDTO, ShippingMethodDTO};
+use crate::application::dto::ShippingMethodListDTO;
 use crate::presentation::shipping::responses::{GetShippingMethodListResponse, GetShippingMethodListItemResponse};
 
 /// Shipping Method List Presenter
@@ -30,6 +30,8 @@ mod tests {
 
     #[test]
     fn test_present() {
+        use crate::application::dto::ShippingMethodDTO;
+        
         let methods = vec![
             ShippingMethodDTO {
                 id: "standard".to_string(),

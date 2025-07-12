@@ -87,19 +87,7 @@ impl ColorId {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TagId(Uuid);
 
-impl TagId {
-    pub fn new() -> Self {
-        Self(Uuid::new_v4())
-    }
-
-    pub fn from_uuid(uuid: Uuid) -> Self {
-        Self(uuid)
-    }
-
-    pub fn value(&self) -> Uuid {
-        self.0
-    }
-}
+impl TagId {}
 
 impl std::fmt::Display for TagId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

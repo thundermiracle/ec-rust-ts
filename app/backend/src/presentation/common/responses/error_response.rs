@@ -14,32 +14,4 @@ pub struct ErrorResponse {
     pub details: Option<String>,
 }
 
-impl ErrorResponse {
-    pub fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            code: code.into(),
-            message: message.into(),
-            details: None,
-        }
-    }
-
-    pub fn with_details(
-        code: impl Into<String>,
-        message: impl Into<String>,
-        details: impl Into<String>,
-    ) -> Self {
-        Self {
-            code: code.into(),
-            message: message.into(),
-            details: Some(details.into()),
-        }
-    }
-
-    pub fn internal_server_error(message: impl Into<String>) -> Self {
-        Self {
-            code: "INTERNAL_SERVER_ERROR".to_string(),
-            message: message.into(),
-            details: None,
-        }
-    }
-} 
+impl ErrorResponse {} 
