@@ -8,7 +8,6 @@ import {
   useGetProductListQuery, 
   useFindVariantsMutation, 
   useCalculateCartMutation, 
-  useGetShippingMethodListQuery 
 } from '@/store/api';
 import { enhanceCartItemsWithVariantAPI } from '@/components/Cart/CartDrawer/helper';
 import { useFormContext } from 'react-hook-form';
@@ -30,12 +29,10 @@ export function OrderSummary() {
   // カート情報
   const cartItems = useAppSelector(selectCartItems);
 
-  // react-hook-form から配送方法を取得
+  // react-hook-form から配送方法と支払い方法を取得
   const { watch } = useFormContext<CheckoutFormData>();
   const shippingMethod = watch('shippingMethod');
-
-  // 配送方法リスト取得
-  const { data: shippingData } = useGetShippingMethodListQuery();
+  const paymentMethod = watch('paymentMethod');
 
   // 商品リスト取得
   const { data: productListData, isLoading: isProductListLoading } = useGetProductListQuery();
@@ -64,16 +61,18 @@ export function OrderSummary() {
 
   // カート計算API呼び出し
   useEffect(() => {
-    if (cartItems.length > 0) {
+    if (cartItems.length > 0 && shippingMethod && paymentMethod) {
       const calculateCartRequest = {
         items: cartItems.map(item => ({
           skuId: item.skuId,
           quantity: item.quantity,
         })),
+        shipping_method_id: shippingMethod,
+        payment_method_id: paymentMethod,
       };
       calculateCart({ calculateCartRequest });
     }
-  }, [cartItems, calculateCart]);
+  }, [cartItems, shippingMethod, paymentMethod, calculateCart]);
 
   // UI表示用カートアイテム
   const enhancedCartItems: OrderSummaryItem[] = useMemo(() => {
@@ -88,14 +87,16 @@ export function OrderSummary() {
     }));
   }, [cartItems, productListData, variantsData]);
 
-  // 配送料計算
-  const selectedShipping = shippingData?.shippingMethods.find(option => option.id === shippingMethod);
-  const shippingCost = selectedShipping?.price || 0;
-
-  // 金額計算
+  // 金額計算（バックエンドからの値を使用）
   const subtotal = cartCalculationData?.subtotal || 0;
   const tax = cartCalculationData?.taxAmount || 0;
-  const total = (cartCalculationData?.total || 0) + shippingCost;
+  const shippingFee = cartCalculationData?.shippingFee || 0;
+  const paymentFee = cartCalculationData?.paymentFee || 0;
+  const total = cartCalculationData?.total || 0;
+
+  // 支払い方法による手数料表示の判定
+  const isCashOnDelivery = paymentMethod === 'cod';
+  const isConvenienceStore = paymentMethod === 'convenience_store';
 
   // ローディング状態
   const isLoading = isProductListLoading || isVariantsLoading || isCartCalculationLoading;
@@ -164,8 +165,20 @@ export function OrderSummary() {
           </div>
           <div className="flex justify-between text-sm">
             <span>配送料</span>
-            <span>¥{shippingCost.toLocaleString()}</span>
+            <span>¥{shippingFee.toLocaleString()}</span>
           </div>
+          {isCashOnDelivery && paymentFee > 0 && (
+            <div className="flex justify-between text-sm">
+              <span>代引き手数料</span>
+              <span>¥{paymentFee.toLocaleString()}</span>
+            </div>
+          )}
+          {isConvenienceStore && paymentFee > 0 && (
+            <div className="flex justify-between text-sm">
+              <span>コンビニ決済手数料</span>
+              <span>¥{paymentFee.toLocaleString()}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span>税込</span>
             <span>¥{tax.toLocaleString()}</span>

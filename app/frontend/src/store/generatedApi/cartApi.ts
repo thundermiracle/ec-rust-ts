@@ -38,6 +38,8 @@ export type CalculateCartResponse = {
   isEmpty: boolean;
   itemCount: number;
   items: CalculateCartItemResponse[];
+  paymentFee: number;
+  shippingFee: number;
   subtotal: number;
   taxAmount: number;
   total: number;
@@ -57,5 +59,7 @@ export type CalculateCartItemRequest = {
 };
 export type CalculateCartRequest = {
   items: CalculateCartItemRequest[];
+  payment_method_id: string;
+  shipping_method_id: string;
 };
 export const { useCalculateCartMutation } = injectedRtkApi;
