@@ -63,7 +63,7 @@ impl Container {
         
         // ハンドラを作成
         let buy_product_handler = Arc::new(BuyProductHandler::new(product_repository.clone()));
-        let calculate_cart_handler = Arc::new(CalculateCartHandler::new(product_repository.clone()));
+        let calculate_cart_handler = Arc::new(CalculateCartHandler::new(product_repository.clone(), shipping_method_repository.clone(), payment_method_repository.clone()));
         let get_product_handler = Arc::new(GetProductHandler::new(product_repository.clone()));
         let get_product_list_handler = Arc::new(GetProductListHandler::new(product_repository.clone()));
         let get_category_list_handler = Arc::new(GetCategoryListHandler::new(category_repository.clone()));

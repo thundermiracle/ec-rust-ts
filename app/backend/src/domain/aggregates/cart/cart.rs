@@ -6,6 +6,8 @@ use crate::domain::error::DomainError;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cart {
     items: Vec<CartItem>,
+    shipping_fee: Option<Money>,
+    payment_fee: Option<Money>,
 }
 
 impl Cart {
@@ -13,12 +15,18 @@ impl Cart {
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
+            shipping_fee: None,
+            payment_fee: None,
         }
     }
 
     /// カートアイテムのリストからカートを作成
     pub fn from_items(items: Vec<CartItem>) -> Self {
-        Self { items }
+        Self { 
+            items,
+            shipping_fee: None,
+            payment_fee: None,
+        }
     }
 
     /// カートにアイテムを追加
@@ -54,13 +62,30 @@ impl Cart {
         Ok(())
     }
 
-    /// カートの総額を計算
-    pub fn total(&self) -> Result<Money, DomainError> {
-        let mut total = Money::from_yen(0);
+    /// カートアイテムの小計を計算（配送料・支払い手数料を除く）
+    pub fn subtotal(&self) -> Result<Money, DomainError> {
+        let mut subtotal = Money::from_yen(0);
         for item in &self.items {
-            let subtotal = item.subtotal()?;
-            total = total.add(subtotal)?;
+            let item_subtotal = item.subtotal()?;
+            subtotal = subtotal.add(item_subtotal)?;
         }
+        Ok(subtotal)
+    }
+
+    /// カートの総額を計算（配送料・支払い手数料を含む）
+    pub fn total(&self) -> Result<Money, DomainError> {
+        let mut total = self.subtotal()?;
+        
+        // 配送料を追加
+        if let Some(shipping_fee) = self.shipping_fee {
+            total = total.add(shipping_fee)?;
+        }
+        
+        // 支払い手数料を追加
+        if let Some(payment_fee) = self.payment_fee {
+            total = total.add(payment_fee)?;
+        }
+        
         Ok(total)
     }
 
@@ -79,6 +104,47 @@ impl Cart {
         self.items.is_empty()
     }
 
+    /// 配送料を計算
+    /// Clean Architecture: Entity First - 配送料計算はCartの責務
+    pub fn calculate_shipping_fee(&self, shipping_method: &crate::domain::entities::ShippingMethod) -> Result<Money, DomainError> {
+        // 配送方法エンティティ全体を使用してより柔軟な計算が可能
+        if !shipping_method.is_active() {
+            return Err(DomainError::InvalidProductData("Shipping method is not active".to_string()));
+        }
+
+        let _cart_total = self.subtotal()?;
+        
+        // 将来的にはカート金額による配送料無料、重量制限、地域制限なども考慮可能
+        // 現在はシンプルに配送方法の料金をそのまま適用
+        Ok(*shipping_method.price())
+    }
+
+    /// 支払い手数料を計算
+    /// Clean Architecture: Entity First - 支払い手数料計算はCartの責務
+    pub fn calculate_payment_fee(&self, payment_method: &crate::domain::entities::PaymentMethod) -> Result<Money, DomainError> {
+        let cart_total = self.subtotal()?;
+        
+        // PaymentMethodエンティティに委譲してより豊富な情報を活用
+        payment_method.calculate_fee(cart_total)
+    }
+
+    /// 配送方法を適用
+    /// Clean Architecture: エンティティ内で状態管理とビジネスロジック完結
+    pub fn apply_shipping_method(&mut self, shipping_method: &crate::domain::entities::ShippingMethod) -> Result<(), DomainError> {
+        let fee = self.calculate_shipping_fee(shipping_method)?;
+        self.shipping_fee = Some(fee);
+        Ok(())
+    }
+
+    /// 支払い方法を適用
+    /// Clean Architecture: エンティティ内で状態管理とビジネスロジック完結
+    pub fn apply_payment_method(&mut self, payment_method: &crate::domain::entities::PaymentMethod) -> Result<(), DomainError> {
+        let fee = self.calculate_payment_fee(payment_method)?;
+        self.payment_fee = Some(fee);
+        Ok(())
+    }
+
+
     /// カートをクリア
     pub fn clear(&mut self) {
         self.items.clear();
@@ -96,19 +162,39 @@ impl Cart {
 
     /// 税込み総額を計算
     pub fn total_with_tax(&self) -> Result<Money, DomainError> {
-        let subtotal = self.total()?;
-        Ok(subtotal.with_tax())
+        let subtotal = self.subtotal()?;
+        let mut total_with_tax = subtotal.with_tax();
+        
+        // 配送料を追加（配送料は税込み）
+        if let Some(shipping_fee) = self.shipping_fee {
+            total_with_tax = total_with_tax.add(shipping_fee)?;
+        }
+        
+        // 支払い手数料を追加（支払い手数料は税込み）
+        if let Some(payment_fee) = self.payment_fee {
+            total_with_tax = total_with_tax.add(payment_fee)?;
+        }
+        
+        Ok(total_with_tax)
     }
 
     /// 税額を計算
     pub fn tax_amount(&self) -> Result<Money, DomainError> {
-        let subtotal = self.total()?;
+        let subtotal = self.subtotal()?;
         Ok(subtotal.tax_amount())
     }
 
     // Getters
     pub fn items(&self) -> &[CartItem] {
         &self.items
+    }
+
+    pub fn shipping_fee(&self) -> Option<Money> {
+        self.shipping_fee
+    }
+
+    pub fn payment_fee(&self) -> Option<Money> {
+        self.payment_fee
     }
 }
 

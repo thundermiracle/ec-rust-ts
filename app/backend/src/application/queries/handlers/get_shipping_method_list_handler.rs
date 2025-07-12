@@ -30,6 +30,7 @@ mod tests {
     use crate::application::repositories::ShippingMethodRepository;
     use crate::application::error::RepositoryError;
     use crate::application::dto::{ShippingMethodListDTO, ShippingMethodDTO};
+    use crate::domain::entities::ShippingMethod;
     use async_trait::async_trait;
 
     // モックリポジトリ
@@ -41,6 +42,42 @@ mod tests {
     impl ShippingMethodRepository for MockShippingMethodRepository {
         async fn find_all(&self) -> Result<ShippingMethodListDTO, RepositoryError> {
             Ok(self.methods.clone())
+        }
+
+        async fn find_by_id_dto(&self, id: &str) -> Result<Option<ShippingMethodDTO>, RepositoryError> {
+            let method = self.methods.methods
+                .iter()
+                .find(|m| m.id == id)
+                .cloned();
+            Ok(method)
+        }
+
+        async fn find_by_id(&self, id: &str) -> Result<Option<ShippingMethod>, RepositoryError> {
+            // テスト用の簡易実装
+            // 実際の実装では適切なドメインエンティティを返す
+            use crate::domain::value_objects::{ShippingMethodId, Money};
+            
+            let method = self.methods.methods
+                .iter()
+                .find(|m| m.id == id);
+                
+            match method {
+                Some(dto) => {
+                    let shipping_method_id = ShippingMethodId::new(dto.id.clone())
+                        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+                    
+                    let shipping_method = ShippingMethod::new(
+                        shipping_method_id,
+                        dto.name.clone(),
+                        dto.description.clone(),
+                        Money::from_yen(dto.price),
+                        true,
+                        1,
+                    );
+                    Ok(Some(shipping_method))
+                }
+                None => Ok(None),
+            }
         }
     }
 

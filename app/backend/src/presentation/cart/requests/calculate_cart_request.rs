@@ -14,6 +14,8 @@ pub struct CalculateCartItemRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CalculateCartRequest {
     pub items: Vec<CalculateCartItemRequest>,
+    pub shipping_method_id: String,
+    pub payment_method_id: String,
 }
 
 impl CalculateCartRequest {
@@ -27,7 +29,7 @@ impl CalculateCartRequest {
             })
             .collect();
 
-        CalculateCartCommand::new(items)
+        CalculateCartCommand::new(items, self.shipping_method_id.clone(), self.payment_method_id.clone())
     }
 
     /// バリデーション
@@ -79,6 +81,8 @@ mod tests {
                     quantity: 1,
                 },
             ],
+            shipping_method_id: "standard".to_string(),
+            payment_method_id: "credit_card".to_string(),
         };
 
         assert!(request.validate().is_ok());
@@ -87,12 +91,16 @@ mod tests {
         assert_eq!(command.items.len(), 2);
         assert_eq!(command.items[0].sku_id, "sku-123");
         assert_eq!(command.items[0].quantity, 2);
+        assert_eq!(command.shipping_method_id, "standard");
+        assert_eq!(command.payment_method_id, "credit_card");
     }
 
     #[test]
     fn empty_items_fails_validation() {
         let request = CalculateCartRequest {
             items: vec![],
+            shipping_method_id: "standard".to_string(),
+            payment_method_id: "credit_card".to_string(),
         };
         
         assert!(request.validate().is_err());
@@ -107,6 +115,8 @@ mod tests {
                     quantity: 0,
                 },
             ],
+            shipping_method_id: "standard".to_string(),
+            payment_method_id: "credit_card".to_string(),
         };
         
         assert!(request.validate().is_err());
@@ -125,6 +135,8 @@ mod tests {
                     quantity: 2,
                 },
             ],
+            shipping_method_id: "standard".to_string(),
+            payment_method_id: "credit_card".to_string(),
         };
         
         assert!(request.validate().is_err());

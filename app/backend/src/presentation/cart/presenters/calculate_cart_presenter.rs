@@ -1,4 +1,4 @@
-use crate::domain::Cart;
+use crate::application::dto::CalculateCartResultDto;
 use crate::presentation::cart::responses::CalculateCartResponse;
 use crate::presentation::cart::responses::CalculateCartItemResponse;
 
@@ -6,8 +6,9 @@ use crate::presentation::cart::responses::CalculateCartItemResponse;
 pub struct CartPresenter;
 
 impl CartPresenter {
-    /// ドメインのCartをCartResponseに変換
-    pub fn to_response(cart: Cart) -> Result<CalculateCartResponse, String> {
+    /// CalculateCartResultDtoをCartResponseに変換
+    pub fn to_response(result: CalculateCartResultDto) -> Result<CalculateCartResponse, String> {
+        let cart = &result.cart;
         let mut items = Vec::new();
         
         // 各カートアイテムを変換
@@ -28,8 +29,8 @@ impl CartPresenter {
         }
 
         // カート全体の計算
-        let subtotal = cart.total()
-            .map_err(|e| format!("Failed to calculate cart total: {}", e))?;
+        let subtotal = cart.subtotal()
+            .map_err(|e| format!("Failed to calculate cart subtotal: {}", e))?;
         
         let tax_amount = cart.tax_amount()
             .map_err(|e| format!("Failed to calculate tax amount: {}", e))?;
@@ -45,6 +46,8 @@ impl CartPresenter {
             tax_amount: tax_amount.yen(),
             total: total_with_tax.yen(),
             is_empty: cart.is_empty(),
+            shipping_fee: result.shipping_fee.yen(),
+            payment_fee: result.payment_fee.yen(),
         })
     }
 }
@@ -68,7 +71,8 @@ mod tests {
     #[test]
     fn empty_cart_to_response() {
         let cart = Cart::new();
-        let response = CartPresenter::to_response(cart).unwrap();
+        let result = CalculateCartResultDto::new(cart, Money::from_yen(500), Money::from_yen(200));
+        let response = CartPresenter::to_response(result).unwrap();
         
         assert!(response.is_empty);
         assert_eq!(response.item_count, 0);
@@ -76,6 +80,8 @@ mod tests {
         assert_eq!(response.subtotal, 0);
         assert_eq!(response.tax_amount, 0);
         assert_eq!(response.total, 0);
+        assert_eq!(response.shipping_fee, 500);
+        assert_eq!(response.payment_fee, 200);
         assert!(response.items.is_empty());
     }
 
@@ -94,7 +100,8 @@ mod tests {
         cart.add_item(item1).unwrap();
         cart.add_item(item2).unwrap();
 
-        let response = CartPresenter::to_response(cart).unwrap();
+        let result = CalculateCartResultDto::new(cart, Money::from_yen(500), Money::from_yen(330));
+        let response = CartPresenter::to_response(result).unwrap();
         
         assert!(!response.is_empty);
         assert_eq!(response.item_count, 2);
@@ -102,6 +109,8 @@ mod tests {
         assert_eq!(response.subtotal, 3500); // (1000 * 2) + (1500 * 1)
         assert_eq!(response.tax_amount, 350); // 10% tax
         assert_eq!(response.total, 3850); // subtotal + tax
+        assert_eq!(response.shipping_fee, 500);
+        assert_eq!(response.payment_fee, 330);
         assert_eq!(response.items.len(), 2);
     }
 
@@ -113,7 +122,8 @@ mod tests {
         let product_name = item.product_name().value().to_string();
         
         cart.add_item(item).unwrap();
-        let response = CartPresenter::to_response(cart).unwrap();
+        let result = CalculateCartResultDto::new(cart, Money::from_yen(500), Money::from_yen(0));
+        let response = CartPresenter::to_response(result).unwrap();
         
         assert_eq!(response.items.len(), 1);
         let item_response = &response.items[0];

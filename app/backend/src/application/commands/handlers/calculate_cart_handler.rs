@@ -1,24 +1,33 @@
 use std::sync::Arc;
 use uuid::Uuid;
 use crate::application::commands::models::CalculateCartCommand;
-use crate::application::repositories::ProductRepository;
+use crate::application::repositories::{ProductRepository, ShippingMethodRepository, PaymentMethodRepository};
+use crate::application::dto::CalculateCartResultDto;
 use crate::application::error::ApplicationError;
 use crate::domain::{Cart, CartItem, SKUId, ProductId, ProductName, Money};
 
 /// カート計算ハンドラ（ユースケース）
-pub struct CalculateCartHandler<R: ProductRepository> {
-    product_repository: Arc<R>,
+pub struct CalculateCartHandler {
+    product_repository: Arc<dyn ProductRepository>,
+    shipping_method_repository: Arc<dyn ShippingMethodRepository>,
+    payment_method_repository: Arc<dyn PaymentMethodRepository>,
 }
 
-impl<R: ProductRepository> CalculateCartHandler<R> {
-    pub fn new(product_repository: Arc<R>) -> Self {
+impl CalculateCartHandler {
+    pub fn new(
+        product_repository: Arc<dyn ProductRepository>,
+        shipping_method_repository: Arc<dyn ShippingMethodRepository>,
+        payment_method_repository: Arc<dyn PaymentMethodRepository>,
+    ) -> Self {
         Self {
             product_repository,
+            shipping_method_repository,
+            payment_method_repository,
         }
     }
 
     /// カート計算を実行
-    pub async fn handle(&self, command: CalculateCartCommand) -> Result<Cart, ApplicationError> {
+    pub async fn handle(&self, command: CalculateCartCommand) -> Result<CalculateCartResultDto, ApplicationError> {
         // 1. すべてのsku_idを抽出
         let sku_ids: Result<Vec<SKUId>, ApplicationError> = command
             .items
@@ -113,7 +122,33 @@ impl<R: ProductRepository> CalculateCartHandler<R> {
             cart_items.push(cart_item);
         }
 
-        // 5. Cartアグリゲートを作成
-        Ok(Cart::from_items(cart_items))
+        // 5. 配送方法の取得
+        let shipping_method = self.shipping_method_repository
+            .find_by_id(&command.shipping_method_id)
+            .await
+            .map_err(ApplicationError::Repository)?
+            .ok_or_else(|| ApplicationError::NotFound(
+                format!("Shipping method not found: {}", command.shipping_method_id)
+            ))?;
+
+        // 6. 支払い方法の取得
+        let payment_method = self.payment_method_repository
+            .find_by_id(&command.payment_method_id)
+            .await
+            .map_err(ApplicationError::Repository)?
+            .ok_or_else(|| ApplicationError::NotFound(
+                format!("Payment method not found: {}", command.payment_method_id)
+            ))?;
+
+        // 7. Cart作成と設定（Domain層で全て完結）
+        let mut cart = Cart::from_items(cart_items);
+        cart.apply_shipping_method(&shipping_method).map_err(ApplicationError::Domain)?;
+        cart.apply_payment_method(&payment_method).map_err(ApplicationError::Domain)?;
+
+        // 8. 手数料をCartから取得
+        let shipping_fee = cart.shipping_fee().unwrap_or(Money::from_yen(0));
+        let payment_fee = cart.payment_fee().unwrap_or(Money::from_yen(0));
+
+        Ok(CalculateCartResultDto::new(cart, shipping_fee, payment_fee))
     }
 } 

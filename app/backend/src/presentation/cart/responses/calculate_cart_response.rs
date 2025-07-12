@@ -24,4 +24,6 @@ pub struct CalculateCartResponse {
     pub tax_amount: u32,
     pub total: u32,
     pub is_empty: bool,
+    pub shipping_fee: u32,
+    pub payment_fee: u32,
 }

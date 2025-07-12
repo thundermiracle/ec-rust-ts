@@ -5,9 +5,7 @@ use crate::application::queries::handlers::{GetProductHandler, GetProductListHan
 use crate::application::commands::models::{BuyProductCommand, CalculateCartCommand};
 use crate::application::queries::models::{GetProductQuery, FindVariantsQuery};
 use crate::application::error::ApplicationError;
-use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO, PaymentMethodListDTO};
-use crate::infrastructure::database::repositories_impl::SqliteProductRepository;
-use crate::domain::Cart;
+use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO, PaymentMethodListDTO, CalculateCartResultDto};
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
 /// 
@@ -16,7 +14,7 @@ use crate::domain::Cart;
 pub struct Dispatcher {
     // コマンドハンドラ
     buy_product_handler: Arc<BuyProductHandler>,
-    calculate_cart_handler: Arc<CalculateCartHandler<SqliteProductRepository>>,
+    calculate_cart_handler: Arc<CalculateCartHandler>,
     
     // クエリハンドラ
     get_product_handler: Arc<GetProductHandler>,
@@ -31,7 +29,7 @@ pub struct Dispatcher {
 impl Dispatcher {
     pub fn new(
         buy_product_handler: Arc<BuyProductHandler>,
-        calculate_cart_handler: Arc<CalculateCartHandler<SqliteProductRepository>>,
+        calculate_cart_handler: Arc<CalculateCartHandler>,
         get_product_handler: Arc<GetProductHandler>,
         get_product_list_handler: Arc<GetProductListHandler>,
         get_category_list_handler: Arc<GetCategoryListHandler>,
@@ -59,7 +57,7 @@ impl Dispatcher {
     }
 
     /// カート計算コマンドを実行
-    pub async fn execute_calculate_cart_command(&self, command: CalculateCartCommand) -> Result<Cart, ApplicationError> {
+    pub async fn execute_calculate_cart_command(&self, command: CalculateCartCommand) -> Result<CalculateCartResultDto, ApplicationError> {
         self.calculate_cart_handler.handle(command).await
     }
 
