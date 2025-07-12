@@ -7,48 +7,32 @@ pub struct CartPresenter;
 
 impl CartPresenter {
     /// CalculateCartResultDtoをCartResponseに変換
-    pub fn to_response(result: CalculateCartResultDto) -> Result<CalculateCartResponse, String> {
-        let cart = &result.cart;
-        let mut items = Vec::new();
-        
+    /// 純粋なデータ変換のみを行う
+    pub fn to_response(result: CalculateCartResultDto) -> CalculateCartResponse {
         // 各カートアイテムを変換
-        for item in cart.items() {
-            let subtotal = item.subtotal()
-                .map_err(|e| format!("Failed to calculate subtotal: {}", e))?;
-            
-            let cart_item_response = CalculateCartItemResponse {
-                sku_id: item.sku_id().to_string(),
-                product_id: item.product_id().to_string(),
-                product_name: item.product_name().value().to_string(),
-                unit_price: item.unit_price().yen(),
-                quantity: item.quantity(),
-                subtotal: subtotal.yen(),
-            };
-            
-            items.push(cart_item_response);
-        }
+        let items = result.items
+            .into_iter()
+            .map(|item| CalculateCartItemResponse {
+                sku_id: item.sku_id,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                unit_price: item.unit_price.yen(),
+                quantity: item.quantity,
+                subtotal: item.subtotal.yen(),
+            })
+            .collect();
 
-        // カート全体の計算
-        let subtotal = cart.subtotal()
-            .map_err(|e| format!("Failed to calculate cart subtotal: {}", e))?;
-        
-        let tax_amount = cart.tax_amount()
-            .map_err(|e| format!("Failed to calculate tax amount: {}", e))?;
-        
-        let total_with_tax = cart.total_with_tax()
-            .map_err(|e| format!("Failed to calculate total with tax: {}", e))?;
-
-        Ok(CalculateCartResponse {
+        CalculateCartResponse {
             items,
-            total_quantity: cart.total_quantity(),
-            item_count: cart.item_count(),
-            subtotal: subtotal.yen(),
-            tax_amount: tax_amount.yen(),
-            total: total_with_tax.yen(),
-            is_empty: cart.is_empty(),
+            total_quantity: result.total_quantity,
+            item_count: result.item_count,
+            subtotal: result.subtotal.yen(),
+            tax_amount: result.tax_amount.yen(),
+            total: result.total_with_tax.yen(),
+            is_empty: result.is_empty,
             shipping_fee: result.shipping_fee.yen(),
             payment_fee: result.payment_fee.yen(),
-        })
+        }
     }
 }
 
@@ -71,8 +55,8 @@ mod tests {
     #[test]
     fn empty_cart_to_response() {
         let cart = Cart::new();
-        let result = CalculateCartResultDto::new(cart, Money::from_yen(500), Money::from_yen(200));
-        let response = CartPresenter::to_response(result).unwrap();
+        let result = CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(200)).unwrap();
+        let response = CartPresenter::to_response(result);
         
         assert!(response.is_empty);
         assert_eq!(response.item_count, 0);
@@ -100,8 +84,8 @@ mod tests {
         cart.add_item(item1).unwrap();
         cart.add_item(item2).unwrap();
 
-        let result = CalculateCartResultDto::new(cart, Money::from_yen(500), Money::from_yen(330));
-        let response = CartPresenter::to_response(result).unwrap();
+        let result = CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(330)).unwrap();
+        let response = CartPresenter::to_response(result);
         
         assert!(!response.is_empty);
         assert_eq!(response.item_count, 2);
@@ -122,8 +106,8 @@ mod tests {
         let product_name = item.product_name().value().to_string();
         
         cart.add_item(item).unwrap();
-        let result = CalculateCartResultDto::new(cart, Money::from_yen(500), Money::from_yen(0));
-        let response = CartPresenter::to_response(result).unwrap();
+        let result = CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(0)).unwrap();
+        let response = CartPresenter::to_response(result);
         
         assert_eq!(response.items.len(), 1);
         let item_response = &response.items[0];

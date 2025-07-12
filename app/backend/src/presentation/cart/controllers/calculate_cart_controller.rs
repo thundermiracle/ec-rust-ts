@@ -49,8 +49,7 @@ pub async fn handle(
         .await?; // ApplicationErrorからErrorへの自動変換を利用
 
     // 4. プレゼンターでレスポンスに変換
-    let response = CartPresenter::to_response(result)
-        .map_err(|msg| crate::application::error::ApplicationError::InvalidInput(msg))?;
+    let response = CartPresenter::to_response(result);
 
     println!("->> CalculateCartController::handle - success for cart with {} items", response.item_count);
     Ok(Json(response))

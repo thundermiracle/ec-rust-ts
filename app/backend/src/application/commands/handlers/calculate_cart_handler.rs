@@ -149,6 +149,7 @@ impl CalculateCartHandler {
         let shipping_fee = cart.shipping_fee().unwrap_or(Money::from_yen(0));
         let payment_fee = cart.payment_fee().unwrap_or(Money::from_yen(0));
 
-        Ok(CalculateCartResultDto::new(cart, shipping_fee, payment_fee))
+        CalculateCartResultDto::from_cart(cart, shipping_fee, payment_fee)
+            .map_err(ApplicationError::InvalidInput)
     }
 } 
