@@ -7,10 +7,10 @@ import { selectCartItems } from '@/store/cartSlice';
 import { 
   useGetProductListQuery, 
   useFindVariantsMutation, 
-  useCalculateCartMutation, 
 } from '@/store/api';
 import { enhanceCartItemsWithVariantAPI } from '@/components/Cart/CartDrawer/helper';
 import { useFormContext } from 'react-hook-form';
+import { useCartCalculation } from '@/hooks/useCartCalculation';
 import type { CheckoutFormData } from '@/lib/validators/checkout';
 
 // 表示用アイテム型（内部用）
@@ -40,8 +40,18 @@ export function OrderSummary() {
   // バリアント詳細取得
   const [findVariants, { data: variantsData, isLoading: isVariantsLoading }] = useFindVariantsMutation();
 
-  // カート計算
-  const [calculateCart, { data: cartCalculationData, isLoading: isCartCalculationLoading }] = useCalculateCartMutation();
+  // カート計算フック
+  const { 
+    subtotal, 
+    tax, 
+    shippingFee, 
+    paymentFee, 
+    total, 
+    isCartCalculationLoading 
+  } = useCartCalculation({
+    shippingMethod,
+    paymentMethod,
+  });
 
   // SKU ID 一意キー
   const skuIdsKey = useMemo(() => {
@@ -59,20 +69,6 @@ export function OrderSummary() {
     }
   }, [skuIdsKey, findVariants]);
 
-  // カート計算API呼び出し
-  useEffect(() => {
-    if (cartItems.length > 0 && shippingMethod && paymentMethod) {
-      const calculateCartRequest = {
-        items: cartItems.map(item => ({
-          skuId: item.skuId,
-          quantity: item.quantity,
-        })),
-        shipping_method_id: shippingMethod,
-        payment_method_id: paymentMethod,
-      };
-      calculateCart({ calculateCartRequest });
-    }
-  }, [cartItems, shippingMethod, paymentMethod, calculateCart]);
 
   // UI表示用カートアイテム
   const enhancedCartItems: OrderSummaryItem[] = useMemo(() => {
@@ -87,12 +83,6 @@ export function OrderSummary() {
     }));
   }, [cartItems, productListData, variantsData]);
 
-  // 金額計算（バックエンドからの値を使用）
-  const subtotal = cartCalculationData?.subtotal || 0;
-  const tax = cartCalculationData?.taxAmount || 0;
-  const shippingFee = cartCalculationData?.shippingFee || 0;
-  const paymentFee = cartCalculationData?.paymentFee || 0;
-  const total = cartCalculationData?.total || 0;
 
   // 支払い方法による手数料表示の判定
   const isCashOnDelivery = paymentMethod === 'cod';

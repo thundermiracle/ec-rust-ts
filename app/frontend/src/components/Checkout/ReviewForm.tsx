@@ -1,28 +1,43 @@
-import React from 'react';
-import { useFormContext, Controller } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import { Shield } from 'lucide-react';
-import { useGetShippingMethodListQuery } from '@/store/api';
-import { useGetPaymentMethodListQuery } from '@/store/generatedApi/paymentApi';
-import { type CheckoutFormData } from '@/lib/validators/checkout';
+import React from "react";
+import { useFormContext, Controller } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Shield } from "lucide-react";
+import { useGetShippingMethodListQuery } from "@/store/api";
+import { useGetPaymentMethodListQuery } from "@/store/generatedApi/paymentApi";
+import { type CheckoutFormData } from "@/lib/validators/checkout";
 
 interface ReviewFormProps {
   onBack: () => void;
   total?: number;
+  isLoadingTotal?: boolean;
+  hasCalculationError?: boolean;
 }
 
-// TODO: totalを動くようにする
-export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
-  const { register, control, getValues, formState: { isSubmitting, errors } } = useFormContext<CheckoutFormData>();
+export function ReviewForm({
+  onBack,
+  total = 0,
+  isLoadingTotal = false,
+  hasCalculationError,
+}: ReviewFormProps) {
+  const {
+    register,
+    control,
+    getValues,
+    formState: { isSubmitting },
+  } = useFormContext<CheckoutFormData>();
   const { data: shippingData } = useGetShippingMethodListQuery();
   const { data: paymentData } = useGetPaymentMethodListQuery();
   const values = getValues();
 
-  const selectedShipping = shippingData?.shippingMethods.find(option => option.id === values.shippingMethod);
-  const selectedPayment = paymentData?.items?.find(option => option.id === values.paymentMethod);
+  const selectedShipping = shippingData?.shippingMethods.find(
+    (option) => option.id === values.shippingMethod
+  );
+  const selectedPayment = paymentData?.items?.find(
+    (option) => option.id === values.paymentMethod
+  );
 
   return (
     <Card>
@@ -37,10 +52,14 @@ export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
         <div>
           <h3 className="font-medium mb-2">配送先</h3>
           <div className="text-sm text-muted-foreground">
-            <p>{values.lastName} {values.firstName}</p>
+            <p>
+              {values.lastName} {values.firstName}
+            </p>
             <p>{values.email}</p>
             <p>〒{values.postalCode}</p>
-            <p>{values.prefecture} {values.city}</p>
+            <p>
+              {values.prefecture} {values.city}
+            </p>
             <p>{values.address}</p>
             {values.apartment && <p>{values.apartment}</p>}
             <p>{values.phone}</p>
@@ -51,7 +70,9 @@ export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
         <div>
           <h3 className="font-medium mb-2">配送方法</h3>
           <p className="text-sm text-muted-foreground">
-            {selectedShipping?.name} - {selectedShipping?.description}
+            {selectedShipping?.name && selectedShipping?.description
+              ? `${selectedShipping.name} - ${selectedShipping.description}`
+              : "未選択"}
           </p>
         </div>
 
@@ -59,7 +80,7 @@ export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
         <div>
           <h3 className="font-medium mb-2">支払い方法</h3>
           <p className="text-sm text-muted-foreground">
-            {selectedPayment?.name}
+            {selectedPayment?.name ? selectedPayment.name : "未選択"}
           </p>
         </div>
 
@@ -68,10 +89,9 @@ export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
           label="注文メモ（任意）"
           placeholder="配送に関するご要望などがございましたらご記入ください"
           className="min-h-[80px]"
-          {...register('notes')}
+          {...register("notes")}
         />
-        {errors.notes && <p className="text-red-500 text-sm mt-1">{errors.notes.message}</p>}
-        
+
         <Controller
           name="subscribeNewsletter"
           control={control}
@@ -84,26 +104,39 @@ export function ReviewForm({ onBack, total = 0 }: ReviewFormProps) {
             />
           )}
         />
-        {errors.subscribeNewsletter && <p className="text-red-500 text-sm mt-1">{errors.subscribeNewsletter.message}</p>}
+
+        {hasCalculationError && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-red-800 text-sm">
+              合計金額の計算に失敗しました。配送方法と支払い方法を再選択してください。
+            </p>
+          </div>
+        )}
 
         <div className="flex space-x-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="flex-1"
             onClick={onBack}
             type="button"
           >
             戻る
           </Button>
-          <Button 
+          <Button
             type="submit"
             className="flex-1"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingTotal || hasCalculationError}
           >
-            {isSubmitting ? '注文処理中...' : `¥${total.toLocaleString()}で注文確定`}
+            {isSubmitting
+              ? "注文処理中..."
+              : isLoadingTotal
+                ? "計算中..."
+                : hasCalculationError
+                  ? "計算エラー"
+                  : `¥${total.toLocaleString()}で注文確定`}
           </Button>
         </div>
       </CardContent>
     </Card>
   );
-} 
+}

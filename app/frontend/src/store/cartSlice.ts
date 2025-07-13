@@ -120,7 +120,7 @@ export const {
 } = cartSlice.actions;
 
 // Selectors
-export const selectCartItems = (state: { cart: CartState }) => {
+export const selectCartItems = (state: { cart: CartState; [key: string]: unknown }) => {
   // Lazily load from localStorage if cart has not been initialized yet
   if (!state.cart.initialized) {
     return loadCartFromStorage();
@@ -128,11 +128,11 @@ export const selectCartItems = (state: { cart: CartState }) => {
   return state.cart.items;
 };
 
-export const selectCartInitialized = (state: { cart: CartState }) => state.cart.initialized;
+export const selectCartInitialized = (state: { cart: CartState; [key: string]: unknown }) => state.cart.initialized;
 
-export const selectCartIsOpen = (state: { cart: CartState }) => state.cart.isOpen;
+export const selectCartIsOpen = (state: { cart: CartState; [key: string]: unknown }) => state.cart.isOpen;
 
-export const selectCartItemsCount = (state: { cart: CartState }) => 
+export const selectCartItemsCount = (state: { cart: CartState; [key: string]: unknown }) => 
   selectCartItems(state).reduce((total, item) => total + item.quantity, 0);
 
 export default cartSlice.reducer; 

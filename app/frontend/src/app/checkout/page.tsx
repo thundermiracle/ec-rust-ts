@@ -10,6 +10,7 @@ import {
   selectCartItems, 
   clearCart,
 } from '@/store/cartSlice';
+import { useCartCalculation } from '@/hooks/useCartCalculation';
 import { Button } from '@/components/ui/button';
 import { Stepper } from '@/components/ui/stepper';
 import { 
@@ -56,6 +57,20 @@ export default function CheckoutPage() {
       notes: '',
       subscribeNewsletter: false,
     },
+  });
+
+  // フォームの配送・支払い方法を監視
+  const shippingMethod = formContext.watch('shippingMethod');
+  const paymentMethod = formContext.watch('paymentMethod');
+  
+  // カート計算フック
+  const { 
+    total, 
+    isCartCalculationLoading, 
+    cartCalculationError 
+  } = useCartCalculation({
+    shippingMethod,
+    paymentMethod,
   });
 
   // カートの初期化が完了してから、カートが空の場合は/に戻る
@@ -150,7 +165,12 @@ export default function CheckoutPage() {
                   <PaymentForm onNext={handleNextStep} onPrev={handlePrevStep} />
                 )}
                 {currentStep === 'review' && (
-                  <ReviewForm onBack={handlePrevStep} />
+                  <ReviewForm 
+                    onBack={handlePrevStep} 
+                    total={total}
+                    isLoadingTotal={isCartCalculationLoading}
+                    hasCalculationError={Boolean(cartCalculationError)}
+                  />
                 )}
               </div>
 
