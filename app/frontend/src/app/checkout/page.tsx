@@ -20,6 +20,7 @@ import {
   OrderSummary,
 } from '@/components/Checkout';
 import { checkoutSchema, type CheckoutFormData, shippingSchema, paymentSchema } from '@/lib/validators/checkout';
+import { useCheckoutStorage } from '@/hooks/useCheckoutStorage';
 import { ArrowLeft } from 'lucide-react';
 
 const CHECKOUT_STEPS = [
@@ -59,6 +60,11 @@ export default function CheckoutPage() {
     },
   });
 
+  // localStorage管理のカスタムhook
+  const { saveShipping, savePayment, clearStorage } = useCheckoutStorage({
+    formContext
+  });
+
   // フォームの配送・支払い方法を監視
   const shippingMethod = formContext.watch('shippingMethod');
   const paymentMethod = formContext.watch('paymentMethod');
@@ -86,8 +92,9 @@ export default function CheckoutPage() {
       // TODO: 実際のAPIエンドポイントに注文データを送信
       console.log('注文データ:', data);
       
-      // 注文完了後、カートをクリアして完了ページへ
+      // 注文完了後、カートとlocalStorageをクリアして完了ページへ
       dispatch(clearCart());
+      clearStorage();
       router.push('/checkout/success');
       
     } catch (error) {
@@ -101,11 +108,19 @@ export default function CheckoutPage() {
     if (currentStep === 'shipping') {
       const fields = Object.keys(shippingSchema.shape) as (keyof CheckoutFormData)[];
       isValid = await formContext.trigger(fields);
-      if (isValid) setCurrentStep('payment');
+      if (isValid) {
+        // 配送情報をlocalStorageに保存
+        saveShipping();
+        setCurrentStep('payment');
+      }
     } else if (currentStep === 'payment') {
       const fields = Object.keys(paymentSchema.shape) as (keyof CheckoutFormData)[];
       isValid = await formContext.trigger(fields);
-      if (isValid) setCurrentStep('review');
+      if (isValid) {
+        // 支払い情報をlocalStorageに保存（クレジットカード情報除く）
+        savePayment();
+        setCurrentStep('review');
+      }
     }
   };
 
