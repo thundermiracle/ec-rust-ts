@@ -10,6 +10,11 @@ pub struct Money {
 }
 
 impl Money {
+    /// ゼロ円を作成
+    pub fn zero() -> Self {
+        Self::from_yen(0)
+    }
+
     /// 円単位で金額を作成
     pub fn from_yen(yen: u32) -> Self {
         Self {
@@ -27,6 +32,11 @@ impl Money {
 
     /// 円単位の金額を取得
     pub fn yen(&self) -> u32 {
+        self.amount_in_yen
+    }
+
+    /// 円単位の金額を取得（別名）
+    pub fn amount_in_yen(&self) -> u32 {
         self.amount_in_yen
     }
 
@@ -105,6 +115,7 @@ impl Money {
         let tax = (self.amount_in_yen as f64 * 0.10).ceil() as u32;
         Money::from_yen(tax)
     }
+
 
     /// 日本円フォーマット
     pub fn format_jpy(&self) -> String {

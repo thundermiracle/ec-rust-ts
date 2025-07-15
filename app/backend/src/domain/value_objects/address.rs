@@ -74,6 +74,11 @@ impl Address {
         ).trim_end().to_string()
     }
 
+    /// フォーマット済み住所（full_addressの別名）
+    pub fn formatted(&self) -> String {
+        self.full_address()
+    }
+
     fn validate_postal_code(postal_code: &str) -> Result<(), AddressError> {
         if postal_code.trim().is_empty() {
             return Err(AddressError::Empty);

@@ -1,7 +1,7 @@
 use crate::domain::error::DomainError;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProductName(String);
 
 impl ProductName {
@@ -31,7 +31,7 @@ impl std::fmt::Display for ProductName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SKUName(String);
 
 impl SKUName {

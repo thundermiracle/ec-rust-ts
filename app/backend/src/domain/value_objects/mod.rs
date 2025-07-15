@@ -8,9 +8,13 @@ mod address;
 mod email;
 mod phone_number;
 mod personal_info;
+mod order_number;
 
 pub use self::money::Money;
-pub use self::identifiers::{ProductId, SKUId, CategoryId, ColorId, DeliveryInfoId, ShippingMethodId};
+pub use self::identifiers::{
+    ProductId, SKUId, CategoryId, ColorId, DeliveryInfoId, ShippingMethodId,
+    OrderId, PaymentMethodId, CustomerId
+};
 pub use self::names::{ProductName, SKUName, SKUCode};
 pub use self::descriptions::Description;
 pub use self::dimensions_material::{Dimensions, Material};
@@ -18,4 +22,5 @@ pub use self::variant_attributes::VariantAttributes;
 pub use self::address::Address;
 pub use self::email::Email;
 pub use self::phone_number::PhoneNumber;
-pub use self::personal_info::PersonalInfo;
+pub use self::personal_info::{PersonalInfo, FirstName, LastName};
+pub use self::order_number::OrderNumber;
