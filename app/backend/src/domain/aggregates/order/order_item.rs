@@ -155,7 +155,7 @@ mod tests {
     fn test_is_same_sku() {
         let item1 = create_test_order_item();
         let item2_same_sku = OrderItem::new(
-            item1.sku_id,
+            item1.sku_id.clone(),
             SKUCode::new("DIFFERENT-CODE".to_string()).unwrap(),
             ProductName::new("Different Product".to_string()).unwrap(),
             SKUName::new("Different SKU".to_string()).unwrap(),
