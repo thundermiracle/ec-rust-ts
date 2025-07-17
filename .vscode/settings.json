@@ -2,5 +2,9 @@
     "rust-analyzer.linkedProjects": [
         "app/backend/Cargo.toml"
     ],
-    "nxConsole.generateAiAgentRules": true
+    "nxConsole.generateAiAgentRules": true,
+    "[rust]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    }
 }
