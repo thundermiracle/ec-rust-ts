@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use crate::application::commands::handlers::CalculateCartHandler;
 use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler, FindVariantsHandler, GetShippingMethodListHandler, GetPaymentMethodListHandler};
-use crate::application::commands::models::CalculateCartCommand;
+use crate::application::commands::models::{CalculateCartCommand, CreateOrderCommand};
 use crate::application::queries::models::{GetProductQuery, FindVariantsQuery};
 use crate::application::error::ApplicationError;
-use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, ProductListDTO, VariantSummaryDTO, ShippingMethodListDTO, PaymentMethodListDTO, CalculateCartResultDto};
+use crate::application::dto::{CalculateCartResultDto, CategoryListDTO, ColorListDTO, CreateOrderResultDTO, PaymentMethodListDTO, ProductDTO, ProductListDTO, ShippingMethodListDTO, VariantSummaryDTO};
+use crate::application::commands::handlers::CreateOrderHandler;
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
 /// 
@@ -14,6 +15,7 @@ use crate::application::dto::{CategoryListDTO, ColorListDTO, ProductDTO, Product
 pub struct Dispatcher {
     // コマンドハンドラ
     calculate_cart_handler: Arc<CalculateCartHandler>,
+    create_order_handler: Arc<CreateOrderHandler>,
     
     // クエリハンドラ
     get_product_handler: Arc<GetProductHandler>,
@@ -28,6 +30,7 @@ pub struct Dispatcher {
 impl Dispatcher {
     pub fn new(
         calculate_cart_handler: Arc<CalculateCartHandler>,
+        create_order_handler: Arc<CreateOrderHandler>,
         get_product_handler: Arc<GetProductHandler>,
         get_product_list_handler: Arc<GetProductListHandler>,
         get_category_list_handler: Arc<GetCategoryListHandler>,
@@ -38,6 +41,7 @@ impl Dispatcher {
     ) -> Self {
         Self {
             calculate_cart_handler,
+            create_order_handler,
             get_product_handler,
             get_product_list_handler,
             get_category_list_handler,
@@ -51,6 +55,11 @@ impl Dispatcher {
     /// カート計算コマンドを実行
     pub async fn execute_calculate_cart_command(&self, command: CalculateCartCommand) -> Result<CalculateCartResultDto, ApplicationError> {
         self.calculate_cart_handler.handle(command).await
+    }
+
+    /// 注文作成コマンドを実行
+    pub async fn execute_create_order_command(&self, command: CreateOrderCommand) -> Result<CreateOrderResultDTO, ApplicationError> {
+        self.create_order_handler.handle(command).await
     }
 
     /// 商品取得クエリを実行

@@ -1,6 +1,5 @@
 use crate::application::error::RepositoryError;
 use crate::domain::aggregates::order::Order;
-use crate::domain::value_objects::{OrderId, OrderNumber};
 
 #[async_trait::async_trait]
 pub trait OrderRepository: Send + Sync {

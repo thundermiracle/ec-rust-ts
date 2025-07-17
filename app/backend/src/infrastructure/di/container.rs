@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository, SqliteShippingMethodRepository, SqlitePaymentMethodRepository};
+use crate::application::commands::handlers::CreateOrderHandler;
+use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository, SqliteShippingMethodRepository, SqlitePaymentMethodRepository, SqliteOrderRepository};
 use crate::infrastructure::database::db::get_db;
-use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository, ShippingMethodRepository, PaymentMethodRepository};
+use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository, ShippingMethodRepository, PaymentMethodRepository, OrderRepository};
 use crate::application::{
     Dispatcher,
     GetProductHandler, 
@@ -29,6 +30,8 @@ pub struct Container {
     pub shipping_method_repository: Arc<dyn ShippingMethodRepository + Send + Sync>,
     /// PaymentMethodRepositoryの実装
     pub payment_method_repository: Arc<dyn PaymentMethodRepository + Send + Sync>,
+    /// OrderRepositoryの実装
+    pub order_repository: Arc<dyn OrderRepository + Send + Sync>,
     /// CQRSディスパッチャ
     pub dispatcher: Arc<Dispatcher>,
 }
@@ -59,6 +62,7 @@ impl Container {
         let variant_repository = Arc::new(SqliteVariantRepository::new(pool.clone()));
         let shipping_method_repository = Arc::new(SqliteShippingMethodRepository::new(Arc::new(pool.clone())));
         let payment_method_repository = Arc::new(SqlitePaymentMethodRepository::new(pool.clone()));
+        let order_repository = Arc::new(SqliteOrderRepository::new(pool.clone()));
         
         // ハンドラを作成
         let calculate_cart_handler = Arc::new(CalculateCartHandler::new(product_repository.clone(), shipping_method_repository.clone(), payment_method_repository.clone()));
@@ -69,10 +73,12 @@ impl Container {
         let find_variants_handler = Arc::new(FindVariantsHandler::new(variant_repository.clone()));
         let get_shipping_method_list_handler = Arc::new(GetShippingMethodListHandler::new(shipping_method_repository.clone()));
         let get_payment_method_list_handler = Arc::new(GetPaymentMethodListHandler::new(payment_method_repository.clone()));
+        let create_order_handler = Arc::new(CreateOrderHandler::new(product_repository.clone(), shipping_method_repository.clone(), payment_method_repository.clone(), order_repository.clone()));
         
         // ディスパッチャを作成
         let dispatcher = Arc::new(Dispatcher::new(
             calculate_cart_handler,
+            create_order_handler,
             get_product_handler, 
             get_product_list_handler,
             get_category_list_handler,
@@ -89,6 +95,7 @@ impl Container {
             variant_repository,
             shipping_method_repository,
             payment_method_repository,
+            order_repository,
             dispatcher,
         })
     }

@@ -20,6 +20,9 @@ pub async fn run_migrations(database_url: &str) -> Result<()> {
     // Phase 5: 支払い方法テーブル作成
     create_payment_methods_table(&pool).await?;
     
+    // Phase 6: 注文関連テーブル作成
+    create_order_tables(&pool).await?;
+    
     println!("✅ All migrations completed successfully!");
     Ok(())
 }
@@ -317,6 +320,143 @@ async fn create_payment_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
     .await?;
 
     println!("💳 Payment methods table created with initial data");
+    Ok(())
+}
+
+/// Phase 6: 注文関連テーブル作成
+async fn create_order_tables(pool: &sqlx::SqlitePool) -> Result<()> {
+    // 注文テーブル
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS orders (
+            id TEXT PRIMARY KEY,
+            order_number TEXT UNIQUE NOT NULL,
+            
+            -- 顧客情報
+            customer_first_name TEXT NOT NULL,
+            customer_last_name TEXT NOT NULL,
+            customer_email TEXT NOT NULL,
+            customer_phone TEXT NOT NULL,
+            
+            -- 配送情報
+            shipping_method_id TEXT NOT NULL,
+            shipping_fee INTEGER NOT NULL,
+            shipping_postal_code TEXT NOT NULL,
+            shipping_prefecture TEXT NOT NULL,
+            shipping_city TEXT NOT NULL,
+            shipping_street TEXT NOT NULL,
+            shipping_building TEXT,
+            
+            -- 支払い情報
+            payment_method_id TEXT NOT NULL,
+            payment_fee INTEGER NOT NULL,
+            payment_details TEXT,
+            
+            -- 価格情報
+            subtotal INTEGER NOT NULL,
+            shipping_fee_total INTEGER NOT NULL,
+            payment_fee_total INTEGER NOT NULL,
+            tax_amount INTEGER NOT NULL,
+            total_amount INTEGER NOT NULL,
+            
+            -- ステータスとタイムスタンプ
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            paid_at TEXT,
+            shipped_at TEXT,
+            delivered_at TEXT,
+            cancelled_at TEXT,
+            
+            -- オプション
+            delivery_info_id TEXT,
+            notes TEXT,
+            
+            FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id),
+            FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id),
+            CONSTRAINT valid_status CHECK (status IN ('pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
+            CONSTRAINT positive_amounts CHECK (subtotal >= 0 AND tax_amount >= 0 AND total_amount >= 0)
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    // 注文アイテムテーブル
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id TEXT NOT NULL,
+            
+            -- SKU情報
+            sku_id TEXT NOT NULL,
+            sku_code TEXT NOT NULL,
+            product_name TEXT NOT NULL,
+            sku_name TEXT NOT NULL,
+            
+            -- 価格情報
+            unit_price INTEGER NOT NULL,
+            quantity INTEGER NOT NULL,
+            subtotal INTEGER NOT NULL,
+            
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            FOREIGN KEY (sku_id) REFERENCES skus(id),
+            CONSTRAINT positive_quantity CHECK (quantity > 0),
+            CONSTRAINT positive_price CHECK (unit_price >= 0),
+            CONSTRAINT valid_subtotal CHECK (subtotal = unit_price * quantity)
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    // 注文イベントテーブル
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS order_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            event_data TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            CONSTRAINT valid_event_type CHECK (event_type IN (
+                'order_created', 'order_paid', 'order_shipped', 
+                'order_delivered', 'order_cancelled', 'order_refunded'
+            ))
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    // インデックス作成
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number)")
+        .execute(pool).await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_items_sku_id ON order_items(sku_id)")
+        .execute(pool).await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_events_order_id ON order_events(order_id)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_events_type ON order_events(event_type)")
+        .execute(pool).await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_events_created_at ON order_events(created_at)")
+        .execute(pool).await?;
+
+    println!("📦 Order tables created (orders, order_items, order_events)");
     Ok(())
 }
 

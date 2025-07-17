@@ -15,6 +15,39 @@ pub enum OrderStatus {
     Refunded,       // Order refunded
 }
 
+impl std::fmt::Display for OrderStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OrderStatus::Pending => write!(f, "pending"),
+            OrderStatus::Paid => write!(f, "paid"),
+            OrderStatus::Processing => write!(f, "processing"),
+            OrderStatus::Shipped => write!(f, "shipped"),
+            OrderStatus::Delivered => write!(f, "delivered"),
+            OrderStatus::Cancelled => write!(f, "cancelled"),
+            OrderStatus::Refunded => write!(f, "refunded"),
+        }
+    }
+}
+
+impl std::str::FromStr for OrderStatus {
+    type Err = crate::domain::error::DomainError;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "pending" => Ok(OrderStatus::Pending),
+            "paid" => Ok(OrderStatus::Paid),
+            "processing" => Ok(OrderStatus::Processing),
+            "shipped" => Ok(OrderStatus::Shipped),
+            "delivered" => Ok(OrderStatus::Delivered),
+            "cancelled" => Ok(OrderStatus::Cancelled),
+            "refunded" => Ok(OrderStatus::Refunded),
+            _ => Err(crate::domain::error::DomainError::InvalidProductData(
+                format!("Invalid order status: {}", s)
+            ))
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderTimestamps {
     pub created_at: DateTime<Utc>,
