@@ -1,5 +1,8 @@
 pub mod handlers;
 pub mod models;
 
-pub use handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler, FindVariantsHandler};
-pub use models::{GetProductQuery, FindVariantsQuery};
+pub use handlers::{
+    FindVariantsHandler, GetCategoryListHandler, GetColorListHandler, GetProductHandler,
+    GetProductListHandler,
+};
+pub use models::{FindVariantsQuery, GetProductQuery};

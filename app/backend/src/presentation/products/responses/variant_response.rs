@@ -38,4 +38,4 @@ pub struct VariantResponse {
     /// 品切れかどうか
     #[serde(rename = "isSoldOut")]
     pub is_sold_out: bool,
-} 
+}

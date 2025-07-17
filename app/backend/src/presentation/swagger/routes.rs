@@ -8,8 +8,8 @@ use crate::presentation::swagger::openapi::ApiDoc;
 /// SwaggerUIホスティングとOpenAPI JSONエンドポイント
 /// Clean Architecture: Interface Adapters層でSwagger UI関連のエンドポイントを提供
 pub fn swagger_routes() -> Router<Arc<Container>> {
-    Router::new()
-        .route("/api-docs/openapi.json", get(|| async {
-            axum::Json(ApiDoc::openapi())
-        }))
-} 
+    Router::new().route(
+        "/api-docs/openapi.json",
+        get(|| async { axum::Json(ApiDoc::openapi()) }),
+    )
+}

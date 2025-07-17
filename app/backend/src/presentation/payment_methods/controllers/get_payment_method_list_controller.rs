@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use crate::error::Result;
 use crate::infrastructure::Container;
+use crate::presentation::ErrorResponse;
 use crate::presentation::payment_methods::presenters::GetPaymentMethodListPresenter;
 use crate::presentation::payment_methods::responses::GetPaymentMethodListResponse;
-use crate::presentation::ErrorResponse;
 
 /// PaymentMethod List Controller
 pub struct GetPaymentMethodListController;

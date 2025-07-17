@@ -17,19 +17,11 @@ pub struct ColorName(String);
 
 impl Color {
     /// 新しい色を作成
-    pub fn new(
-        id: u32,
-        name: ColorName, 
-        hex: String, 
-    ) -> Result<Self, DomainError> {
+    pub fn new(id: u32, name: ColorName, hex: String) -> Result<Self, DomainError> {
         // HEXコードのバリデーション
         Self::validate_hex_code(&hex)?;
 
-        Ok(Self { 
-            id,
-            name, 
-            hex,
-        })
+        Ok(Self { id, name, hex })
     }
 
     /// HEXコードのバリデーション
@@ -71,7 +63,7 @@ impl ColorName {
     /// 新しい色名を作成
     pub fn new(name: String) -> Result<Self, DomainError> {
         let trimmed = name.trim();
-        
+
         if trimmed.is_empty() {
             return Err(DomainError::InvalidProductData(
                 "Color name cannot be empty".to_string(),
@@ -165,4 +157,4 @@ mod tests {
         let color_name = ColorName::new(long_name);
         assert!(color_name.is_err());
     }
-} 
+}

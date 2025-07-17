@@ -2,7 +2,6 @@ use uuid::Uuid;
 
 use crate::domain::ProductId;
 
-
 /// 商品クエリ結果 - API応答に最適化されたDTO
 /// Clean Architecture: Application層のQuery DTO.
 /// Presentation層に渡すための、ビジネスロジックを含まない純粋なデータ構造です。

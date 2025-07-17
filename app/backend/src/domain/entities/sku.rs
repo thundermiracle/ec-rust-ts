@@ -1,5 +1,5 @@
-use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
+use crate::domain::value_objects::*;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone)]
@@ -171,7 +171,10 @@ impl SKU {
     }
 
     // Variant関連
-    pub fn update_variant_attributes(&mut self, attributes: VariantAttributes) -> Result<(), DomainError> {
+    pub fn update_variant_attributes(
+        &mut self,
+        attributes: VariantAttributes,
+    ) -> Result<(), DomainError> {
         self.variant_attributes = attributes;
         self.updated_at = Utc::now();
         Ok(())
@@ -195,7 +198,9 @@ impl SKU {
 
     pub fn savings_amount(&self) -> Money {
         if let Some(sale_price) = self.sale_price {
-            self.base_price.subtract(sale_price).unwrap_or(Money::from_yen(0))
+            self.base_price
+                .subtract(sale_price)
+                .unwrap_or(Money::from_yen(0))
         } else {
             Money::from_yen(0)
         }
@@ -215,7 +220,11 @@ impl SKU {
 
     pub fn full_display_name(&self) -> String {
         if self.variant_attributes.has_any_attributes() {
-            format!("{} - {}", self.name.value(), self.variant_attributes.display_name())
+            format!(
+                "{} - {}",
+                self.name.value(),
+                self.variant_attributes.display_name()
+            )
         } else {
             self.name.value().to_string()
         }
@@ -387,4 +396,4 @@ impl SKUStatus {
     pub fn is_active(&self) -> bool {
         matches!(self, SKUStatus::Active)
     }
-} 
+}

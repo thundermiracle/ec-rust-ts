@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use sqlx::{Row, SqlitePool};
 
-use crate::application::repositories::PaymentMethodRepository;
+use crate::application::dto::{PaymentMethodDTO, PaymentMethodListDTO};
 use crate::application::error::RepositoryError;
-use crate::application::dto::{PaymentMethodListDTO, PaymentMethodDTO};
+use crate::application::repositories::PaymentMethodRepository;
 use crate::domain::entities::PaymentMethod;
 
 /// SQLite実装のPaymentMethodRepository
@@ -39,11 +39,13 @@ impl PaymentMethodRepository for SqlitePaymentMethodRepository {
     }
 
     async fn find_by_id(&self, id: &str) -> Result<Option<PaymentMethod>, RepositoryError> {
-        let row = sqlx::query("SELECT id, name, description, is_active, sort_order FROM payment_methods WHERE id = ?")
-            .bind(id)
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+        let row = sqlx::query(
+            "SELECT id, name, description, is_active, sort_order FROM payment_methods WHERE id = ?",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
         match row {
             Some(row) => {
@@ -53,8 +55,9 @@ impl PaymentMethodRepository for SqlitePaymentMethodRepository {
                     row.get::<String, _>("description"),
                     row.get::<bool, _>("is_active"),
                     row.get::<u32, _>("sort_order"),
-                ).map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-                
+                )
+                .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
                 Ok(Some(payment_method))
             }
             None => Ok(None),

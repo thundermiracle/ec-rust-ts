@@ -1,7 +1,7 @@
-use crate::domain::value_objects::*;
-use crate::domain::error::DomainError;
-use crate::domain::{SKU, ProductImage, Tag};
 use crate::domain::entities::sku::StockAdjustment;
+use crate::domain::error::DomainError;
+use crate::domain::value_objects::*;
+use crate::domain::{ProductImage, SKU, Tag};
 use chrono::{DateTime, Utc};
 use std::collections::HashSet;
 
@@ -15,14 +15,14 @@ pub struct Product {
     is_best_seller: bool,
     is_quick_ship: bool,
     is_available: bool,
-    
+
     // SKUs（このProductに属するSKU）
     skus: Vec<SKU>,
-    
+
     // 関連エンティティ
     images: Vec<ProductImage>,
     tags: Vec<Tag>,
-    
+
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -54,9 +54,10 @@ impl Product {
     pub fn add_sku(&mut self, sku: SKU) -> Result<(), DomainError> {
         // ビジネスルール: 同じSKUコードは追加不可
         if self.skus.iter().any(|s| s.sku_code() == sku.sku_code()) {
-            return Err(DomainError::BusinessRuleViolation(
-                format!("SKU code '{}' already exists in this product", sku.sku_code().value()),
-            ));
+            return Err(DomainError::BusinessRuleViolation(format!(
+                "SKU code '{}' already exists in this product",
+                sku.sku_code().value()
+            )));
         }
 
         // ビジネスルール: SKUは同じProductに属する必要がある
@@ -72,7 +73,10 @@ impl Product {
     }
 
     pub fn remove_sku(&mut self, sku_id: &SKUId) -> Result<SKU, DomainError> {
-        let index = self.skus.iter().position(|s| s.id() == sku_id)
+        let index = self
+            .skus
+            .iter()
+            .position(|s| s.id() == sku_id)
             .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
 
         let removed_sku = self.skus.remove(index);
@@ -93,28 +97,39 @@ impl Product {
     }
 
     // 在庫操作（Product経由でSKU操作）
-    pub fn adjust_sku_stock(&mut self, sku_id: &SKUId, adjustment: StockAdjustment) -> Result<(), DomainError> {
-        let sku = self.find_sku_by_id_mut(sku_id)
+    pub fn adjust_sku_stock(
+        &mut self,
+        sku_id: &SKUId,
+        adjustment: StockAdjustment,
+    ) -> Result<(), DomainError> {
+        let sku = self
+            .find_sku_by_id_mut(sku_id)
             .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
-        
+
         sku.adjust_stock(adjustment)?;
         self.updated_at = Utc::now();
         Ok(())
     }
 
     pub fn reserve_sku_stock(&mut self, sku_id: &SKUId, quantity: u32) -> Result<(), DomainError> {
-        let sku = self.find_sku_by_id_mut(sku_id)
+        let sku = self
+            .find_sku_by_id_mut(sku_id)
             .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
-        
+
         sku.reserve_stock(quantity)?;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    pub fn set_sku_sale_price(&mut self, sku_id: &SKUId, sale_price: Money) -> Result<(), DomainError> {
-        let sku = self.find_sku_by_id_mut(sku_id)
+    pub fn set_sku_sale_price(
+        &mut self,
+        sku_id: &SKUId,
+        sale_price: Money,
+    ) -> Result<(), DomainError> {
+        let sku = self
+            .find_sku_by_id_mut(sku_id)
             .ok_or_else(|| DomainError::BusinessRuleViolation("SKU not found".to_string()))?;
-        
+
         sku.set_sale_price(sale_price)?;
         self.updated_at = Utc::now();
         Ok(())
@@ -122,8 +137,11 @@ impl Product {
 
     // Product レベルのビジネスロジック
     pub fn has_variants(&self) -> bool {
-        self.skus.len() > 1 || 
-        self.skus.iter().any(|sku| sku.variant_attributes().has_any_attributes())
+        self.skus.len() > 1
+            || self
+                .skus
+                .iter()
+                .any(|sku| sku.variant_attributes().has_any_attributes())
     }
 
     pub fn is_available_for_purchase(&self) -> bool {
@@ -142,7 +160,7 @@ impl Product {
         let prices: Vec<Money> = self.skus.iter().map(|sku| sku.current_price()).collect();
         let min_price = prices.iter().min().cloned()?;
         let max_price = prices.iter().max().cloned()?;
-        
+
         Some((min_price, max_price))
     }
 
@@ -196,7 +214,10 @@ impl Product {
     }
 
     pub fn out_of_stock_skus(&self) -> Vec<&SKU> {
-        self.skus.iter().filter(|sku| sku.is_out_of_stock()).collect()
+        self.skus
+            .iter()
+            .filter(|sku| sku.is_out_of_stock())
+            .collect()
     }
 
     // 画像管理
@@ -211,7 +232,11 @@ impl Product {
 
     // タグ管理
     pub fn add_tag(&mut self, tag: Tag) {
-        if !self.tags.iter().any(|t| t.slug().value() == tag.slug().value()) {
+        if !self
+            .tags
+            .iter()
+            .any(|t| t.slug().value() == tag.slug().value())
+        {
             self.tags.push(tag);
             self.updated_at = Utc::now();
         }
@@ -245,12 +270,12 @@ impl Product {
 
     pub fn discontinue(&mut self) -> Result<(), DomainError> {
         self.is_available = false;
-        
+
         // 全SKUも販売停止
         for sku in &mut self.skus {
             sku.discontinue();
         }
-        
+
         self.updated_at = Utc::now();
         Ok(())
     }

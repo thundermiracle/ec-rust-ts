@@ -1,13 +1,13 @@
 use axum::extract::State;
-use axum::{routing::post, Json, Router};
+use axum::{Json, Router, routing::post};
 use std::sync::Arc;
 
-use crate::infrastructure::Container;
 use crate::error::Result;
-use crate::presentation::variants::requests::FindVariantsRequest;
-use crate::presentation::variants::presenters::FindVariantsPresenter;
-use crate::presentation::variants::responses::FindVariantsResponse;
+use crate::infrastructure::Container;
 use crate::presentation::ErrorResponse;
+use crate::presentation::variants::presenters::FindVariantsPresenter;
+use crate::presentation::variants::requests::FindVariantsRequest;
+use crate::presentation::variants::responses::FindVariantsResponse;
 
 /// Get Variants Controller - バリアント詳細取得の単一責任
 /// Clean Architecture: 1つのユースケースに対して1つのController
@@ -16,8 +16,7 @@ pub struct FindVariantsController;
 impl FindVariantsController {
     /// このControllerのルート定義
     pub fn routes() -> Router<Arc<Container>> {
-        Router::new()
-            .route("/variants", post(handle))
+        Router::new().route("/variants", post(handle))
     }
 }
 
@@ -39,18 +38,23 @@ pub async fn handle(
     State(container): State<Arc<Container>>,
     Json(request): Json<FindVariantsRequest>,
 ) -> Result<Json<FindVariantsResponse>> {
-    println!("->> FindVariantsController::handle - sku_ids: {:?}", request.sku_ids);
+    println!(
+        "->> FindVariantsController::handle - sku_ids: {:?}",
+        request.sku_ids
+    );
 
     // リクエストからクエリを作成
-    let query = request.to_query()
-        .map_err(|_| crate::application::error::ApplicationError::Validation(
-            "Invalid SKU ID format".to_string()
-        ))?;
+    let query = request.to_query().map_err(|_| {
+        crate::application::error::ApplicationError::Validation("Invalid SKU ID format".to_string())
+    })?;
 
     let dispatcher = container.get_dispatcher();
-    
+
     let variants = dispatcher.execute_find_variants_query(query).await?;
-        
-    println!("->> FindVariantsController::handle - success for {} variants", variants.len());
+
+    println!(
+        "->> FindVariantsController::handle - success for {} variants",
+        variants.len()
+    );
     Ok(Json(FindVariantsPresenter::present(variants)))
 }

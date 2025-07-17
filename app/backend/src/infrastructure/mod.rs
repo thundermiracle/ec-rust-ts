@@ -5,4 +5,4 @@ pub mod database;
 pub mod di;
 
 // メインモジュールからのexport
-pub use di::{Container, get_container}; 
+pub use di::{Container, get_container};

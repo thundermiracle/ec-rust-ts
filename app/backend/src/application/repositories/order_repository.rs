@@ -5,7 +5,7 @@ use crate::domain::aggregates::order::Order;
 pub trait OrderRepository: Send + Sync {
     /// 注文を保存
     async fn save(&self, order: &Order) -> Result<(), RepositoryError>;
-    
+
     /// 注文を更新
     async fn update(&self, order: &Order) -> Result<(), RepositoryError>;
 }

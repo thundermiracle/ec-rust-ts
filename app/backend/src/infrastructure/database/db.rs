@@ -26,13 +26,13 @@ pub async fn init_db(database_url: &str) -> Result<()> {
     // すでに初期化されている場合はエラーを返す
     match DB_INSTANCE.set(Arc::new(db)) {
         Ok(_) => Ok(()),
-        Err(_) => Err(anyhow::anyhow!("Database already initialized"))
+        Err(_) => Err(anyhow::anyhow!("Database already initialized")),
     }
 }
 
 pub async fn get_db() -> Result<Arc<Database>> {
     match DB_INSTANCE.get() {
         Some(db) => Ok(db.clone()),
-        None => Err(anyhow::anyhow!("Database not initialized"))
+        None => Err(anyhow::anyhow!("Database not initialized")),
     }
 }

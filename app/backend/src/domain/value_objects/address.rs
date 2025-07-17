@@ -29,7 +29,7 @@ impl Address {
         Self::validate_field(&prefecture, "都道府県")?;
         Self::validate_field(&city, "市区町村")?;
         Self::validate_field(&street, "番地")?;
-        
+
         if let Some(ref building) = building {
             Self::validate_field(building, "建物名")?;
         }
@@ -71,7 +71,9 @@ impl Address {
             self.city,
             self.street,
             self.building.as_ref().map(|s| s.as_str()).unwrap_or("")
-        ).trim_end().to_string()
+        )
+        .trim_end()
+        .to_string()
     }
 
     /// フォーマット済み住所（full_addressの別名）
@@ -116,7 +118,9 @@ impl fmt::Display for AddressError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AddressError::Empty => write!(f, "住所の項目が入力されていません"),
-            AddressError::InvalidPostalCode => write!(f, "郵便番号の形式が正しくありません（例: 123-4567）"),
+            AddressError::InvalidPostalCode => {
+                write!(f, "郵便番号の形式が正しくありません（例: 123-4567）")
+            }
             AddressError::TooLong => write!(f, "住所の項目が長すぎます（100文字以内）"),
         }
     }
@@ -158,8 +162,12 @@ mod tests {
             "渋谷区".to_string(),
             "渋谷1-1-1".to_string(),
             Some("渋谷ビル".to_string()),
-        ).unwrap();
-        
-        assert_eq!(address.full_address(), "〒123-4567 東京都 渋谷区 渋谷1-1-1 渋谷ビル");
+        )
+        .unwrap();
+
+        assert_eq!(
+            address.full_address(),
+            "〒123-4567 東京都 渋谷区 渋谷1-1-1 渋谷ビル"
+        );
     }
 }

@@ -14,4 +14,4 @@ pub struct ErrorResponse {
     pub details: Option<String>,
 }
 
-impl ErrorResponse {} 
+impl ErrorResponse {}

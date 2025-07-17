@@ -1,5 +1,5 @@
-use crate::application::error::RepositoryError;
 use crate::application::dto::PaymentMethodListDTO;
+use crate::application::error::RepositoryError;
 use crate::domain::entities::PaymentMethod;
 
 #[async_trait::async_trait]

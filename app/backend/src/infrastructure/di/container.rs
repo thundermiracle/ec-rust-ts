@@ -1,19 +1,24 @@
 use std::sync::Arc;
 
-use crate::application::commands::handlers::CreateOrderHandler;
-use crate::infrastructure::database::repositories_impl::{SqliteProductRepository, SqliteCategoryRepository, SqliteColorRepository, SqliteVariantRepository, SqliteShippingMethodRepository, SqlitePaymentMethodRepository, SqliteOrderRepository};
-use crate::infrastructure::database::db::get_db;
-use crate::application::repositories::{ProductRepository, CategoryRepository, ColorRepository, VariantRepository, ShippingMethodRepository, PaymentMethodRepository, OrderRepository};
-use crate::application::{
-    Dispatcher,
-    GetProductHandler, 
-    GetProductListHandler,
-    GetCategoryListHandler,
-    GetColorListHandler,
-    FindVariantsHandler,
-};
-use crate::application::queries::handlers::{GetShippingMethodListHandler, GetPaymentMethodListHandler};
 use crate::application::commands::CalculateCartHandler;
+use crate::application::commands::handlers::CreateOrderHandler;
+use crate::application::queries::handlers::{
+    GetPaymentMethodListHandler, GetShippingMethodListHandler,
+};
+use crate::application::repositories::{
+    CategoryRepository, ColorRepository, OrderRepository, PaymentMethodRepository,
+    ProductRepository, ShippingMethodRepository, VariantRepository,
+};
+use crate::application::{
+    Dispatcher, FindVariantsHandler, GetCategoryListHandler, GetColorListHandler,
+    GetProductHandler, GetProductListHandler,
+};
+use crate::infrastructure::database::db::get_db;
+use crate::infrastructure::database::repositories_impl::{
+    SqliteCategoryRepository, SqliteColorRepository, SqliteOrderRepository,
+    SqlitePaymentMethodRepository, SqliteProductRepository, SqliteShippingMethodRepository,
+    SqliteVariantRepository,
+};
 
 /// コンテナはアプリケーションの依存関係を管理します
 /// Uncle Bob's Clean Architecture: Frameworks & Drivers層でDI設定
@@ -42,44 +47,62 @@ impl Container {
         // データベースプールを取得
         let db = get_db().await?;
         let pool = db.get_pool().clone();
-        
+
         Self::new_with_pool(pool).await
     }
-    
+
     /// テスト用コンテナを作成します
     pub async fn new_for_test() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         // テスト用インメモリDB
         let pool = sqlx::SqlitePool::connect("sqlite::memory:").await?;
         Self::new_with_pool(pool).await
     }
-    
+
     /// プールを指定してコンテナを作成します
-    async fn new_with_pool(pool: sqlx::SqlitePool) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    async fn new_with_pool(
+        pool: sqlx::SqlitePool,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         // リポジトリの実装をインスタンス化（プールを注入）
         let product_repository = Arc::new(SqliteProductRepository::new(pool.clone()));
         let category_repository = Arc::new(SqliteCategoryRepository::new(pool.clone()));
         let color_repository = Arc::new(SqliteColorRepository::new(pool.clone()));
         let variant_repository = Arc::new(SqliteVariantRepository::new(pool.clone()));
-        let shipping_method_repository = Arc::new(SqliteShippingMethodRepository::new(Arc::new(pool.clone())));
+        let shipping_method_repository =
+            Arc::new(SqliteShippingMethodRepository::new(Arc::new(pool.clone())));
         let payment_method_repository = Arc::new(SqlitePaymentMethodRepository::new(pool.clone()));
         let order_repository = Arc::new(SqliteOrderRepository::new(pool.clone()));
-        
+
         // ハンドラを作成
-        let calculate_cart_handler = Arc::new(CalculateCartHandler::new(product_repository.clone(), shipping_method_repository.clone(), payment_method_repository.clone()));
+        let calculate_cart_handler = Arc::new(CalculateCartHandler::new(
+            product_repository.clone(),
+            shipping_method_repository.clone(),
+            payment_method_repository.clone(),
+        ));
         let get_product_handler = Arc::new(GetProductHandler::new(product_repository.clone()));
-        let get_product_list_handler = Arc::new(GetProductListHandler::new(product_repository.clone()));
-        let get_category_list_handler = Arc::new(GetCategoryListHandler::new(category_repository.clone()));
+        let get_product_list_handler =
+            Arc::new(GetProductListHandler::new(product_repository.clone()));
+        let get_category_list_handler =
+            Arc::new(GetCategoryListHandler::new(category_repository.clone()));
         let get_color_list_handler = Arc::new(GetColorListHandler::new(color_repository.clone()));
         let find_variants_handler = Arc::new(FindVariantsHandler::new(variant_repository.clone()));
-        let get_shipping_method_list_handler = Arc::new(GetShippingMethodListHandler::new(shipping_method_repository.clone()));
-        let get_payment_method_list_handler = Arc::new(GetPaymentMethodListHandler::new(payment_method_repository.clone()));
-        let create_order_handler = Arc::new(CreateOrderHandler::new(product_repository.clone(), shipping_method_repository.clone(), payment_method_repository.clone(), order_repository.clone()));
-        
+        let get_shipping_method_list_handler = Arc::new(GetShippingMethodListHandler::new(
+            shipping_method_repository.clone(),
+        ));
+        let get_payment_method_list_handler = Arc::new(GetPaymentMethodListHandler::new(
+            payment_method_repository.clone(),
+        ));
+        let create_order_handler = Arc::new(CreateOrderHandler::new(
+            product_repository.clone(),
+            shipping_method_repository.clone(),
+            payment_method_repository.clone(),
+            order_repository.clone(),
+        ));
+
         // ディスパッチャを作成
         let dispatcher = Arc::new(Dispatcher::new(
             calculate_cart_handler,
             create_order_handler,
-            get_product_handler, 
+            get_product_handler,
             get_product_list_handler,
             get_category_list_handler,
             get_color_list_handler,
@@ -87,7 +110,7 @@ impl Container {
             get_shipping_method_list_handler,
             get_payment_method_list_handler,
         ));
-        
+
         Ok(Self {
             product_repository,
             category_repository,
@@ -99,7 +122,7 @@ impl Container {
             dispatcher,
         })
     }
-    
+
     /// Dispatcherを取得します
     pub fn get_dispatcher(&self) -> Arc<Dispatcher> {
         self.dispatcher.clone()

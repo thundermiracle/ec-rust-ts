@@ -1,6 +1,4 @@
-use crate::domain::value_objects::{
-    Email, PersonalInfo, Address, PhoneNumber, DeliveryInfoId
-};
+use crate::domain::value_objects::{Address, DeliveryInfoId, Email, PersonalInfo, PhoneNumber};
 use chrono::{DateTime, Utc};
 use std::fmt;
 
@@ -8,19 +6,19 @@ use std::fmt;
 pub struct DeliveryInfo {
     // 識別子
     pub id: DeliveryInfoId,
-    
+
     // 基本配送情報（不変）
     pub email: Email,
     pub personal_info: PersonalInfo,
     pub address: Address,
     pub phone_number: PhoneNumber,
-    
+
     // 配送状態（可変）
     pub status: DeliveryStatus,
     pub carrier: Option<String>,
     pub tracking_number: Option<String>,
     pub shipping_method: Option<String>,
-    
+
     // タイムスタンプ
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -40,7 +38,10 @@ pub enum DeliveryStatus {
 
 #[derive(Debug, PartialEq)]
 pub enum DeliveryInfoError {
-    InvalidStatusTransition { from: DeliveryStatus, to: DeliveryStatus },
+    InvalidStatusTransition {
+        from: DeliveryStatus,
+        to: DeliveryStatus,
+    },
     MissingTrackingInfo,
     AlreadyDelivered,
     InvalidData(String),
@@ -55,7 +56,7 @@ impl DeliveryInfo {
         shipping_method: Option<String>,
     ) -> Self {
         let now = Utc::now();
-        
+
         Self {
             id: DeliveryInfoId::new(),
             email,
@@ -159,7 +160,7 @@ impl DeliveryInfo {
 
     fn is_valid_status_transition(&self, new_status: &DeliveryStatus) -> bool {
         use DeliveryStatus::*;
-        
+
         match (&self.status, new_status) {
             (Pending, Processing) => true,
             (Processing, Shipped) => true,
@@ -212,7 +213,10 @@ impl DeliveryInfo {
     }
 
     pub fn is_in_progress(&self) -> bool {
-        matches!(self.status, DeliveryStatus::Processing | DeliveryStatus::Shipped | DeliveryStatus::InTransit)
+        matches!(
+            self.status,
+            DeliveryStatus::Processing | DeliveryStatus::Shipped | DeliveryStatus::InTransit
+        )
     }
 }
 
@@ -262,7 +266,11 @@ impl fmt::Display for DeliveryInfoError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DeliveryInfoError::InvalidStatusTransition { from, to } => {
-                write!(f, "無効な状態遷移: {} から {} への変更はできません", from, to)
+                write!(
+                    f,
+                    "無効な状態遷移: {} から {} への変更はできません",
+                    from, to
+                )
             }
             DeliveryInfoError::MissingTrackingInfo => {
                 write!(f, "配送業者と追跡番号が設定されていません")
@@ -280,21 +288,29 @@ impl fmt::Display for DeliveryInfoError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::value_objects::{Email, PersonalInfo, Address, PhoneNumber};
+    use crate::domain::value_objects::{Address, Email, PersonalInfo, PhoneNumber};
 
     fn create_test_delivery_info() -> DeliveryInfo {
         let email = Email::new("test@example.com".to_string()).unwrap();
-        let personal_info = PersonalInfo::from_strings("太郎".to_string(), "田中".to_string()).unwrap();
+        let personal_info =
+            PersonalInfo::from_strings("太郎".to_string(), "田中".to_string()).unwrap();
         let address = Address::new(
             "123-4567".to_string(),
             "東京都".to_string(),
             "渋谷区".to_string(),
             "渋谷1-1-1".to_string(),
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let phone_number = PhoneNumber::new("03-1234-5678".to_string()).unwrap();
 
-        DeliveryInfo::new(email, personal_info, address, phone_number, Some("宅配便".to_string()))
+        DeliveryInfo::new(
+            email,
+            personal_info,
+            address,
+            phone_number,
+            Some("宅配便".to_string()),
+        )
     }
 
     #[test]
@@ -308,19 +324,25 @@ mod tests {
     #[test]
     fn test_status_transitions() {
         let mut delivery_info = create_test_delivery_info();
-        
+
         // Pending -> Processing
-        assert!(delivery_info.update_status(DeliveryStatus::Processing).is_ok());
+        assert!(
+            delivery_info
+                .update_status(DeliveryStatus::Processing)
+                .is_ok()
+        );
         assert_eq!(delivery_info.status, DeliveryStatus::Processing);
-        
+
         // Processing -> Shipped (should fail without tracking info)
         assert!(delivery_info.mark_as_shipped().is_err());
-        
+
         // Set tracking info and try again
-        delivery_info.set_tracking_info("ヤマト運輸".to_string(), "1234567890".to_string()).unwrap();
+        delivery_info
+            .set_tracking_info("ヤマト運輸".to_string(), "1234567890".to_string())
+            .unwrap();
         assert!(delivery_info.mark_as_shipped().is_ok());
         assert_eq!(delivery_info.status, DeliveryStatus::Shipped);
-        
+
         // Shipped -> InTransit -> Delivered
         assert!(delivery_info.mark_as_in_transit().is_ok());
         assert!(delivery_info.mark_as_delivered().is_ok());
@@ -331,7 +353,7 @@ mod tests {
     #[test]
     fn test_invalid_status_transition() {
         let mut delivery_info = create_test_delivery_info();
-        
+
         // Pending -> Delivered (invalid)
         let result = delivery_info.update_status(DeliveryStatus::Delivered);
         assert!(result.is_err());
@@ -341,7 +363,7 @@ mod tests {
     #[test]
     fn test_mark_as_failed() {
         let mut delivery_info = create_test_delivery_info();
-        
+
         // Can fail from any status
         assert!(delivery_info.mark_as_failed().is_ok());
         assert_eq!(delivery_info.status, DeliveryStatus::Failed);

@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use crate::error::Result;
 use crate::infrastructure::Container;
+use crate::presentation::ErrorResponse;
 use crate::presentation::colors::presenters::GetColorListPresenter;
 use crate::presentation::colors::responses::GetColorListResponse;
-use crate::presentation::ErrorResponse;
 
 /// Colors Controller - 色一覧取得
 pub struct GetColorListController;
@@ -17,7 +17,6 @@ impl GetColorListController {
         Router::new().route("/colors", get(handle))
     }
 }
-
 
 /// GET /colors - 色一覧取得処理
 #[utoipa::path(
@@ -30,9 +29,7 @@ impl GetColorListController {
     ),
     tag = "Colors"
 )]
-pub async fn handle(
-    State(container): State<Arc<Container>>,
-) -> Result<Json<GetColorListResponse>> {
+pub async fn handle(State(container): State<Arc<Container>>) -> Result<Json<GetColorListResponse>> {
     println!("->> GetColorListController::handle");
 
     let dispatcher = container.get_dispatcher();

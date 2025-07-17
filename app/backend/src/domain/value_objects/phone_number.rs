@@ -45,7 +45,7 @@ impl PhoneNumber {
 
     pub fn formatted(&self) -> String {
         let clean = self.value.replace("-", "");
-        
+
         match clean.len() {
             10 => format!("{}-{}-{}", &clean[0..2], &clean[2..6], &clean[6..10]),
             11 => format!("{}-{}-{}", &clean[0..3], &clean[3..7], &clean[7..11]),
@@ -102,7 +102,7 @@ mod tests {
     fn test_formatted_display() {
         let phone = PhoneNumber::new("0312345678".to_string()).unwrap();
         assert_eq!(phone.formatted(), "03-1234-5678");
-        
+
         let phone = PhoneNumber::new("09012345678".to_string()).unwrap();
         assert_eq!(phone.formatted(), "090-1234-5678");
     }

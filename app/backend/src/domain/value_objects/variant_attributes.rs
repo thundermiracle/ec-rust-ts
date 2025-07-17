@@ -53,14 +53,14 @@ impl VariantAttributes {
 
     pub fn display_name(&self) -> String {
         let mut parts = Vec::new();
-        
+
         if let Some(dimensions) = &self.dimensions {
             parts.push(dimensions.value());
         }
         if let Some(material) = &self.material {
             parts.push(material.value());
         }
-        
+
         if parts.is_empty() {
             "Standard".to_string()
         } else {
@@ -74,11 +74,11 @@ impl VariantAttributes {
         }
 
         let mut parts = Vec::new();
-        
+
         if let Some(material) = &self.material {
             parts.push(material.abbreviated().to_uppercase());
         }
-        
+
         if parts.is_empty() {
             "STD".to_string()
         } else {
@@ -104,4 +104,4 @@ impl Default for VariantAttributes {
     fn default() -> Self {
         Self::new()
     }
-} 
+}

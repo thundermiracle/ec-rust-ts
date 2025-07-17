@@ -1,6 +1,6 @@
 use crate::application::dto::CalculateCartResultDto;
-use crate::presentation::cart::responses::CalculateCartResponse;
 use crate::presentation::cart::responses::CalculateCartItemResponse;
+use crate::presentation::cart::responses::CalculateCartResponse;
 
 /// カートプレゼンター
 pub struct CartPresenter;
@@ -10,7 +10,8 @@ impl CartPresenter {
     /// 純粋なデータ変換のみを行う
     pub fn to_response(result: CalculateCartResultDto) -> CalculateCartResponse {
         // 各カートアイテムを変換
-        let items = result.items
+        let items = result
+            .items
             .into_iter()
             .map(|item| CalculateCartItemResponse {
                 sku_id: item.sku_id,
@@ -49,15 +50,18 @@ mod tests {
             ProductName::new("Test Product".to_string()).unwrap(),
             Money::from_yen(1000),
             2,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
     fn empty_cart_to_response() {
         let cart = Cart::new();
-        let result = CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(200)).unwrap();
+        let result =
+            CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(200))
+                .unwrap();
         let response = CartPresenter::to_response(result);
-        
+
         assert!(response.is_empty);
         assert_eq!(response.item_count, 0);
         assert_eq!(response.total_quantity, 0);
@@ -79,14 +83,17 @@ mod tests {
             ProductName::new("Another Product".to_string()).unwrap(),
             Money::from_yen(1500),
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         cart.add_item(item1).unwrap();
         cart.add_item(item2).unwrap();
 
-        let result = CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(330)).unwrap();
+        let result =
+            CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(330))
+                .unwrap();
         let response = CartPresenter::to_response(result);
-        
+
         assert!(!response.is_empty);
         assert_eq!(response.item_count, 2);
         assert_eq!(response.total_quantity, 3); // 2 + 1
@@ -104,11 +111,13 @@ mod tests {
         let item = create_test_cart_item();
         let sku_id = item.sku_id().to_string();
         let product_name = item.product_name().value().to_string();
-        
+
         cart.add_item(item).unwrap();
-        let result = CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(0)).unwrap();
+        let result =
+            CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(0))
+                .unwrap();
         let response = CartPresenter::to_response(result);
-        
+
         assert_eq!(response.items.len(), 1);
         let item_response = &response.items[0];
         assert_eq!(item_response.sku_id, sku_id);

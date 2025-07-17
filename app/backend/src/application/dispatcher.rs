@@ -1,22 +1,28 @@
 use std::sync::Arc;
 
 use crate::application::commands::handlers::CalculateCartHandler;
-use crate::application::queries::handlers::{GetProductHandler, GetProductListHandler, GetCategoryListHandler, GetColorListHandler, FindVariantsHandler, GetShippingMethodListHandler, GetPaymentMethodListHandler};
-use crate::application::commands::models::{CalculateCartCommand, CreateOrderCommand};
-use crate::application::queries::models::{GetProductQuery, FindVariantsQuery};
-use crate::application::error::ApplicationError;
-use crate::application::dto::{CalculateCartResultDto, CategoryListDTO, ColorListDTO, CreateOrderResultDTO, PaymentMethodListDTO, ProductDTO, ProductListDTO, ShippingMethodListDTO, VariantSummaryDTO};
 use crate::application::commands::handlers::CreateOrderHandler;
+use crate::application::commands::models::{CalculateCartCommand, CreateOrderCommand};
+use crate::application::dto::{
+    CalculateCartResultDto, CategoryListDTO, ColorListDTO, CreateOrderResultDTO,
+    PaymentMethodListDTO, ProductDTO, ProductListDTO, ShippingMethodListDTO, VariantSummaryDTO,
+};
+use crate::application::error::ApplicationError;
+use crate::application::queries::handlers::{
+    FindVariantsHandler, GetCategoryListHandler, GetColorListHandler, GetPaymentMethodListHandler,
+    GetProductHandler, GetProductListHandler, GetShippingMethodListHandler,
+};
+use crate::application::queries::models::{FindVariantsQuery, GetProductQuery};
 
 /// CQRS パターンのコマンド・クエリディスパッチャ
-/// 
+///
 /// コマンドとクエリの実行を一元的に管理し、適切なハンドラに処理を委譲します。
 /// これにより、プレゼンテーション層はビジネスロジックの詳細を知る必要がなくなります。
 pub struct Dispatcher {
     // コマンドハンドラ
     calculate_cart_handler: Arc<CalculateCartHandler>,
     create_order_handler: Arc<CreateOrderHandler>,
-    
+
     // クエリハンドラ
     get_product_handler: Arc<GetProductHandler>,
     get_product_list_handler: Arc<GetProductListHandler>,
@@ -53,17 +59,26 @@ impl Dispatcher {
     }
 
     /// カート計算コマンドを実行
-    pub async fn execute_calculate_cart_command(&self, command: CalculateCartCommand) -> Result<CalculateCartResultDto, ApplicationError> {
+    pub async fn execute_calculate_cart_command(
+        &self,
+        command: CalculateCartCommand,
+    ) -> Result<CalculateCartResultDto, ApplicationError> {
         self.calculate_cart_handler.handle(command).await
     }
 
     /// 注文作成コマンドを実行
-    pub async fn execute_create_order_command(&self, command: CreateOrderCommand) -> Result<CreateOrderResultDTO, ApplicationError> {
+    pub async fn execute_create_order_command(
+        &self,
+        command: CreateOrderCommand,
+    ) -> Result<CreateOrderResultDTO, ApplicationError> {
         self.create_order_handler.handle(command).await
     }
 
     /// 商品取得クエリを実行
-    pub async fn execute_get_product_query(&self, query: GetProductQuery) -> Result<ProductDTO, ApplicationError> {
+    pub async fn execute_get_product_query(
+        &self,
+        query: GetProductQuery,
+    ) -> Result<ProductDTO, ApplicationError> {
         self.get_product_handler.handle(query).await
     }
 
@@ -73,7 +88,9 @@ impl Dispatcher {
     }
 
     /// カテゴリリスト取得クエリを実行
-    pub async fn execute_get_category_list_query(&self) -> Result<CategoryListDTO, ApplicationError> {
+    pub async fn execute_get_category_list_query(
+        &self,
+    ) -> Result<CategoryListDTO, ApplicationError> {
         self.get_category_list_handler.handle().await
     }
 
@@ -83,17 +100,24 @@ impl Dispatcher {
     }
 
     /// バリアントリスト取得クエリを実行
-    pub async fn execute_find_variants_query(&self, query: FindVariantsQuery) -> Result<Vec<VariantSummaryDTO>, ApplicationError> {
+    pub async fn execute_find_variants_query(
+        &self,
+        query: FindVariantsQuery,
+    ) -> Result<Vec<VariantSummaryDTO>, ApplicationError> {
         self.find_variants_handler.handle(query).await
     }
 
     /// 配送方法リスト取得クエリを実行
-    pub async fn execute_get_shipping_method_list_query(&self) -> Result<ShippingMethodListDTO, ApplicationError> {
+    pub async fn execute_get_shipping_method_list_query(
+        &self,
+    ) -> Result<ShippingMethodListDTO, ApplicationError> {
         self.get_shipping_method_list_handler.handle().await
     }
 
     /// 支払い方法リスト取得クエリを実行
-    pub async fn execute_get_payment_method_list_query(&self) -> Result<PaymentMethodListDTO, ApplicationError> {
+    pub async fn execute_get_payment_method_list_query(
+        &self,
+    ) -> Result<PaymentMethodListDTO, ApplicationError> {
         self.get_payment_method_list_handler.handle().await
     }
-} 
+}

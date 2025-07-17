@@ -20,4 +20,4 @@ pub struct FindVariantsItemResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FindVariantsResponse {
     pub variants: Vec<FindVariantsItemResponse>,
-} 
+}

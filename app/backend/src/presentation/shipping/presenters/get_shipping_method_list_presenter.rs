@@ -1,5 +1,7 @@
 use crate::application::dto::ShippingMethodListDTO;
-use crate::presentation::shipping::responses::{GetShippingMethodListResponse, GetShippingMethodListItemResponse};
+use crate::presentation::shipping::responses::{
+    GetShippingMethodListItemResponse, GetShippingMethodListResponse,
+};
 
 /// Shipping Method List Presenter
 /// Clean Architecture: Interface Adapters層
@@ -31,19 +33,17 @@ mod tests {
     #[test]
     fn test_present() {
         use crate::application::dto::ShippingMethodDTO;
-        
-        let methods = vec![
-            ShippingMethodDTO {
-                id: "standard".to_string(),
-                name: "標準配送".to_string(),
-                description: "5-7営業日".to_string(),
-                price: 500,
-            },
-        ];
+
+        let methods = vec![ShippingMethodDTO {
+            id: "standard".to_string(),
+            name: "標準配送".to_string(),
+            description: "5-7営業日".to_string(),
+            price: 500,
+        }];
 
         let shipping_method_list = ShippingMethodListDTO::new(methods);
         let response = GetShippingMethodListPresenter::present(shipping_method_list);
-        
+
         assert_eq!(response.shipping_methods.len(), 1);
         assert_eq!(response.shipping_methods[0].id, "standard");
         assert_eq!(response.shipping_methods[0].name, "標準配送");

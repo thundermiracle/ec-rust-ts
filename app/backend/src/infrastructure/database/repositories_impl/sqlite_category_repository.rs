@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use sqlx::{Row, SqlitePool};
 
+use crate::application::dto::{CategoryDTO, CategoryListDTO};
 use crate::application::error::RepositoryError;
 use crate::application::repositories::CategoryRepository;
-use crate::application::dto::{CategoryListDTO, CategoryDTO};
 
 /// SQLite実装のCategoryRepository
 /// Clean Architecture: Frameworks & Drivers層
@@ -32,7 +32,7 @@ impl CategoryRepository for SqliteCategoryRepository {
                 display_order
             FROM categories
             ORDER BY display_order ASC, name ASC
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await
@@ -42,25 +42,24 @@ impl CategoryRepository for SqliteCategoryRepository {
         let mut categories = Vec::new();
 
         for row in category_rows {
-            let id: String = row.try_get("id")
+            let id: String = row
+                .try_get("id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let name: String = row.try_get("name")
+            let name: String = row
+                .try_get("name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let slug: String = row.try_get("slug")
+            let slug: String = row
+                .try_get("slug")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let parent_id: Option<String> = row.try_get("parent_id")
+            let parent_id: Option<String> = row
+                .try_get("parent_id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let display_order: i64 = row.try_get("display_order")
+            let display_order: i64 = row
+                .try_get("display_order")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // CategoryDTOを構築
-            let category_dto = CategoryDTO::new(
-                id,
-                name,
-                slug,
-                parent_id,
-                display_order as u32,
-            );
+            let category_dto = CategoryDTO::new(id, name, slug, parent_id, display_order as u32);
 
             categories.push(category_dto);
         }

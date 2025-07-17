@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use sqlx::{SqlitePool, Row};
+use sqlx::{Row, SqlitePool};
 use std::sync::Arc;
 
-use crate::application::repositories::ShippingMethodRepository;
+use crate::application::dto::{ShippingMethodDTO, ShippingMethodListDTO};
 use crate::application::error::RepositoryError;
-use crate::application::dto::{ShippingMethodListDTO, ShippingMethodDTO};
+use crate::application::repositories::ShippingMethodRepository;
 use crate::domain::entities::ShippingMethod;
-use crate::domain::value_objects::{ShippingMethodId, Money};
+use crate::domain::value_objects::{Money, ShippingMethodId};
 
 pub struct SqliteShippingMethodRepository {
     pool: Arc<SqlitePool>,
@@ -27,7 +27,7 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
             FROM shipping_methods
             WHERE is_active = 1
             ORDER BY sort_order ASC
-            "#
+            "#,
         )
         .fetch_all(self.pool.as_ref())
         .await
@@ -58,7 +58,7 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
             SELECT id, name, description, price, is_active, sort_order, created_at, updated_at
             FROM shipping_methods
             WHERE id = ?
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(self.pool.as_ref())
@@ -68,10 +68,10 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
         match row {
             Some(row) => {
                 use chrono::{DateTime, Utc};
-                
+
                 let shipping_method_id = ShippingMethodId::new(row.get::<String, _>("id"))
                     .map_err(|e| RepositoryError::DatabaseError(e.to_string()))?;
-                
+
                 let shipping_method = ShippingMethod::with_timestamps(
                     shipping_method_id,
                     row.get::<String, _>("name"),
@@ -82,11 +82,10 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
                     row.get::<DateTime<Utc>, _>("created_at"),
                     row.get::<DateTime<Utc>, _>("updated_at"),
                 );
-                
+
                 Ok(Some(shipping_method))
             }
             None => Ok(None),
         }
     }
 }
-

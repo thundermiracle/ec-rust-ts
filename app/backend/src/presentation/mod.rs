@@ -1,13 +1,13 @@
-mod products;
+mod cart;
 mod categories;
 mod colors;
-mod variants;
-mod cart;
-mod shipping;
-mod payment_methods;
 mod common;
-mod swagger;
+mod payment_methods;
+mod products;
 mod routes;
+mod shipping;
+mod swagger;
+mod variants;
 
-pub use routes::routes;
 pub use common::ErrorResponse;
+pub use routes::routes;

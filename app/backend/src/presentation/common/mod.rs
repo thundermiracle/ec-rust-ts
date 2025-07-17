@@ -3,4 +3,4 @@
 pub mod responses;
 
 // 共通レスポンス型のエクスポート
-pub use responses::ErrorResponse; 
+pub use responses::ErrorResponse;

@@ -4,25 +4,25 @@ use sqlx::SqlitePool;
 pub async fn run_migrations(database_url: &str) -> Result<()> {
     // データベース接続を直接作成
     let pool = SqlitePool::connect(database_url).await?;
-    
+
     // Phase 1: 正規化スキーマ（カテゴリー、色、タグなど）
     create_normalized_schema(&pool).await?;
-    
+
     // Phase 2: 商品テーブル作成（カテゴリーと色テーブルに依存）
     create_products_table(&pool).await?;
-    
+
     // Phase 3: SKUと商品関連テーブル作成（商品テーブルに依存）
     create_product_related_tables(&pool).await?;
-    
+
     // Phase 4: 配送方法テーブル作成
     create_shipping_methods_table(&pool).await?;
-    
+
     // Phase 5: 支払い方法テーブル作成
     create_payment_methods_table(&pool).await?;
-    
+
     // Phase 6: 注文関連テーブル作成
     create_order_tables(&pool).await?;
-    
+
     println!("✅ All migrations completed successfully!");
     Ok(())
 }
@@ -42,18 +42,23 @@ async fn create_normalized_schema(pool: &sqlx::SqlitePool) -> Result<()> {
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
     // カテゴリーインデックス
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_categories_display_order ON categories(display_order)",
+    )
+    .execute(pool)
+    .await?;
 
     // 色テーブル - 中央集権的な色マスターテーブル
     sqlx::query(
@@ -65,16 +70,18 @@ async fn create_normalized_schema(pool: &sqlx::SqlitePool) -> Result<()> {
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
     // 色インデックス
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_colors_name ON colors(name)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_colors_hex ON colors(hex)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
 
     // タグテーブル
     sqlx::query(
@@ -88,18 +95,23 @@ async fn create_normalized_schema(pool: &sqlx::SqlitePool) -> Result<()> {
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
     // タグインデックス
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_slug ON tags(slug)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_priority ON tags(priority)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_system ON tags(is_system) WHERE is_system = 1")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_tags_system ON tags(is_system) WHERE is_system = 1",
+    )
+    .execute(pool)
+    .await?;
 
     println!("🏗️  Normalized schema created (categories, colors, tags)");
     Ok(())
@@ -120,17 +132,18 @@ async fn create_products_table(pool: &sqlx::SqlitePool) -> Result<()> {
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
     // 商品インデックス
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_products_best_seller ON products(is_best_seller) WHERE is_best_seller = 1")
         .execute(pool).await?;
-    
+
     println!("📦 Products table created with constraints and indexes");
     Ok(())
 }
@@ -164,30 +177,43 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             CONSTRAINT valid_reserved CHECK (reserved_quantity <= stock_quantity),
             CONSTRAINT positive_display_order CHECK (display_order >= 0)
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
     // SKUインデックス
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_product_id ON skus(product_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_code ON skus(sku_code)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_color ON skus(color_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_dimensions ON skus(dimensions) WHERE dimensions IS NOT NULL")
         .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_material ON skus(material) WHERE material IS NOT NULL")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_stock ON skus(stock_quantity, reserved_quantity)")
-        .execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_skus_material ON skus(material) WHERE material IS NOT NULL",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_skus_stock ON skus(stock_quantity, reserved_quantity)",
+    )
+    .execute(pool)
+    .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_price ON skus(base_price, sale_price)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_low_stock ON skus(stock_quantity, reserved_quantity, low_stock_threshold) WHERE stock_quantity - reserved_quantity <= low_stock_threshold AND stock_quantity - reserved_quantity > 0")
         .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_skus_display_order ON skus(product_id, display_order)")
-        .execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_skus_display_order ON skus(product_id, display_order)",
+    )
+    .execute(pool)
+    .await?;
 
     // 商品画像テーブル
     sqlx::query(
@@ -202,13 +228,16 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id)")
-        .execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id)",
+    )
+    .execute(pool)
+    .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_images_order ON product_images(product_id, display_order)")
         .execute(pool).await?;
 
@@ -224,15 +253,19 @@ async fn create_product_related_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
             UNIQUE(product_id, tag_id)
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_tags_product_id ON product_tags(product_id)")
-        .execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_product_tags_product_id ON product_tags(product_id)",
+    )
+    .execute(pool)
+    .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_product_tags_tag_id ON product_tags(tag_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
 
     println!("🔗 Product related tables created (skus, images, product_tags)");
     Ok(())
@@ -254,7 +287,7 @@ async fn create_shipping_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
             CONSTRAINT positive_price CHECK (price >= 0),
             CONSTRAINT positive_sort_order CHECK (sort_order >= 0)
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -272,7 +305,7 @@ async fn create_shipping_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
         ('standard', '標準配送', '5-7営業日', 500, 1),
         ('express', '速達配送', '2-3営業日', 1000, 2),
         ('overnight', '翌日配送', '翌営業日', 2000, 3)
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -295,7 +328,7 @@ async fn create_payment_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             CONSTRAINT positive_sort_order CHECK (sort_order >= 0)
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -303,8 +336,11 @@ async fn create_payment_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
     // 支払い方法インデックス
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_payment_methods_active ON payment_methods(is_active) WHERE is_active = 1")
         .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_payment_methods_sort_order ON payment_methods(sort_order)")
-        .execute(pool).await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_payment_methods_sort_order ON payment_methods(sort_order)",
+    )
+    .execute(pool)
+    .await?;
 
     // 初期データ挿入
     sqlx::query(
@@ -314,7 +350,7 @@ async fn create_payment_methods_table(pool: &sqlx::SqlitePool) -> Result<()> {
         ('cod', '代引き', '商品到着時に現金でお支払い', 1, 2),
         ('bank_transfer', '銀行振込', '指定口座への事前振込', 1, 3),
         ('convenience_store', 'コンビニ支払い', 'セブンイレブン、ファミリーマート等', 1, 4)
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -408,7 +444,7 @@ async fn create_order_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             CONSTRAINT positive_price CHECK (unit_price >= 0),
             CONSTRAINT valid_subtotal CHECK (subtotal = unit_price * quantity)
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -429,35 +465,44 @@ async fn create_order_tables(pool: &sqlx::SqlitePool) -> Result<()> {
                 'order_delivered', 'order_cancelled', 'order_refunded'
             ))
         )
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
 
     // インデックス作成
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
 
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_items_sku_id ON order_items(sku_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
 
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_events_order_id ON order_events(order_id)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_events_type ON order_events(event_type)")
-        .execute(pool).await?;
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_order_events_created_at ON order_events(created_at)")
-        .execute(pool).await?;
+        .execute(pool)
+        .await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_order_events_created_at ON order_events(created_at)",
+    )
+    .execute(pool)
+    .await?;
 
     println!("📦 Order tables created (orders, order_items, order_events)");
     Ok(())
 }
-
- 

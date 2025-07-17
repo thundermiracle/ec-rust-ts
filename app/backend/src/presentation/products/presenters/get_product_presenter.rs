@@ -1,5 +1,5 @@
 use crate::application::dto::{ProductDTO, VariantDTO};
-use crate::presentation::products::responses::{VariantResponse, GetProductResponse};
+use crate::presentation::products::responses::{GetProductResponse, VariantResponse};
 
 /// GET /products/{id} API専用プレゼンター
 /// Clean Architecture: Application層のProductDTOをInterface Adapter層のGetProductResponseに変換
@@ -8,10 +8,10 @@ pub struct GetProductPresenter;
 
 impl GetProductPresenter {
     /// ProductDTOをGetProductResponseに変換（GET /products/{id}専用）
-    /// 
+    ///
     /// # Arguments
     /// * `product_dto` - Application層のProductDTO
-    /// 
+    ///
     /// # Returns
     /// * `GetProductResponse` - GET /products/{id} API専用レスポンス
     pub fn present(product_dto: ProductDTO) -> GetProductResponse {
@@ -35,10 +35,10 @@ impl GetProductPresenter {
     }
 
     /// VariantDTOをVariantResponseに変換
-    /// 
+    ///
     /// # Arguments
     /// * `variant_view_model` - Application層のVariantDTO
-    /// 
+    ///
     /// # Returns
     /// * `VariantResponse` - API応答用の形式に変換されたVariantResponse
     fn present_variant(variant_view_model: VariantDTO) -> VariantResponse {
@@ -141,7 +141,7 @@ mod tests {
 
         // Then: variantsも正しく変換されている
         assert_eq!(product_response.variants.len(), 2);
-        
+
         let first_variant = &product_response.variants[0];
         assert_eq!(first_variant.id, "variant-1");
         assert_eq!(first_variant.sku_code, "SKU001");
@@ -250,4 +250,4 @@ mod tests {
         assert!(!variant_response.is_on_sale);
         assert!(variant_response.is_sold_out);
     }
-} 
+}

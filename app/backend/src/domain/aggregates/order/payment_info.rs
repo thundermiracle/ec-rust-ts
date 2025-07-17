@@ -1,4 +1,4 @@
-use crate::domain::value_objects::{PaymentMethodId, Money};
+use crate::domain::value_objects::{Money, PaymentMethodId};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PaymentDetails {
@@ -27,15 +27,15 @@ impl PaymentInfo {
             payment_details,
         }
     }
-    
+
     pub fn method_id_value(&self) -> uuid::Uuid {
         self.method_id.value()
     }
-    
+
     pub fn fee_amount(&self) -> u32 {
         self.fee.amount_in_yen()
     }
-    
+
     pub fn has_details(&self) -> bool {
         self.payment_details.is_some()
     }
@@ -45,11 +45,13 @@ impl PaymentDetails {
     pub fn new(details: String) -> Self {
         PaymentDetails { details }
     }
-    
+
     pub fn from_json_string(json_str: &str) -> Self {
-        PaymentDetails { details: json_str.to_string() }
+        PaymentDetails {
+            details: json_str.to_string(),
+        }
     }
-    
+
     pub fn to_json_string(&self) -> &str {
         &self.details
     }
@@ -64,10 +66,11 @@ mod tests {
         let method_id = PaymentMethodId::new();
         let method_name = "Credit Card".to_string();
         let fee = Money::from_yen(100);
-        let details = PaymentDetails::new(r#"{"card_type": "visa", "last_four": "1234"}"#.to_string());
-        
+        let details =
+            PaymentDetails::new(r#"{"card_type": "visa", "last_four": "1234"}"#.to_string());
+
         let payment_info = PaymentInfo::new(method_id, method_name.clone(), fee, Some(details));
-        
+
         assert_eq!(payment_info.method_name, method_name);
         assert_eq!(payment_info.fee_amount(), 100);
         assert!(payment_info.has_details());
@@ -78,23 +81,23 @@ mod tests {
         let method_id = PaymentMethodId::new();
         let method_name = "Cash on Delivery".to_string();
         let fee = Money::from_yen(300);
-        
+
         let payment_info = PaymentInfo::new(method_id, method_name, fee, None);
-        
+
         assert!(!payment_info.has_details());
     }
 
     #[test]
     fn test_payment_details() {
         let details_json = r#"{"card_type": "mastercard", "expiry": "12/25"}"#;
-        
+
         let details = PaymentDetails::new(details_json.to_string());
-        
+
         assert_eq!(details.details, details_json);
-        
+
         let json_string = details.to_json_string();
         let restored_details = PaymentDetails::from_json_string(json_string);
-        
+
         assert_eq!(details.details, restored_details.details);
     }
 }

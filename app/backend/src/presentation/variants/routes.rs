@@ -5,6 +5,5 @@ use crate::infrastructure::Container;
 use crate::presentation::variants::controllers::FindVariantsController;
 
 pub fn routes() -> Router<Arc<Container>> {
-    Router::new()
-        .merge(FindVariantsController::routes())
-} 
+    Router::new().merge(FindVariantsController::routes())
+}

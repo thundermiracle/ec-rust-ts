@@ -1,5 +1,5 @@
 use crate::domain::error::DomainError;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProductName(String);
@@ -72,9 +72,13 @@ impl SKUCode {
             ));
         }
 
-        if !trimmed.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        if !trimmed
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+        {
             return Err(DomainError::InvalidSKUCode(
-                "SKU code can only contain alphanumeric characters, hyphens, and underscores".to_string(),
+                "SKU code can only contain alphanumeric characters, hyphens, and underscores"
+                    .to_string(),
             ));
         }
 
@@ -90,4 +94,4 @@ impl std::fmt::Display for SKUCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
-} 
+}

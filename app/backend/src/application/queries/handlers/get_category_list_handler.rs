@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::application::repositories::CategoryRepository;
-use crate::application::error::ApplicationError;
 use crate::application::dto::CategoryListDTO;
+use crate::application::error::ApplicationError;
+use crate::application::repositories::CategoryRepository;
 
 /// カテゴリリスト取得クエリハンドラ
 /// CQRS パターンに基づく読み取り操作のハンドラ
@@ -18,14 +18,14 @@ impl GetCategoryListHandler {
     }
 
     /// カテゴリリスト取得クエリを実行
-    /// 
+    ///
     /// # Returns
     /// * `Result<CategoryListDTO, ApplicationError>` - 成功時はカテゴリリストデータ、失敗時はエラー
     pub async fn handle(&self) -> Result<CategoryListDTO, ApplicationError> {
         println!("->> get_category_list_handler");
-        
+
         let category_list = self.category_repository.find_all().await?;
 
         Ok(category_list)
     }
-} 
+}

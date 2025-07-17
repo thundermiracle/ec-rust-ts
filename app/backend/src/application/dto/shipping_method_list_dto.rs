@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::domain::entities::ShippingMethod;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShippingMethodListDTO {
@@ -45,7 +45,7 @@ impl From<&ShippingMethod> for ShippingMethodDTO {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::value_objects::{ShippingMethodId, Money};
+    use crate::domain::value_objects::{Money, ShippingMethodId};
 
     #[test]
     fn test_shipping_method_dto_from_entity() {

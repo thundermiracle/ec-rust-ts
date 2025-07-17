@@ -7,9 +7,7 @@ pub async fn clear_database() -> Result<()> {
     let pool = db.get_pool();
 
     // products テーブルを全削除
-    sqlx::query("DELETE FROM products")
-        .execute(pool)
-        .await?;
+    sqlx::query("DELETE FROM products").execute(pool).await?;
 
     println!("Database cleared successfully!");
     Ok(())

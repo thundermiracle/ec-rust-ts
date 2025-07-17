@@ -111,4 +111,4 @@ impl GetProductListItemResponse {
             is_sold_out,
         }
     }
-} 
+}

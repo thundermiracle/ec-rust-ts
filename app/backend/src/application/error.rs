@@ -50,12 +50,16 @@ impl std::fmt::Display for ApplicationError {
 impl std::fmt::Display for RepositoryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RepositoryError::DatabaseConnection(msg) => write!(f, "Database connection error: {}", msg),
+            RepositoryError::DatabaseConnection(msg) => {
+                write!(f, "Database connection error: {}", msg)
+            }
             RepositoryError::QueryExecution(msg) => write!(f, "Query execution error: {}", msg),
             RepositoryError::NotFound => write!(f, "Data not found"),
             RepositoryError::Unknown(msg) => write!(f, "Unknown error: {}", msg),
             RepositoryError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
-            RepositoryError::DataConversionError(msg) => write!(f, "Data conversion error: {}", msg),
+            RepositoryError::DataConversionError(msg) => {
+                write!(f, "Data conversion error: {}", msg)
+            }
             RepositoryError::DomainError(msg) => write!(f, "Domain error: {}", msg),
         }
     }
@@ -77,5 +81,3 @@ impl From<RepositoryError> for ApplicationError {
         ApplicationError::Repository(err)
     }
 }
-
- 

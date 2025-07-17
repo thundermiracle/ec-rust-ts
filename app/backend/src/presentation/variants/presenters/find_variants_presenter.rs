@@ -16,10 +16,11 @@ impl FindVariantsPresenter {
     }
 
     pub fn present(dtos: Vec<VariantSummaryDTO>) -> FindVariantsResponse {
-        let variants = dtos.into_iter()
+        let variants = dtos
+            .into_iter()
             .map(Self::present_find_variants_single)
             .collect();
 
         FindVariantsResponse { variants }
     }
-} 
+}

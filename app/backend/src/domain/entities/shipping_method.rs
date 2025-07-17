@@ -1,4 +1,4 @@
-use crate::domain::value_objects::{ShippingMethodId, Money};
+use crate::domain::value_objects::{Money, ShippingMethodId};
 use chrono::{DateTime, Utc};
 use std::fmt;
 
@@ -94,13 +94,7 @@ impl ShippingMethod {
 
 impl fmt::Display for ShippingMethod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} - {} ({})",
-            self.name,
-            self.description,
-            self.price
-        )
+        write!(f, "{} - {} ({})", self.name, self.description, self.price)
     }
 }
 

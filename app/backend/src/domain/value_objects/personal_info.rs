@@ -44,10 +44,7 @@ impl FirstName {
 
         // 日本語、英語、数字、一般的な記号を許可
         if !value.chars().all(|c| {
-            c.is_alphanumeric() 
-                || c.is_whitespace() 
-                || "ー・".contains(c)
-                || (c as u32) >= 0x3040 // ひらがな・カタカナ・漢字
+            c.is_alphanumeric() || c.is_whitespace() || "ー・".contains(c) || (c as u32) >= 0x3040 // ひらがな・カタカナ・漢字
         }) {
             return Err(PersonalInfoError::InvalidCharacter);
         }
@@ -77,10 +74,7 @@ impl LastName {
 
         // 日本語、英語、数字、一般的な記号を許可
         if !value.chars().all(|c| {
-            c.is_alphanumeric() 
-                || c.is_whitespace() 
-                || "ー・".contains(c)
-                || (c as u32) >= 0x3040 // ひらがな・カタカナ・漢字
+            c.is_alphanumeric() || c.is_whitespace() || "ー・".contains(c) || (c as u32) >= 0x3040 // ひらがな・カタカナ・漢字
         }) {
             return Err(PersonalInfoError::InvalidCharacter);
         }
@@ -139,7 +133,9 @@ impl fmt::Display for PersonalInfoError {
         match self {
             PersonalInfoError::Empty => write!(f, "名前が入力されていません"),
             PersonalInfoError::TooLong => write!(f, "名前が長すぎます（50文字以内）"),
-            PersonalInfoError::InvalidCharacter => write!(f, "名前に使用できない文字が含まれています"),
+            PersonalInfoError::InvalidCharacter => {
+                write!(f, "名前に使用できない文字が含まれています")
+            }
         }
     }
 }
@@ -175,7 +171,8 @@ mod tests {
 
     #[test]
     fn test_personal_info() {
-        let personal_info = PersonalInfo::from_strings("太郎".to_string(), "田中".to_string()).unwrap();
+        let personal_info =
+            PersonalInfo::from_strings("太郎".to_string(), "田中".to_string()).unwrap();
         assert_eq!(personal_info.full_name(), "太郎 田中");
         assert_eq!(personal_info.first_name().value(), "太郎");
         assert_eq!(personal_info.last_name().value(), "田中");

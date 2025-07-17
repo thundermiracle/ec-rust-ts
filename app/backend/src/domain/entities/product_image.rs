@@ -97,7 +97,7 @@ impl ImageUrl {
     /// 新しい画像URLを作成
     pub fn new(url: String) -> Result<Self, DomainError> {
         let trimmed = url.trim();
-        
+
         if trimmed.is_empty() {
             return Err(DomainError::InvalidProductData(
                 "Image URL cannot be empty".to_string(),
@@ -122,8 +122,8 @@ impl ImageUrl {
     /// 基本的なURL形式バリデーション
     fn is_valid_url(url: &str) -> bool {
         // HTTPまたはHTTPSで始まる、または相対パス
-        url.starts_with("http://") 
-            || url.starts_with("https://") 
+        url.starts_with("http://")
+            || url.starts_with("https://")
             || url.starts_with("/")
             || url.starts_with("./")
     }
@@ -156,10 +156,11 @@ mod tests {
         let id = ProductImageId::new(1);
         let product_id = ProductImageProductId::new("desk-walnut-1".to_string()).unwrap();
         let image_url = ImageUrl::new("https://example.com/image.jpg".to_string()).unwrap();
-        
-        let product_image = ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 0);
+
+        let product_image =
+            ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 0);
         assert!(product_image.is_ok());
-        
+
         let product_image = product_image.unwrap();
         assert!(product_image.is_main_image());
     }
@@ -169,10 +170,11 @@ mod tests {
         let id = ProductImageId::new(2);
         let product_id = ProductImageProductId::new("desk-walnut-1".to_string()).unwrap();
         let image_url = ImageUrl::new("https://example.com/image2.jpg".to_string()).unwrap();
-        
-        let product_image = ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 1);
+
+        let product_image =
+            ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 1);
         assert!(product_image.is_ok());
-        
+
         let product_image = product_image.unwrap();
         assert!(!product_image.is_main_image());
     }
@@ -182,8 +184,14 @@ mod tests {
         let id = ProductImageId::new(1);
         let product_id = ProductImageProductId::new("desk-walnut-1".to_string()).unwrap();
         let image_url = ImageUrl::new("https://example.com/image.jpg".to_string()).unwrap();
-        
-        let product_image = ProductImage::new(id, product_id, image_url, Some("alt text".to_string()), 10000);
+
+        let product_image = ProductImage::new(
+            id,
+            product_id,
+            image_url,
+            Some("alt text".to_string()),
+            10000,
+        );
         assert!(product_image.is_err());
     }
 
@@ -207,4 +215,4 @@ mod tests {
         let product_id = ProductImageProductId::new("".to_string());
         assert!(product_id.is_err());
     }
-} 
+}

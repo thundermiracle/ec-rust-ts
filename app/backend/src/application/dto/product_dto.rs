@@ -32,7 +32,6 @@ pub struct VariantDTO {
     pub is_sold_out: bool,
 }
 
-
 impl ProductDTO {}
 
 impl VariantDTO {
@@ -72,5 +71,3 @@ impl VariantDTO {
         }
     }
 }
-
-

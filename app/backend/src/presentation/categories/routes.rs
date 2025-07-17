@@ -5,6 +5,5 @@ use crate::infrastructure::Container;
 use crate::presentation::categories::controllers::GetCategoryListController;
 
 pub fn routes() -> Router<Arc<Container>> {
-    Router::new()
-        .merge(GetCategoryListController::routes())
-} 
+    Router::new().merge(GetCategoryListController::routes())
+}

@@ -1,5 +1,5 @@
-use crate::application::dto::{CategoryListDTO, CategoryDTO};
-use crate::presentation::categories::responses::{GetCategoryListResponse, CategoryResponse};
+use crate::application::dto::{CategoryDTO, CategoryListDTO};
+use crate::presentation::categories::responses::{CategoryResponse, GetCategoryListResponse};
 
 /// カテゴリリストプレゼンター
 /// Clean Architecture: Interface Adapters層
@@ -37,20 +37,14 @@ impl GetCategoryListPresenter {
     /// # Returns
     /// HTTPレスポンス用のCategoryResponse
     fn present_category_item(dto: CategoryDTO) -> CategoryResponse {
-        CategoryResponse::new(
-            dto.id,
-            dto.name,
-            dto.slug,
-            dto.parent_id,
-            dto.display_order,
-        )
+        CategoryResponse::new(dto.id, dto.name, dto.slug, dto.parent_id, dto.display_order)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::dto::{CategoryListDTO, CategoryDTO};
+    use crate::application::dto::{CategoryDTO, CategoryListDTO};
 
     /// GetCategoryListPresenterのテスト
     #[test]
@@ -120,6 +114,9 @@ mod tests {
         assert_eq!(response.categories.len(), 2);
         assert!(response.categories[0].is_root());
         assert!(response.categories[1].is_subcategory());
-        assert_eq!(response.categories[1].parent_id, Some("furniture".to_string()));
+        assert_eq!(
+            response.categories[1].parent_id,
+            Some("furniture".to_string())
+        );
     }
-} 
+}

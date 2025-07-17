@@ -34,5 +34,4 @@ impl CategoryDTO {
             display_order,
         }
     }
-
 }

@@ -148,7 +148,7 @@ impl TagSlug {
     /// 新しいタグスラッグを作成
     pub fn new(slug: String) -> Result<Self, DomainError> {
         let trimmed = slug.trim();
-        
+
         if trimmed.is_empty() {
             return Err(DomainError::InvalidProductData(
                 "Tag slug cannot be empty".to_string(),
@@ -156,7 +156,10 @@ impl TagSlug {
         }
 
         // ビジネスルール: スラッグは小文字英数字とアンダースコアのみ
-        if !trimmed.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_') {
+        if !trimmed
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+        {
             return Err(DomainError::InvalidProductData(
                 "Tag slug must contain only lowercase letters, digits, and underscores".to_string(),
             ));
@@ -204,7 +207,7 @@ mod tests {
             10,
             false,
         );
-        
+
         assert!(tag.is_ok());
         let tag = tag.unwrap();
         assert_eq!(tag.name(), "Custom Tag");
@@ -235,10 +238,10 @@ mod tests {
     fn reject_invalid_tag_slug() {
         // 大文字を含む
         assert!(TagSlug::new("Invalid_Tag".to_string()).is_err());
-        
+
         // 空文字
         assert!(TagSlug::new("".to_string()).is_err());
-        
+
         // 特殊文字を含む
         assert!(TagSlug::new("tag-name".to_string()).is_err());
         assert!(TagSlug::new("tag name".to_string()).is_err());
@@ -253,20 +256,14 @@ mod tests {
     #[test]
     fn reject_empty_tag_name() {
         let tag_slug = TagSlug::new("test_tag".to_string()).unwrap();
-        let tag = Tag::new(
-            tag_slug,
-            "".to_string(),
-            None,
-            10,
-            false,
-        );
+        let tag = Tag::new(tag_slug, "".to_string(), None, 10, false);
         assert!(tag.is_err());
     }
 
     #[test]
     fn reject_invalid_color_code() {
         let tag_slug = TagSlug::new("test_tag".to_string()).unwrap();
-        
+
         // HEX形式でない
         let tag = Tag::new(
             tag_slug.clone(),
@@ -276,7 +273,7 @@ mod tests {
             false,
         );
         assert!(tag.is_err());
-        
+
         // 長さが不正
         let tag = Tag::new(
             tag_slug.clone(),
@@ -286,7 +283,7 @@ mod tests {
             false,
         );
         assert!(tag.is_err());
-        
+
         // 無効な文字を含む
         let tag = Tag::new(
             tag_slug,
@@ -312,4 +309,4 @@ mod tests {
         let tag = tag.unwrap();
         assert_eq!(tag.color_code(), Some("#FF6B6B"));
     }
-} 
+}

@@ -1,5 +1,7 @@
 use crate::application::dto::PaymentMethodListDTO;
-use crate::presentation::payment_methods::responses::{GetPaymentMethodListResponse, PaymentMethodListItemResponse};
+use crate::presentation::payment_methods::responses::{
+    GetPaymentMethodListResponse, PaymentMethodListItemResponse,
+};
 
 /// PaymentMethodリストプレゼンター
 /// Clean Architecture: Interface Adapters層
@@ -26,7 +28,7 @@ impl GetPaymentMethodListPresenter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::dto::{PaymentMethodListDTO, PaymentMethodDTO};
+    use crate::application::dto::{PaymentMethodDTO, PaymentMethodListDTO};
 
     #[test]
     fn test_present() {
@@ -44,22 +46,28 @@ mod tests {
         ]);
 
         let response = GetPaymentMethodListPresenter::present(dto);
-        
+
         assert_eq!(response.items.len(), 2);
         assert_eq!(response.items[0].id, "credit_card");
         assert_eq!(response.items[0].name, Some("クレジットカード".to_string()));
-        assert_eq!(response.items[0].description, Some("VISA、MasterCard、JCB対応".to_string()));
-        
+        assert_eq!(
+            response.items[0].description,
+            Some("VISA、MasterCard、JCB対応".to_string())
+        );
+
         assert_eq!(response.items[1].id, "cod");
         assert_eq!(response.items[1].name, Some("代引き".to_string()));
-        assert_eq!(response.items[1].description, Some("商品到着時に現金でお支払い".to_string()));
+        assert_eq!(
+            response.items[1].description,
+            Some("商品到着時に現金でお支払い".to_string())
+        );
     }
 
     #[test]
     fn test_present_empty_list() {
         let dto = PaymentMethodListDTO::new(vec![]);
         let response = GetPaymentMethodListPresenter::present(dto);
-        
+
         assert_eq!(response.items.len(), 0);
     }
 
@@ -89,11 +97,12 @@ mod tests {
         ]);
 
         let response = GetPaymentMethodListPresenter::present(dto);
-        
+
         assert_eq!(response.items.len(), 4);
-        
+
         // Test all payment method types are correctly presented
-        let payment_methods: Vec<String> = response.items.iter().map(|item| item.id.clone()).collect();
+        let payment_methods: Vec<String> =
+            response.items.iter().map(|item| item.id.clone()).collect();
         assert!(payment_methods.contains(&"credit_card".to_string()));
         assert!(payment_methods.contains(&"cod".to_string()));
         assert!(payment_methods.contains(&"bank_transfer".to_string()));

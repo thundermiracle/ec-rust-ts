@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Description(String);
@@ -15,4 +15,4 @@ impl Description {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
-} 
+}

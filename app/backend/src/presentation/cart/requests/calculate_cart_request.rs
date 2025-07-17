@@ -1,6 +1,6 @@
+use crate::application::commands::{CalculateCartCommand, CalculationCartCommandItem};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::application::commands::{CalculateCartCommand, CalculationCartCommandItem};
 
 /// HTTP リクエスト用のカートアイテム
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -21,7 +21,8 @@ pub struct CalculateCartRequest {
 impl CalculateCartRequest {
     /// アプリケーション層のコマンドに変換
     pub fn to_command(&self) -> CalculateCartCommand {
-        let items = self.items
+        let items = self
+            .items
             .iter()
             .map(|item| CalculationCartCommandItem {
                 sku_id: item.sku_id.clone(),
@@ -29,7 +30,11 @@ impl CalculateCartRequest {
             })
             .collect();
 
-        CalculateCartCommand::new(items, self.shipping_method_id.clone(), self.payment_method_id.clone())
+        CalculateCartCommand::new(
+            items,
+            self.shipping_method_id.clone(),
+            self.payment_method_id.clone(),
+        )
     }
 
     /// バリデーション
@@ -86,7 +91,7 @@ mod tests {
         };
 
         assert!(request.validate().is_ok());
-        
+
         let command = request.to_command();
         assert_eq!(command.items.len(), 2);
         assert_eq!(command.items[0].sku_id, "sku-123");
@@ -102,23 +107,21 @@ mod tests {
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
         };
-        
+
         assert!(request.validate().is_err());
     }
 
     #[test]
     fn zero_quantity_fails_validation() {
         let request = CalculateCartRequest {
-            items: vec![
-                CalculateCartItemRequest {
-                    sku_id: "sku-123".to_string(),
-                    quantity: 0,
-                },
-            ],
+            items: vec![CalculateCartItemRequest {
+                sku_id: "sku-123".to_string(),
+                quantity: 0,
+            }],
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
         };
-        
+
         assert!(request.validate().is_err());
     }
 
@@ -138,7 +141,7 @@ mod tests {
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
         };
-        
+
         assert!(request.validate().is_err());
     }
-} 
+}

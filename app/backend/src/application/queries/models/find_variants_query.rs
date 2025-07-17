@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::domain::SKUId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FindVariantsQuery {
@@ -10,4 +10,4 @@ impl FindVariantsQuery {
     pub fn new(sku_ids: Vec<SKUId>) -> Self {
         Self { sku_ids }
     }
-} 
+}

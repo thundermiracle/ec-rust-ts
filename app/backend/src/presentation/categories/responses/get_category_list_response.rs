@@ -52,7 +52,6 @@ impl CategoryResponse {
             display_order,
         }
     }
-
 }
 
 #[cfg(test)]
@@ -79,11 +78,23 @@ mod tests {
     #[test]
     fn test_get_category_list_response_creation() {
         let categories = vec![
-            CategoryResponse::new("desks".to_string(), "Desks".to_string(), "desks".to_string(), None, 1),
-            CategoryResponse::new("tables".to_string(), "Tables".to_string(), "tables".to_string(), None, 2),
+            CategoryResponse::new(
+                "desks".to_string(),
+                "Desks".to_string(),
+                "desks".to_string(),
+                None,
+                1,
+            ),
+            CategoryResponse::new(
+                "tables".to_string(),
+                "Tables".to_string(),
+                "tables".to_string(),
+                None,
+                2,
+            ),
         ];
 
         let category_list = GetCategoryListResponse::new(categories);
         assert_eq!(category_list.categories.len(), 2);
     }
-} 
+}

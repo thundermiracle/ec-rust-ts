@@ -1,6 +1,6 @@
 use crate::domain::aggregates::CartItem;
-use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
+use crate::domain::value_objects::*;
 
 /// カートアグリゲート
 #[derive(Debug, Clone, PartialEq)]
@@ -22,7 +22,7 @@ impl Cart {
 
     /// カートアイテムのリストからカートを作成
     pub fn from_items(items: Vec<CartItem>) -> Self {
-        Self { 
+        Self {
             items,
             shipping_fee: None,
             payment_fee: None,
@@ -46,7 +46,11 @@ impl Cart {
     }
 
     /// SKUのアイテム数量を更新
-    pub fn update_item_quantity(&mut self, sku_id: &SKUId, new_quantity: u32) -> Result<(), DomainError> {
+    pub fn update_item_quantity(
+        &mut self,
+        sku_id: &SKUId,
+        new_quantity: u32,
+    ) -> Result<(), DomainError> {
         if new_quantity == 0 {
             self.remove_item(sku_id);
             return Ok(());
@@ -75,17 +79,17 @@ impl Cart {
     /// カートの総額を計算（配送料・支払い手数料を含む）
     pub fn total(&self) -> Result<Money, DomainError> {
         let mut total = self.subtotal()?;
-        
+
         // 配送料を追加
         if let Some(shipping_fee) = self.shipping_fee {
             total = total.add(shipping_fee)?;
         }
-        
+
         // 支払い手数料を追加
         if let Some(payment_fee) = self.payment_fee {
             total = total.add(payment_fee)?;
         }
-        
+
         Ok(total)
     }
 
@@ -106,14 +110,19 @@ impl Cart {
 
     /// 配送料を計算
     /// Clean Architecture: Entity First - 配送料計算はCartの責務
-    pub fn calculate_shipping_fee(&self, shipping_method: &crate::domain::entities::ShippingMethod) -> Result<Money, DomainError> {
+    pub fn calculate_shipping_fee(
+        &self,
+        shipping_method: &crate::domain::entities::ShippingMethod,
+    ) -> Result<Money, DomainError> {
         // 配送方法エンティティ全体を使用してより柔軟な計算が可能
         if !shipping_method.is_active() {
-            return Err(DomainError::InvalidProductData("Shipping method is not active".to_string()));
+            return Err(DomainError::InvalidProductData(
+                "Shipping method is not active".to_string(),
+            ));
         }
 
         let _cart_total = self.subtotal()?;
-        
+
         // 将来的にはカート金額による配送料無料、重量制限、地域制限なども考慮可能
         // 現在はシンプルに配送方法の料金をそのまま適用
         Ok(*shipping_method.price())
@@ -121,16 +130,22 @@ impl Cart {
 
     /// 支払い手数料を計算
     /// Clean Architecture: Entity First - 支払い手数料計算はCartの責務
-    pub fn calculate_payment_fee(&self, payment_method: &crate::domain::entities::PaymentMethod) -> Result<Money, DomainError> {
+    pub fn calculate_payment_fee(
+        &self,
+        payment_method: &crate::domain::entities::PaymentMethod,
+    ) -> Result<Money, DomainError> {
         let cart_total = self.subtotal()?;
-        
+
         // PaymentMethodエンティティに委譲してより豊富な情報を活用
         payment_method.calculate_fee(cart_total)
     }
 
     /// 配送方法を適用
     /// Clean Architecture: エンティティ内で状態管理とビジネスロジック完結
-    pub fn apply_shipping_method(&mut self, shipping_method: &crate::domain::entities::ShippingMethod) -> Result<(), DomainError> {
+    pub fn apply_shipping_method(
+        &mut self,
+        shipping_method: &crate::domain::entities::ShippingMethod,
+    ) -> Result<(), DomainError> {
         let fee = self.calculate_shipping_fee(shipping_method)?;
         self.shipping_fee = Some(fee);
         Ok(())
@@ -138,12 +153,14 @@ impl Cart {
 
     /// 支払い方法を適用
     /// Clean Architecture: エンティティ内で状態管理とビジネスロジック完結
-    pub fn apply_payment_method(&mut self, payment_method: &crate::domain::entities::PaymentMethod) -> Result<(), DomainError> {
+    pub fn apply_payment_method(
+        &mut self,
+        payment_method: &crate::domain::entities::PaymentMethod,
+    ) -> Result<(), DomainError> {
         let fee = self.calculate_payment_fee(payment_method)?;
         self.payment_fee = Some(fee);
         Ok(())
     }
-
 
     /// カートをクリア
     pub fn clear(&mut self) {
@@ -164,17 +181,17 @@ impl Cart {
     pub fn total_with_tax(&self) -> Result<Money, DomainError> {
         let subtotal = self.subtotal()?;
         let mut total_with_tax = subtotal.with_tax();
-        
+
         // 配送料を追加（配送料は税込み）
         if let Some(shipping_fee) = self.shipping_fee {
             total_with_tax = total_with_tax.add(shipping_fee)?;
         }
-        
+
         // 支払い手数料を追加（支払い手数料は税込み）
         if let Some(payment_fee) = self.payment_fee {
             total_with_tax = total_with_tax.add(payment_fee)?;
         }
-        
+
         Ok(total_with_tax)
     }
 
@@ -216,7 +233,8 @@ mod tests {
             ProductName::new(name.to_string()).unwrap(),
             Money::from_yen(price),
             quantity,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -238,7 +256,7 @@ mod tests {
 
         assert_eq!(cart.item_count(), 2);
         assert_eq!(cart.total_quantity(), 3); // 2 + 1
-        
+
         let total = cart.total().unwrap();
         assert_eq!(total.yen(), 4000); // (1000 * 2) + (2000 * 1)
     }
@@ -247,29 +265,31 @@ mod tests {
     fn add_same_sku_increases_quantity() {
         let mut cart = Cart::new();
         let sku_id = SKUId::from_uuid(Uuid::new_v4());
-        
+
         let item1 = CartItem::new(
             sku_id.clone(),
             ProductId::new(),
             ProductName::new("Product".to_string()).unwrap(),
             Money::from_yen(1000),
             2,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let item2 = CartItem::new(
             sku_id.clone(),
             ProductId::new(),
             ProductName::new("Product".to_string()).unwrap(),
             Money::from_yen(1000),
             3,
-        ).unwrap();
+        )
+        .unwrap();
 
         cart.add_item(item1).unwrap();
         cart.add_item(item2).unwrap();
 
         assert_eq!(cart.item_count(), 1); // Still 1 unique item
         assert_eq!(cart.total_quantity(), 5); // 2 + 3
-        
+
         let total = cart.total().unwrap();
         assert_eq!(total.yen(), 5000); // 1000 * 5
     }
@@ -279,10 +299,10 @@ mod tests {
         let mut cart = Cart::new();
         let item = create_test_cart_item("Product", 1000, 2);
         let sku_id = item.sku_id().clone();
-        
+
         cart.add_item(item).unwrap();
         assert_eq!(cart.item_count(), 1);
-        
+
         cart.remove_item(&sku_id);
         assert!(cart.is_empty());
     }
@@ -292,10 +312,10 @@ mod tests {
         let mut cart = Cart::new();
         let item = create_test_cart_item("Product", 1000, 2);
         let sku_id = item.sku_id().clone();
-        
+
         cart.add_item(item).unwrap();
         cart.update_item_quantity(&sku_id, 5).unwrap();
-        
+
         assert_eq!(cart.total_quantity(), 5);
         let total = cart.total().unwrap();
         assert_eq!(total.yen(), 5000);
@@ -306,10 +326,10 @@ mod tests {
         let mut cart = Cart::new();
         let item = create_test_cart_item("Product", 1000, 2);
         let sku_id = item.sku_id().clone();
-        
+
         cart.add_item(item).unwrap();
         cart.update_item_quantity(&sku_id, 0).unwrap();
-        
+
         assert!(cart.is_empty());
     }
 
@@ -321,8 +341,8 @@ mod tests {
 
         let total_with_tax = cart.total_with_tax().unwrap();
         let tax_amount = cart.tax_amount().unwrap();
-        
+
         assert_eq!(tax_amount.yen(), 100); // 10% of 1000
         assert_eq!(total_with_tax.yen(), 1100); // 1000 + 100
     }
-} 
+}

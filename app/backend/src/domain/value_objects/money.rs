@@ -17,15 +17,14 @@ impl Money {
 
     /// 円単位で金額を作成
     pub fn from_yen(yen: u32) -> Self {
-        Self {
-            amount_in_yen: yen,
-        }
+        Self { amount_in_yen: yen }
     }
 
     /// 文字列から金額を作成（例: "1234" -> 1234円）
     pub fn from_string(amount_str: &str) -> Result<Self, DomainError> {
         let trimmed = amount_str.trim();
-        let yen: u32 = trimmed.parse()
+        let yen: u32 = trimmed
+            .parse()
             .map_err(|_| DomainError::InvalidProductData("Invalid yen amount".to_string()))?;
         Ok(Self::from_yen(yen))
     }
@@ -57,8 +56,12 @@ impl Money {
 
     /// 加算
     pub fn add(&self, other: Money) -> Result<Money, DomainError> {
-        let result = self.amount_in_yen.checked_add(other.amount_in_yen)
-            .ok_or_else(|| DomainError::InvalidProductData("Money overflow in addition".to_string()))?;
+        let result = self
+            .amount_in_yen
+            .checked_add(other.amount_in_yen)
+            .ok_or_else(|| {
+                DomainError::InvalidProductData("Money overflow in addition".to_string())
+            })?;
         Ok(Money::from_yen(result))
     }
 
@@ -74,8 +77,9 @@ impl Money {
 
     /// 乗算
     pub fn multiply(&self, multiplier: u32) -> Result<Money, DomainError> {
-        let result = self.amount_in_yen.checked_mul(multiplier)
-            .ok_or_else(|| DomainError::InvalidProductData("Money overflow in multiplication".to_string()))?;
+        let result = self.amount_in_yen.checked_mul(multiplier).ok_or_else(|| {
+            DomainError::InvalidProductData("Money overflow in multiplication".to_string())
+        })?;
         Ok(Money::from_yen(result))
     }
 
@@ -86,7 +90,7 @@ impl Money {
                 "Percentage must be between 0.0 and 1.0".to_string(),
             ));
         }
-        
+
         let result = (self.amount_in_yen as f64 * percentage).ceil() as u32;
         Ok(Money::from_yen(result))
     }
@@ -98,7 +102,7 @@ impl Money {
                 "Discount percentage cannot exceed 100".to_string(),
             ));
         }
-        
+
         let discount_ratio = discount_percentage as f64 / 100.0;
         let discount_amount = self.percentage(discount_ratio)?;
         self.subtract(discount_amount)
@@ -115,7 +119,6 @@ impl Money {
         let tax = (self.amount_in_yen as f64 * 0.10).ceil() as u32;
         Money::from_yen(tax)
     }
-
 
     /// 日本円フォーマット
     pub fn format_jpy(&self) -> String {
@@ -253,4 +256,4 @@ mod tests {
         assert!(!positive.is_zero());
         assert!(positive.is_positive());
     }
-} 
+}

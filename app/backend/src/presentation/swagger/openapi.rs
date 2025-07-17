@@ -1,35 +1,21 @@
 use utoipa::OpenApi;
 
+use crate::presentation::ErrorResponse;
+use crate::presentation::cart::requests::{CalculateCartItemRequest, CalculateCartRequest};
+use crate::presentation::cart::responses::{CalculateCartItemResponse, CalculateCartResponse};
+use crate::presentation::categories::responses::{CategoryResponse, GetCategoryListResponse};
+use crate::presentation::colors::responses::{GetColorListItemResponse, GetColorListResponse};
+use crate::presentation::payment_methods::responses::{
+    GetPaymentMethodListResponse, PaymentMethodListItemResponse,
+};
 use crate::presentation::products::responses::{
-    GetProductResponse, 
-    GetProductListResponse, 
-    GetProductListItemResponse, 
-    VariantResponse
+    GetProductListItemResponse, GetProductListResponse, GetProductResponse, VariantResponse,
 };
-use crate::presentation::categories::responses::{
-    GetCategoryListResponse,
-    CategoryResponse
-};
-use crate::presentation::colors::responses::{
-    GetColorListResponse,
-    GetColorListItemResponse
-};
-use crate::presentation::variants::responses::{
-    FindVariantsResponse,
-    FindVariantsItemResponse
+use crate::presentation::shipping::responses::{
+    GetShippingMethodListItemResponse, GetShippingMethodListResponse,
 };
 use crate::presentation::variants::requests::FindVariantsRequest;
-use crate::presentation::cart::requests::{CalculateCartRequest, CalculateCartItemRequest};
-use crate::presentation::cart::responses::{CalculateCartResponse, CalculateCartItemResponse};
-use crate::presentation::shipping::responses::{
-    GetShippingMethodListResponse,
-    GetShippingMethodListItemResponse
-};
-use crate::presentation::payment_methods::responses::{
-    GetPaymentMethodListResponse,
-    PaymentMethodListItemResponse
-};
-use crate::presentation::ErrorResponse;
+use crate::presentation::variants::responses::{FindVariantsItemResponse, FindVariantsResponse};
 
 /// OpenAPI仕様書の定義
 /// Clean Architecture: Interface Adapters層でAPI仕様を定義
@@ -91,4 +77,4 @@ use crate::presentation::ErrorResponse;
         (url = "https://api.example.com", description = "Production server")
     )
 )]
-pub struct ApiDoc; 
+pub struct ApiDoc;

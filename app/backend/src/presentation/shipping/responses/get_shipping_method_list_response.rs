@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// Get Shipping Method List Response DTO
@@ -46,7 +46,7 @@ mod tests {
 
         let response = GetShippingMethodListResponse::new(methods);
         let json = serde_json::to_string(&response).unwrap();
-        
+
         assert!(json.contains("standard"));
         assert!(json.contains("標準配送"));
         assert!(json.contains("5-7営業日"));

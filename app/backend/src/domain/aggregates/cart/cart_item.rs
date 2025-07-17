@@ -1,5 +1,5 @@
-use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
+use crate::domain::value_objects::*;
 
 /// カート内の商品アイテムを表すドメインエンティティ
 #[derive(Debug, Clone, PartialEq)]
@@ -59,7 +59,9 @@ impl CartItem {
 
     /// 数量を増加
     pub fn increase_quantity(&mut self, additional: u32) -> Result<(), DomainError> {
-        let new_quantity = self.quantity.checked_add(additional)
+        let new_quantity = self
+            .quantity
+            .checked_add(additional)
             .ok_or_else(|| DomainError::InvalidProductData("Quantity overflow".to_string()))?;
         self.quantity = new_quantity;
         Ok(())
@@ -110,7 +112,8 @@ mod tests {
             ProductName::new("Test Product".to_string()).unwrap(),
             Money::from_yen(1000),
             2,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -159,4 +162,4 @@ mod tests {
         item.decrease_quantity(1).unwrap();
         assert_eq!(item.quantity(), 1); // 2 - 1
     }
-} 
+}

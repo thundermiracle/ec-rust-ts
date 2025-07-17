@@ -32,9 +32,10 @@ impl CalculateCartResultDto {
         // カートアイテムの計算
         let mut items = Vec::new();
         for item in cart.items() {
-            let subtotal = item.subtotal()
+            let subtotal = item
+                .subtotal()
                 .map_err(|e| format!("Failed to calculate item subtotal: {}", e))?;
-            
+
             items.push(CalculatedCartItemDto {
                 sku_id: item.sku_id().to_string(),
                 product_id: item.product_id().to_string(),
@@ -46,13 +47,16 @@ impl CalculateCartResultDto {
         }
 
         // カート全体の計算
-        let subtotal = cart.subtotal()
+        let subtotal = cart
+            .subtotal()
             .map_err(|e| format!("Failed to calculate cart subtotal: {}", e))?;
-        
-        let tax_amount = cart.tax_amount()
+
+        let tax_amount = cart
+            .tax_amount()
             .map_err(|e| format!("Failed to calculate tax amount: {}", e))?;
-        
-        let total_with_tax = cart.total_with_tax()
+
+        let total_with_tax = cart
+            .total_with_tax()
             .map_err(|e| format!("Failed to calculate total with tax: {}", e))?;
 
         Ok(Self {

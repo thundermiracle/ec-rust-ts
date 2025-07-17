@@ -1,12 +1,12 @@
 use axum::extract::State;
-use axum::{routing::get, Json, Router};
+use axum::{Json, Router, routing::get};
 use std::sync::Arc;
 
-use crate::infrastructure::Container;
 use crate::error::Result;
+use crate::infrastructure::Container;
+use crate::presentation::ErrorResponse;
 use crate::presentation::products::presenters::GetProductListPresenter;
 use crate::presentation::products::responses::GetProductListResponse;
-use crate::presentation::ErrorResponse;
 
 /// Get Product List Controller - 商品リスト取得の単一責任
 /// Clean Architecture: 1つのユースケースに対して1つのController
@@ -15,8 +15,7 @@ pub struct GetProductListController;
 impl GetProductListController {
     /// このControllerのルート定義
     pub fn routes() -> Router<Arc<Container>> {
-        Router::new()
-            .route("/products", get(handle))
+        Router::new().route("/products", get(handle))
     }
 }
 
@@ -36,13 +35,11 @@ pub async fn handle(
     State(container): State<Arc<Container>>,
 ) -> Result<Json<GetProductListResponse>> {
     println!("->> GetProductListController::handle");
-    
+
     let dispatcher = container.get_dispatcher();
-    
-    let product_list = dispatcher
-        .execute_get_product_list_query()
-        .await?; // ApplicationErrorからErrorへの自動変換を利用
-        
+
+    let product_list = dispatcher.execute_get_product_list_query().await?; // ApplicationErrorからErrorへの自動変換を利用
+
     println!("->> GetProductListController::handle - success for product_list");
     Ok(Json(GetProductListPresenter::present(product_list)))
-} 
+}

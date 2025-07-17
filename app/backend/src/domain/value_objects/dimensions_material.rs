@@ -1,5 +1,5 @@
 use crate::domain::error::DomainError;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Dimensions(String);
@@ -64,4 +64,4 @@ impl Material {
             }
         }
     }
-} 
+}

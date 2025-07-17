@@ -1,5 +1,5 @@
-use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
+use crate::domain::value_objects::*;
 
 /// 支払い方法エンティティ
 #[derive(Debug, Clone, PartialEq)]
@@ -21,11 +21,15 @@ impl PaymentMethod {
         sort_order: u32,
     ) -> Result<Self, DomainError> {
         if id.trim().is_empty() {
-            return Err(DomainError::InvalidProductData("Payment method ID cannot be empty".to_string()));
+            return Err(DomainError::InvalidProductData(
+                "Payment method ID cannot be empty".to_string(),
+            ));
         }
-        
+
         if name.trim().is_empty() {
-            return Err(DomainError::InvalidProductData("Payment method name cannot be empty".to_string()));
+            return Err(DomainError::InvalidProductData(
+                "Payment method name cannot be empty".to_string(),
+            ));
         }
 
         Ok(Self {
@@ -40,7 +44,9 @@ impl PaymentMethod {
     /// 支払い手数料を計算
     pub fn calculate_fee(&self, cart_total: Money) -> Result<Money, DomainError> {
         if !self.is_active {
-            return Err(DomainError::InvalidProductData("Payment method is not active".to_string()));
+            return Err(DomainError::InvalidProductData(
+                "Payment method is not active".to_string(),
+            ));
         }
 
         match self.id.as_str() {
@@ -54,15 +60,15 @@ impl PaymentMethod {
     /// 代引き手数料の計算
     fn calculate_cod_fee(&self, total_amount: Money) -> Result<Money, DomainError> {
         let yen_amount = total_amount.yen();
-        
+
         let fee_amount = match yen_amount {
-            0..=9999 => 330,        // 1万円未満
-            10000..=29999 => 440,   // 3万円未満  
-            30000..=99999 => 660,   // 10万円未満
+            0..=9999 => 330,         // 1万円未満
+            10000..=29999 => 440,    // 3万円未満
+            30000..=99999 => 660,    // 10万円未満
             100000..=299999 => 1100, // 30万円未満
-            _ => 1650,              // 30万円以上
+            _ => 1650,               // 30万円以上
         };
-        
+
         Ok(Money::from_yen(fee_amount))
     }
 
@@ -110,7 +116,8 @@ mod tests {
             "商品お届け時にお支払い".to_string(),
             true,
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(method.id(), "cod");
         assert_eq!(method.name(), "代金引換");
@@ -126,22 +133,38 @@ mod tests {
             "商品お届け時にお支払い".to_string(),
             true,
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         // 1万円未満: 330円
-        assert_eq!(cod_method.calculate_fee(Money::from_yen(5000)).unwrap(), Money::from_yen(330));
-        
+        assert_eq!(
+            cod_method.calculate_fee(Money::from_yen(5000)).unwrap(),
+            Money::from_yen(330)
+        );
+
         // 3万円未満: 440円
-        assert_eq!(cod_method.calculate_fee(Money::from_yen(15000)).unwrap(), Money::from_yen(440));
-        
+        assert_eq!(
+            cod_method.calculate_fee(Money::from_yen(15000)).unwrap(),
+            Money::from_yen(440)
+        );
+
         // 10万円未満: 660円
-        assert_eq!(cod_method.calculate_fee(Money::from_yen(50000)).unwrap(), Money::from_yen(660));
-        
+        assert_eq!(
+            cod_method.calculate_fee(Money::from_yen(50000)).unwrap(),
+            Money::from_yen(660)
+        );
+
         // 30万円未満: 1100円
-        assert_eq!(cod_method.calculate_fee(Money::from_yen(150000)).unwrap(), Money::from_yen(1100));
-        
+        assert_eq!(
+            cod_method.calculate_fee(Money::from_yen(150000)).unwrap(),
+            Money::from_yen(1100)
+        );
+
         // 30万円以上: 1650円
-        assert_eq!(cod_method.calculate_fee(Money::from_yen(400000)).unwrap(), Money::from_yen(1650));
+        assert_eq!(
+            cod_method.calculate_fee(Money::from_yen(400000)).unwrap(),
+            Money::from_yen(1650)
+        );
     }
 
     #[test]
@@ -152,9 +175,15 @@ mod tests {
             "コンビニでお支払い".to_string(),
             true,
             2,
-        ).unwrap();
+        )
+        .unwrap();
 
-        assert_eq!(convenience_method.calculate_fee(Money::from_yen(10000)).unwrap(), Money::from_yen(200));
+        assert_eq!(
+            convenience_method
+                .calculate_fee(Money::from_yen(10000))
+                .unwrap(),
+            Money::from_yen(200)
+        );
     }
 
     #[test]
@@ -165,7 +194,8 @@ mod tests {
             "商品お届け時にお支払い".to_string(),
             false,
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         let result = inactive_method.calculate_fee(Money::from_yen(10000));
         assert!(result.is_err());

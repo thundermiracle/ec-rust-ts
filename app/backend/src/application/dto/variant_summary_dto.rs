@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::domain::SKUId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariantSummaryDTO {
@@ -29,4 +29,4 @@ impl VariantSummaryDTO {
             dimensions,
         }
     }
-} 
+}

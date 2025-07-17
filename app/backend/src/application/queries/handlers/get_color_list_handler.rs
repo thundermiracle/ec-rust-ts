@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::application::repositories::ColorRepository;
 use crate::application::dto::ColorListDTO;
 use crate::application::error::ApplicationError;
+use crate::application::repositories::ColorRepository;
 
 pub struct GetColorListHandler {
     color_repository: Arc<dyn ColorRepository + Send + Sync>,

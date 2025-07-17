@@ -1,6 +1,6 @@
+use super::variant_response::VariantResponse;
 use serde::Serialize;
 use utoipa::ToSchema;
-use super::variant_response::VariantResponse;
 
 /// GET /products/{id} API専用の商品詳細レスポンス構造体
 #[derive(Debug, Serialize, ToSchema)]
@@ -24,4 +24,4 @@ pub struct GetProductResponse {
     /// バリエーション一覧
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub variants: Vec<VariantResponse>,
-} 
+}

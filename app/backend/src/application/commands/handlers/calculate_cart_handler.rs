@@ -1,10 +1,12 @@
-use std::sync::Arc;
-use uuid::Uuid;
 use crate::application::commands::models::CalculateCartCommand;
-use crate::application::repositories::{ProductRepository, ShippingMethodRepository, PaymentMethodRepository};
 use crate::application::dto::CalculateCartResultDto;
 use crate::application::error::ApplicationError;
-use crate::domain::{Cart, CartItem, SKUId, ProductId, ProductName, Money};
+use crate::application::repositories::{
+    PaymentMethodRepository, ProductRepository, ShippingMethodRepository,
+};
+use crate::domain::{Cart, CartItem, Money, ProductId, ProductName, SKUId};
+use std::sync::Arc;
+use uuid::Uuid;
 
 /// カート計算ハンドラ（ユースケース）
 pub struct CalculateCartHandler {
@@ -27,7 +29,10 @@ impl CalculateCartHandler {
     }
 
     /// カート計算を実行
-    pub async fn handle(&self, command: CalculateCartCommand) -> Result<CalculateCartResultDto, ApplicationError> {
+    pub async fn handle(
+        &self,
+        command: CalculateCartCommand,
+    ) -> Result<CalculateCartResultDto, ApplicationError> {
         // 1. すべてのsku_idを抽出
         let sku_ids: Result<Vec<SKUId>, ApplicationError> = command
             .items
@@ -35,9 +40,12 @@ impl CalculateCartHandler {
             .map(|item| {
                 Uuid::parse_str(&item.sku_id)
                     .map(SKUId::from_uuid)
-                    .map_err(|_| ApplicationError::InvalidInput(
-                        format!("Invalid SKU ID format: {}", item.sku_id)
-                    ))
+                    .map_err(|_| {
+                        ApplicationError::InvalidInput(format!(
+                            "Invalid SKU ID format: {}",
+                            item.sku_id
+                        ))
+                    })
             })
             .collect();
 
@@ -55,11 +63,12 @@ impl CalculateCartHandler {
             let found = variants
                 .iter()
                 .any(|variant| variant.id == item_request.sku_id);
-            
+
             if !found {
-                return Err(ApplicationError::NotFound(
-                    format!("SKU not found: {}", item_request.sku_id)
-                ));
+                return Err(ApplicationError::NotFound(format!(
+                    "SKU not found: {}",
+                    item_request.sku_id
+                )));
             }
         }
 
@@ -68,7 +77,7 @@ impl CalculateCartHandler {
         for item_request in &command.items {
             if item_request.quantity == 0 {
                 return Err(ApplicationError::InvalidInput(
-                    "Item quantity must be greater than zero".to_string()
+                    "Item quantity must be greater than zero".to_string(),
                 ));
             }
 
@@ -80,30 +89,29 @@ impl CalculateCartHandler {
 
             // SKUが購入可能かチェック
             if variant.is_sold_out {
-                return Err(ApplicationError::InvalidInput(
-                    format!("SKU {} is sold out", variant.sku_code)
-                ));
+                return Err(ApplicationError::InvalidInput(format!(
+                    "SKU {} is sold out",
+                    variant.sku_code
+                )));
             }
 
             if variant.stock_quantity < item_request.quantity {
-                return Err(ApplicationError::InvalidInput(
-                    format!(
-                        "Insufficient stock for SKU {}: requested {}, available {}",
-                        variant.sku_code, item_request.quantity, variant.stock_quantity
-                    )
-                ));
+                return Err(ApplicationError::InvalidInput(format!(
+                    "Insufficient stock for SKU {}: requested {}, available {}",
+                    variant.sku_code, item_request.quantity, variant.stock_quantity
+                )));
             }
 
             // ドメインオブジェクトを作成
-            let sku_id = SKUId::from_uuid(
-                Uuid::parse_str(&variant.id)
-                    .map_err(|_| ApplicationError::InvalidInput("Invalid variant ID".to_string()))?
-            );
+            let sku_id =
+                SKUId::from_uuid(Uuid::parse_str(&variant.id).map_err(|_| {
+                    ApplicationError::InvalidInput("Invalid variant ID".to_string())
+                })?);
 
             // ProductIdは実際のプロダクト情報から取得する必要があるが、
             // 現在のVariantDTOには含まれていないため、新規UUIDを生成
             // TODO: VariantDTOにproduct_idを追加するか、別途取得する
-            let product_id = ProductId::new(); 
+            let product_id = ProductId::new();
 
             let product_name = ProductName::new(variant.name.clone())
                 .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
@@ -117,33 +125,44 @@ impl CalculateCartHandler {
                 product_name,
                 unit_price,
                 item_request.quantity,
-            ).map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
+            )
+            .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
 
             cart_items.push(cart_item);
         }
 
         // 5. 配送方法の取得
-        let shipping_method = self.shipping_method_repository
+        let shipping_method = self
+            .shipping_method_repository
             .find_by_id(&command.shipping_method_id)
             .await
             .map_err(ApplicationError::Repository)?
-            .ok_or_else(|| ApplicationError::NotFound(
-                format!("Shipping method not found: {}", command.shipping_method_id)
-            ))?;
+            .ok_or_else(|| {
+                ApplicationError::NotFound(format!(
+                    "Shipping method not found: {}",
+                    command.shipping_method_id
+                ))
+            })?;
 
         // 6. 支払い方法の取得
-        let payment_method = self.payment_method_repository
+        let payment_method = self
+            .payment_method_repository
             .find_by_id(&command.payment_method_id)
             .await
             .map_err(ApplicationError::Repository)?
-            .ok_or_else(|| ApplicationError::NotFound(
-                format!("Payment method not found: {}", command.payment_method_id)
-            ))?;
+            .ok_or_else(|| {
+                ApplicationError::NotFound(format!(
+                    "Payment method not found: {}",
+                    command.payment_method_id
+                ))
+            })?;
 
         // 7. Cart作成と設定（Domain層で全て完結）
         let mut cart = Cart::from_items(cart_items);
-        cart.apply_shipping_method(&shipping_method).map_err(ApplicationError::Domain)?;
-        cart.apply_payment_method(&payment_method).map_err(ApplicationError::Domain)?;
+        cart.apply_shipping_method(&shipping_method)
+            .map_err(ApplicationError::Domain)?;
+        cart.apply_payment_method(&payment_method)
+            .map_err(ApplicationError::Domain)?;
 
         // 8. 手数料をCartから取得
         let shipping_fee = cart.shipping_fee().unwrap_or(Money::from_yen(0));
@@ -152,4 +171,4 @@ impl CalculateCartHandler {
         CalculateCartResultDto::from_cart(cart, shipping_fee, payment_fee)
             .map_err(ApplicationError::InvalidInput)
     }
-} 
+}

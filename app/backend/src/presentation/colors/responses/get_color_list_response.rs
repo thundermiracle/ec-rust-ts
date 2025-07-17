@@ -8,11 +8,10 @@ pub struct GetColorListResponse {
     pub colors: Vec<GetColorListItemResponse>,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct GetColorListItemResponse {
     pub id: u32,
     pub name: String,
     pub hex: String,
-} 
+}

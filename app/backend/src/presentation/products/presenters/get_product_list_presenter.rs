@@ -49,7 +49,7 @@ impl GetProductListPresenter {
         // ViewModelから必要な情報を抽出
         let is_on_sale = summary.is_on_sale();
         let is_sold_out = summary.is_sold_out();
-        
+
         GetProductListItemResponse::new(
             summary.id,
             summary.name,
@@ -199,4 +199,4 @@ mod tests {
         assert_eq!(response.products.len(), 2);
         assert_eq!(response.total_count, 2);
     }
-} 
+}

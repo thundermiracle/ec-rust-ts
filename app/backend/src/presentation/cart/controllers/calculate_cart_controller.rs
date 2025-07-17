@@ -1,17 +1,16 @@
-use axum::{routing::post, Router, extract::State, Json};
+use axum::{Json, Router, extract::State, routing::post};
 use std::sync::Arc;
 
-use crate::infrastructure::Container;
 use crate::error::Result;
-use crate::presentation::cart::{CalculateCartRequest, CartPresenter, CalculateCartResponse};
+use crate::infrastructure::Container;
 use crate::presentation::ErrorResponse;
+use crate::presentation::cart::{CalculateCartRequest, CalculateCartResponse, CartPresenter};
 
 pub struct CalculateCartController;
 
 impl CalculateCartController {
     pub fn routes() -> Router<Arc<Container>> {
-        Router::new()
-            .route("/cart", post(handle))
+        Router::new().route("/cart", post(handle))
     }
 }
 
@@ -33,10 +32,14 @@ pub async fn handle(
     State(container): State<Arc<Container>>,
     Json(request): Json<CalculateCartRequest>,
 ) -> Result<Json<CalculateCartResponse>> {
-    println!("->> CalculateCartController::handle - {} items", request.items.len());
+    println!(
+        "->> CalculateCartController::handle - {} items",
+        request.items.len()
+    );
 
     // 1. リクエストバリデーション
-    request.validate()
+    request
+        .validate()
         .map_err(|msg| crate::application::error::ApplicationError::Validation(msg))?;
 
     // 2. アプリケーション層のコマンドに変換
@@ -44,13 +47,14 @@ pub async fn handle(
 
     // 3. Dispatcherを通じてユースケースを実行
     let dispatcher = container.get_dispatcher();
-    let result = dispatcher
-        .execute_calculate_cart_command(command)
-        .await?; // ApplicationErrorからErrorへの自動変換を利用
+    let result = dispatcher.execute_calculate_cart_command(command).await?; // ApplicationErrorからErrorへの自動変換を利用
 
     // 4. プレゼンターでレスポンスに変換
     let response = CartPresenter::to_response(result);
 
-    println!("->> CalculateCartController::handle - success for cart with {} items", response.item_count);
+    println!(
+        "->> CalculateCartController::handle - success for cart with {} items",
+        response.item_count
+    );
     Ok(Json(response))
 }

@@ -1,6 +1,6 @@
-use uuid::Uuid;
 use crate::domain::error::DomainError;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ProductId(Uuid);
@@ -154,11 +154,11 @@ impl OrderId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
-    
+
     pub fn from_uuid(uuid: Uuid) -> Self {
         Self(uuid)
     }
-    
+
     pub fn value(&self) -> Uuid {
         self.0
     }
@@ -177,11 +177,11 @@ impl PaymentMethodId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
-    
+
     pub fn from_uuid(uuid: Uuid) -> Self {
         Self(uuid)
     }
-    
+
     pub fn value(&self) -> Uuid {
         self.0
     }
@@ -200,11 +200,11 @@ impl CustomerId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
-    
+
     pub fn from_uuid(uuid: Uuid) -> Self {
         Self(uuid)
     }
-    
+
     pub fn value(&self) -> Uuid {
         self.0
     }
@@ -214,4 +214,4 @@ impl std::fmt::Display for CustomerId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
-} 
+}

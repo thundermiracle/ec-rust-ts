@@ -1,7 +1,7 @@
+use super::controllers;
+use crate::infrastructure::Container;
 use axum::Router;
 use std::sync::Arc;
-use crate::infrastructure::Container;
-use super::controllers;
 
 /// Products モジュールの全ルート定義
 /// Clean Architecture: 関連するControllerのルートを統合

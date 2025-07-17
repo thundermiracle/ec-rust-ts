@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use sqlx::{Row, SqlitePool};
 
+use crate::application::dto::{ProductDTO, ProductListDTO, ProductSummaryDTO, VariantDTO};
 use crate::application::error::RepositoryError;
 use crate::application::repositories::ProductRepository;
-use crate::application::dto::{ProductListDTO, ProductSummaryDTO, ProductDTO, VariantDTO};
 use crate::domain::{ProductId, SKUId};
 
 /// SQLite実装のProductRepository
@@ -37,7 +37,7 @@ impl ProductRepository for SqliteProductRepository {
             FROM products p
             JOIN categories c ON c.id = p.category_id
             WHERE p.id = ?
-            "#
+            "#,
         )
         .bind(&product_id_str)
         .fetch_optional(&self.pool)
@@ -75,7 +75,7 @@ impl ProductRepository for SqliteProductRepository {
                 COALESCE(s.sale_price, s.base_price) ASC,
                 s.dimensions ASC,
                 c.name ASC
-            "#
+            "#,
         )
         .bind(&product_id_str)
         .fetch_all(&self.pool)
@@ -89,7 +89,7 @@ impl ProductRepository for SqliteProductRepository {
             FROM product_images
             WHERE product_id = ?
             ORDER BY display_order
-            "#
+            "#,
         )
         .bind(&product_id_str)
         .fetch_all(&self.pool)
@@ -97,44 +97,61 @@ impl ProductRepository for SqliteProductRepository {
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
         // データ変換処理
-        let name: String = product_row.try_get("name")
+        let name: String = product_row
+            .try_get("name")
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-        let description: String = product_row.try_get("description")
+        let description: String = product_row
+            .try_get("description")
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-        let is_best_seller: bool = product_row.try_get("is_best_seller")
+        let is_best_seller: bool = product_row
+            .try_get("is_best_seller")
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-        let is_quick_ship: bool = product_row.try_get("is_quick_ship")
+        let is_quick_ship: bool = product_row
+            .try_get("is_quick_ship")
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-        let category_name: String = product_row.try_get("category_name")
+        let category_name: String = product_row
+            .try_get("category_name")
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
         // バリアント情報を構築
         let mut variants = Vec::new();
 
         for sku_row in sku_rows {
-            let sku_id: String = sku_row.try_get("id")
+            let sku_id: String = sku_row
+                .try_get("id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_code: String = sku_row.try_get("sku_code")
+            let sku_code: String = sku_row
+                .try_get("sku_code")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_name: String = sku_row.try_get("name")
+            let sku_name: String = sku_row
+                .try_get("name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let base_price: i64 = sku_row.try_get("base_price")
+            let base_price: i64 = sku_row
+                .try_get("base_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_sale_price: Option<i64> = sku_row.try_get("sale_price")
+            let sku_sale_price: Option<i64> = sku_row
+                .try_get("sale_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let stock_quantity: i64 = sku_row.try_get("stock_quantity")
+            let stock_quantity: i64 = sku_row
+                .try_get("stock_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let reserved_quantity: i64 = sku_row.try_get("reserved_quantity")
+            let reserved_quantity: i64 = sku_row
+                .try_get("reserved_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let display_order: i64 = sku_row.try_get("display_order")
+            let display_order: i64 = sku_row
+                .try_get("display_order")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_image_url: Option<String> = sku_row.try_get("image_url")
+            let sku_image_url: Option<String> = sku_row
+                .try_get("image_url")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let color_name: String = sku_row.try_get("color_name")
+            let color_name: String = sku_row
+                .try_get("color_name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_dimensions: Option<String> = sku_row.try_get("dimensions")
+            let sku_dimensions: Option<String> = sku_row
+                .try_get("dimensions")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_material: Option<String> = sku_row.try_get("material")
+            let sku_material: Option<String> = sku_row
+                .try_get("material")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // バリアント作成 - VariantDTOの構造体フィールドに直接設定
@@ -146,7 +163,7 @@ impl ProductRepository for SqliteProductRepository {
                 sku_material.unwrap_or_default(),
                 sku_dimensions.unwrap_or_default(),
                 base_price as u32,
-                sku_sale_price.map(|p| p  as u32),
+                sku_sale_price.map(|p| p as u32),
                 stock_quantity as u32,
                 reserved_quantity as u32,
                 display_order as u32,
@@ -217,7 +234,7 @@ impl ProductRepository for SqliteProductRepository {
                 FROM product_images
             ) pi ON pi.product_id = p.id AND pi.rn = 1
             ORDER BY p.name
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await
@@ -243,7 +260,11 @@ impl ProductRepository for SqliteProductRepository {
             .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
         // プレースホルダーを動的に生成
-        let placeholders = product_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let placeholders = product_ids
+            .iter()
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(",");
 
         // 各商品の色情報を取得
         let color_query = format!(
@@ -272,25 +293,35 @@ impl ProductRepository for SqliteProductRepository {
         let mut product_summaries = Vec::new();
 
         for product_row in product_rows {
-            let product_id: String = product_row.try_get("id")
+            let product_id: String = product_row
+                .try_get("id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let name: String = product_row.try_get("name")
+            let name: String = product_row
+                .try_get("name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let is_best_seller: bool = product_row.try_get("is_best_seller")
+            let is_best_seller: bool = product_row
+                .try_get("is_best_seller")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let is_quick_ship: bool = product_row.try_get("is_quick_ship")
+            let is_quick_ship: bool = product_row
+                .try_get("is_quick_ship")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let category_name: String = product_row.try_get("category_name")
+            let category_name: String = product_row
+                .try_get("category_name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let base_price: i64 = product_row.try_get("base_price")
+            let base_price: i64 = product_row
+                .try_get("base_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sale_price: Option<i64> = product_row.try_get("sale_price")
+            let sale_price: Option<i64> = product_row
+                .try_get("sale_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let stock_quantity: i64 = product_row.try_get("stock_quantity")
+            let stock_quantity: i64 = product_row
+                .try_get("stock_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let reserved_quantity: i64 = product_row.try_get("reserved_quantity")
+            let reserved_quantity: i64 = product_row
+                .try_get("reserved_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let first_image: Option<String> = product_row.try_get("first_image")
+            let first_image: Option<String> = product_row
+                .try_get("first_image")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // この商品の色情報を取得
@@ -342,20 +373,24 @@ impl ProductRepository for SqliteProductRepository {
         Ok(product_list)
     }
 
-    async fn find_variants_by_ids(&self, sku_ids: &[SKUId]) -> Result<Vec<VariantDTO>, RepositoryError> {
+    async fn find_variants_by_ids(
+        &self,
+        sku_ids: &[SKUId],
+    ) -> Result<Vec<VariantDTO>, RepositoryError> {
         if sku_ids.is_empty() {
             return Ok(Vec::new());
         }
 
         // UUIDを文字列に変換
-        let sku_id_strings: Vec<String> = sku_ids
-            .iter()
-            .map(|id| id.value().to_string())
-            .collect();
+        let sku_id_strings: Vec<String> = sku_ids.iter().map(|id| id.value().to_string()).collect();
 
         // プレースホルダーを動的に生成
-        let placeholders = sku_id_strings.iter().map(|_| "?").collect::<Vec<_>>().join(",");
-        
+        let placeholders = sku_id_strings
+            .iter()
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(",");
+
         let query = format!(
             r#"
             SELECT 
@@ -392,29 +427,41 @@ impl ProductRepository for SqliteProductRepository {
         let mut variants = Vec::new();
 
         for sku_row in sku_rows {
-            let sku_id: String = sku_row.try_get("id")
+            let sku_id: String = sku_row
+                .try_get("id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_code: String = sku_row.try_get("sku_code")
+            let sku_code: String = sku_row
+                .try_get("sku_code")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_name: String = sku_row.try_get("name")
+            let sku_name: String = sku_row
+                .try_get("name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let base_price: i64 = sku_row.try_get("base_price")
+            let base_price: i64 = sku_row
+                .try_get("base_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_sale_price: Option<i64> = sku_row.try_get("sale_price")
+            let sku_sale_price: Option<i64> = sku_row
+                .try_get("sale_price")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let stock_quantity: i64 = sku_row.try_get("stock_quantity")
+            let stock_quantity: i64 = sku_row
+                .try_get("stock_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let reserved_quantity: i64 = sku_row.try_get("reserved_quantity")
+            let reserved_quantity: i64 = sku_row
+                .try_get("reserved_quantity")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let display_order: i64 = sku_row.try_get("display_order")
+            let display_order: i64 = sku_row
+                .try_get("display_order")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_image_url: Option<String> = sku_row.try_get("image_url")
+            let sku_image_url: Option<String> = sku_row
+                .try_get("image_url")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let color_name: String = sku_row.try_get("color_name")
+            let color_name: String = sku_row
+                .try_get("color_name")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_dimensions: Option<String> = sku_row.try_get("dimensions")
+            let sku_dimensions: Option<String> = sku_row
+                .try_get("dimensions")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
-            let sku_material: Option<String> = sku_row.try_get("material")
+            let sku_material: Option<String> = sku_row
+                .try_get("material")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
             // バリアント作成

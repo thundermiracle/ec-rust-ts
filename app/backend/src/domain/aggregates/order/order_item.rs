@@ -1,5 +1,5 @@
-use crate::domain::value_objects::*;
 use crate::domain::error::DomainError;
+use crate::domain::value_objects::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderItem {
@@ -22,16 +22,16 @@ impl OrderItem {
     ) -> Result<Self, DomainError> {
         if quantity <= 0 {
             return Err(DomainError::InvalidProductData(
-                "Quantity must be positive".to_string()
+                "Quantity must be positive".to_string(),
             ));
         }
-        
+
         if quantity > 999 {
             return Err(DomainError::InvalidProductData(
-                "Quantity cannot exceed 999".to_string()
+                "Quantity cannot exceed 999".to_string(),
             ));
         }
-        
+
         Ok(OrderItem {
             sku_id,
             sku_code,
@@ -41,28 +41,28 @@ impl OrderItem {
             quantity,
         })
     }
-    
+
     pub fn subtotal(&self) -> Result<Money, DomainError> {
         self.unit_price.multiply(self.quantity as u32)
     }
-    
+
     pub fn update_quantity(&mut self, new_quantity: i32) -> Result<(), DomainError> {
         if new_quantity <= 0 {
             return Err(DomainError::InvalidProductData(
-                "Quantity must be positive".to_string()
+                "Quantity must be positive".to_string(),
             ));
         }
-        
+
         if new_quantity > 999 {
             return Err(DomainError::InvalidProductData(
-                "Quantity cannot exceed 999".to_string()
+                "Quantity cannot exceed 999".to_string(),
             ));
         }
-        
+
         self.quantity = new_quantity;
         Ok(())
     }
-    
+
     pub fn is_same_sku(&self, sku_id: &SKUId) -> bool {
         self.sku_id == *sku_id
     }
@@ -80,7 +80,8 @@ mod tests {
             SKUName::new("Test SKU".to_string()).unwrap(),
             Money::from_yen(1000),
             2,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -133,7 +134,7 @@ mod tests {
     #[test]
     fn test_update_quantity() {
         let mut item = create_test_order_item();
-        
+
         assert!(item.update_quantity(5).is_ok());
         assert_eq!(item.quantity, 5);
         assert_eq!(item.subtotal().unwrap(), Money::from_yen(5000));
@@ -142,11 +143,11 @@ mod tests {
     #[test]
     fn test_update_quantity_invalid() {
         let mut item = create_test_order_item();
-        
+
         assert!(item.update_quantity(0).is_err());
         assert!(item.update_quantity(-1).is_err());
         assert!(item.update_quantity(1000).is_err());
-        
+
         // Original quantity should remain unchanged
         assert_eq!(item.quantity, 2);
     }
@@ -161,10 +162,11 @@ mod tests {
             SKUName::new("Different SKU".to_string()).unwrap(),
             Money::from_yen(2000),
             1,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let item3_different_sku = create_test_order_item();
-        
+
         assert!(item1.is_same_sku(&item2_same_sku.sku_id));
         assert!(!item1.is_same_sku(&item3_different_sku.sku_id));
     }

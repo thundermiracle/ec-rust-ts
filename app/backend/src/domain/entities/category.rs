@@ -30,7 +30,7 @@ impl Category {
                 "Category name cannot be empty".to_string(),
             ));
         }
-        
+
         if slug.trim().is_empty() {
             return Err(DomainError::InvalidProductData(
                 "Category slug cannot be empty".to_string(),
@@ -144,13 +144,7 @@ mod tests {
     #[test]
     fn reject_empty_name() {
         let category_id = CategoryId::new("desks".to_string()).unwrap();
-        let category = Category::new(
-            category_id,
-            "".to_string(),
-            "desks".to_string(),
-            None,
-            None,
-        );
+        let category = Category::new(category_id, "".to_string(), "desks".to_string(), None, None);
         assert!(category.is_err());
     }
 
@@ -166,4 +160,4 @@ mod tests {
         );
         assert!(category.is_err());
     }
-} 
+}

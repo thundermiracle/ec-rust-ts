@@ -1,13 +1,13 @@
 use axum::extract::{Path, State};
-use axum::{routing::get, Json, Router};
+use axum::{Json, Router, routing::get};
 use std::sync::Arc;
 
-use crate::infrastructure::Container;
-use crate::error::Result;
 use crate::application::GetProductQuery;
+use crate::error::Result;
+use crate::infrastructure::Container;
+use crate::presentation::ErrorResponse;
 use crate::presentation::products::presenters::GetProductPresenter;
 use crate::presentation::products::responses::GetProductResponse;
-use crate::presentation::ErrorResponse;
 
 /// Get Product Controller - 商品詳細取得の単一責任
 /// Clean Architecture: 1つのユースケースに対して1つのController
@@ -16,8 +16,7 @@ pub struct GetProductController;
 impl GetProductController {
     /// このControllerのルート定義
     pub fn routes() -> Router<Arc<Container>> {
-        Router::new()
-            .route("/products/{id}", get(handle))
+        Router::new().route("/products/{id}", get(handle))
     }
 }
 
@@ -39,16 +38,19 @@ impl GetProductController {
 )]
 pub async fn handle(
     State(container): State<Arc<Container>>,
-    Path(id): Path<String>
+    Path(id): Path<String>,
 ) -> Result<Json<GetProductResponse>> {
     println!("->> GetProductController::handle - product_id: {}", id);
-    
+
     let dispatcher = container.get_dispatcher();
-    
+
     let product_detail = dispatcher
         .execute_get_product_query(GetProductQuery::new(id.clone()))
         .await?; // ApplicationErrorからErrorへの自動変換を利用
-        
-    println!("->> GetProductController::handle - success for product_id: {}", id);
+
+    println!(
+        "->> GetProductController::handle - success for product_id: {}",
+        id
+    );
     Ok(Json(GetProductPresenter::present(product_detail)))
-} 
+}

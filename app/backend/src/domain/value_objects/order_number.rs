@@ -6,24 +6,25 @@ pub struct OrderNumber(String);
 
 impl OrderNumber {
     const MAX_LENGTH: usize = 20;
-    
+
     pub fn generate(year: i32, sequence: u32) -> Self {
         Self(format!("ORD-{}-{:06}", year, sequence))
     }
-    
+
     pub fn from_string(value: String) -> Result<Self, DomainError> {
         if value.is_empty() {
             return Err(DomainError::InvalidProductData(
                 "Order number cannot be empty".to_string(),
             ));
         }
-        
+
         if value.len() > Self::MAX_LENGTH {
-            return Err(DomainError::InvalidProductData(
-                format!("Order number cannot exceed {} characters", Self::MAX_LENGTH),
-            ));
+            return Err(DomainError::InvalidProductData(format!(
+                "Order number cannot exceed {} characters",
+                Self::MAX_LENGTH
+            )));
         }
-        
+
         // Basic format validation for generated order numbers
         if value.starts_with("ORD-") && value.len() == 15 {
             // Validate format: ORD-YYYY-NNNNNN
@@ -34,11 +35,11 @@ impl OrderNumber {
                 }
             }
         }
-        
+
         // Allow custom order numbers that don't follow the standard format
         Ok(Self(value))
     }
-    
+
     pub fn value(&self) -> &str {
         &self.0
     }

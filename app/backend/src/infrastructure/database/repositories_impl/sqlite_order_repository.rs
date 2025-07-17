@@ -20,9 +20,12 @@ impl SqliteOrderRepository {
 #[async_trait]
 impl OrderRepository for SqliteOrderRepository {
     async fn save(&self, order: &Order) -> Result<(), RepositoryError> {
-        let mut tx = self.pool.begin().await
+        let mut tx = self
+            .pool
+            .begin()
+            .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+
         // 注文データを挿入
         sqlx::query(
             r#"
@@ -38,7 +41,7 @@ impl OrderRepository for SqliteOrderRepository {
                 ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
                 ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
             )
-            "#
+            "#,
         )
         .bind(order.id.value().to_string())
         .bind(order.order_number.value())
@@ -55,7 +58,13 @@ impl OrderRepository for SqliteOrderRepository {
         .bind(order.shipping_info.address.building())
         .bind(order.payment_info.method_id.value().to_string())
         .bind(order.payment_info.fee.amount_in_yen() as i64)
-        .bind(order.payment_info.payment_details.as_ref().map(|d| d.to_json_string().to_string()))
+        .bind(
+            order
+                .payment_info
+                .payment_details
+                .as_ref()
+                .map(|d| d.to_json_string().to_string()),
+        )
         .bind(order.pricing.subtotal.amount_in_yen() as i64)
         .bind(order.pricing.shipping_fee.amount_in_yen() as i64)
         .bind(order.pricing.payment_fee.amount_in_yen() as i64)
@@ -68,7 +77,7 @@ impl OrderRepository for SqliteOrderRepository {
         .execute(&mut *tx)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+
         // 注文アイテムを挿入
         for item in &order.items {
             sqlx::query(
@@ -77,7 +86,7 @@ impl OrderRepository for SqliteOrderRepository {
                     order_id, sku_id, sku_code, product_name, sku_name,
                     unit_price, quantity, subtotal
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-                "#
+                "#,
             )
             .bind(order.id.value().to_string())
             .bind(item.sku_id.value().to_string())
@@ -91,17 +100,21 @@ impl OrderRepository for SqliteOrderRepository {
             .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
         }
-        
-        tx.commit().await
+
+        tx.commit()
+            .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+
         Ok(())
     }
-    
+
     async fn update(&self, order: &Order) -> Result<(), RepositoryError> {
-        let mut tx = self.pool.begin().await
+        let mut tx = self
+            .pool
+            .begin()
+            .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+
         // 注文データを更新
         sqlx::query(
             r#"
@@ -118,7 +131,7 @@ impl OrderRepository for SqliteOrderRepository {
                 total_amount = ?19, status = ?20, updated_at = ?21,
                 notes = ?22
             WHERE id = ?23
-            "#
+            "#,
         )
         .bind(order.customer_info.personal_info.first_name().value())
         .bind(order.customer_info.personal_info.last_name().value())
@@ -133,7 +146,13 @@ impl OrderRepository for SqliteOrderRepository {
         .bind(order.shipping_info.address.building())
         .bind(order.payment_info.method_id.value().to_string())
         .bind(order.payment_info.fee.amount_in_yen() as i64)
-        .bind(order.payment_info.payment_details.as_ref().map(|d| d.to_json_string().to_string()))
+        .bind(
+            order
+                .payment_info
+                .payment_details
+                .as_ref()
+                .map(|d| d.to_json_string().to_string()),
+        )
         .bind(order.pricing.subtotal.amount_in_yen() as i64)
         .bind(order.pricing.shipping_fee.amount_in_yen() as i64)
         .bind(order.pricing.payment_fee.amount_in_yen() as i64)
@@ -146,14 +165,14 @@ impl OrderRepository for SqliteOrderRepository {
         .execute(&mut *tx)
         .await
         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+
         // 既存の注文アイテムを削除
         sqlx::query("DELETE FROM order_items WHERE order_id = ?")
-        .bind(order.id.value().to_string())
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+            .bind(order.id.value().to_string())
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+
         // 注文アイテムを再挿入
         for item in &order.items {
             sqlx::query(
@@ -162,7 +181,7 @@ impl OrderRepository for SqliteOrderRepository {
                     order_id, sku_id, sku_code, product_name, sku_name,
                     unit_price, quantity, subtotal
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-                "#
+                "#,
             )
             .bind(order.id.value().to_string())
             .bind(item.sku_id.value().to_string())
@@ -176,10 +195,11 @@ impl OrderRepository for SqliteOrderRepository {
             .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
         }
-        
-        tx.commit().await
+
+        tx.commit()
+            .await
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-        
+
         Ok(())
     }
 }

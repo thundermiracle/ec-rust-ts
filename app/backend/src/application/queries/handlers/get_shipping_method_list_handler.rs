@@ -1,15 +1,17 @@
 use std::sync::Arc;
 
-use crate::application::repositories::ShippingMethodRepository;
 use crate::application::dto::ShippingMethodListDTO;
 use crate::application::error::ApplicationError;
+use crate::application::repositories::ShippingMethodRepository;
 
 pub struct GetShippingMethodListHandler {
     shipping_method_repository: Arc<dyn ShippingMethodRepository + Send + Sync>,
 }
 
 impl GetShippingMethodListHandler {
-    pub fn new(shipping_method_repository: Arc<dyn ShippingMethodRepository + Send + Sync>) -> Self {
+    pub fn new(
+        shipping_method_repository: Arc<dyn ShippingMethodRepository + Send + Sync>,
+    ) -> Self {
         Self {
             shipping_method_repository,
         }
@@ -17,9 +19,9 @@ impl GetShippingMethodListHandler {
 
     pub async fn handle(&self) -> Result<ShippingMethodListDTO, ApplicationError> {
         println!("->> GetShippingMethodListHandler::handle");
-        
+
         let result = self.shipping_method_repository.find_all().await?;
-        
+
         Ok(result)
     }
 }
@@ -27,9 +29,9 @@ impl GetShippingMethodListHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::repositories::ShippingMethodRepository;
+    use crate::application::dto::{ShippingMethodDTO, ShippingMethodListDTO};
     use crate::application::error::RepositoryError;
-    use crate::application::dto::{ShippingMethodListDTO, ShippingMethodDTO};
+    use crate::application::repositories::ShippingMethodRepository;
     use crate::domain::entities::ShippingMethod;
     use async_trait::async_trait;
 
@@ -47,17 +49,15 @@ mod tests {
         async fn find_by_id(&self, id: &str) -> Result<Option<ShippingMethod>, RepositoryError> {
             // テスト用の簡易実装
             // 実際の実装では適切なドメインエンティティを返す
-            use crate::domain::value_objects::{ShippingMethodId, Money};
-            
-            let method = self.methods.methods
-                .iter()
-                .find(|m| m.id == id);
-                
+            use crate::domain::value_objects::{Money, ShippingMethodId};
+
+            let method = self.methods.methods.iter().find(|m| m.id == id);
+
             match method {
                 Some(dto) => {
                     let shipping_method_id = ShippingMethodId::new(dto.id.clone())
                         .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
-                    
+
                     let shipping_method = ShippingMethod::new(
                         shipping_method_id,
                         dto.name.clone(),
