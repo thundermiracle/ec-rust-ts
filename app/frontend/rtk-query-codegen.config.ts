@@ -25,6 +25,9 @@ const config: ConfigFile = {
     "./src/store/generatedApi/paymentApi.ts": {
       filterEndpoints: [/payment/i],
     },
+    "./src/store/generatedApi/ordersApi.ts": {
+      filterEndpoints: [/order/i],
+    },
   },
   hooks: true,
   tag: true,

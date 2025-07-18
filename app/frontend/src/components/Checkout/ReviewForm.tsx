@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Shield } from "lucide-react";
+import { Shield, AlertCircle, X } from "lucide-react";
 import { useGetShippingMethodListQuery } from "@/store/api";
 import { useGetPaymentMethodListQuery } from "@/store/generatedApi/paymentApi";
 import { type CheckoutFormData } from "@/lib/validators/checkout";
@@ -14,6 +14,9 @@ interface ReviewFormProps {
   total?: number;
   isLoadingTotal?: boolean;
   hasCalculationError?: boolean;
+  isCreatingOrder?: boolean;
+  orderError?: string | null;
+  onClearError?: () => void;
 }
 
 export function ReviewForm({
@@ -21,12 +24,14 @@ export function ReviewForm({
   total = 0,
   isLoadingTotal = false,
   hasCalculationError,
+  isCreatingOrder = false,
+  orderError,
+  onClearError,
 }: ReviewFormProps) {
   const {
     register,
     control,
     getValues,
-    formState: { isSubmitting },
   } = useFormContext<CheckoutFormData>();
   const { data: shippingData } = useGetShippingMethodListQuery();
   const { data: paymentData } = useGetPaymentMethodListQuery();
@@ -107,9 +112,32 @@ export function ReviewForm({
 
         {hasCalculationError && (
           <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-red-800 text-sm">
-              合計金額の計算に失敗しました。配送方法と支払い方法を再選択してください。
-            </p>
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-red-800 text-sm">
+                合計金額の計算に失敗しました。配送方法と支払い方法を再選択してください。
+              </p>
+            </div>
+          </div>
+        )}
+
+        {orderError && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-red-800 text-sm">{orderError}</p>
+              </div>
+              {onClearError && (
+                <button
+                  type="button"
+                  onClick={onClearError}
+                  className="ml-2 text-red-500 hover:text-red-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -125,15 +153,17 @@ export function ReviewForm({
           <Button
             type="submit"
             className="flex-1"
-            disabled={isSubmitting || isLoadingTotal || hasCalculationError}
+            disabled={isLoadingTotal || hasCalculationError || isCreatingOrder || Boolean(orderError)}
           >
-            {isSubmitting
+            {isCreatingOrder
               ? "注文処理中..."
               : isLoadingTotal
-                ? "計算中..."
-                : hasCalculationError
-                  ? "計算エラー"
-                  : `¥${total.toLocaleString()}で注文確定`}
+                  ? "計算中..."
+                  : hasCalculationError
+                    ? "計算エラー"
+                    : orderError
+                      ? "エラーを確認してください"
+                      : `¥${total.toLocaleString()}で注文確定`}
           </Button>
         </div>
       </CardContent>

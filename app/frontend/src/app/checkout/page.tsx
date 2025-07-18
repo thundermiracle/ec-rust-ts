@@ -10,6 +10,7 @@ import {
   selectCartItems, 
   clearCart,
 } from '@/store/cartSlice';
+import { useCreateOrderMutation, type CreateOrderRequest } from '@/store/api';
 import { useCartCalculation } from '@/hooks/useCartCalculation';
 import { Button } from '@/components/ui/button';
 import { Stepper } from '@/components/ui/stepper';
@@ -35,6 +36,8 @@ export default function CheckoutPage() {
   const cartItems = useAppSelector(selectCartItems);
   
   const [currentStep, setCurrentStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
+  const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
+  const [orderError, setOrderError] = useState<string | null>(null);
   
   const formContext = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -89,17 +92,62 @@ export default function CheckoutPage() {
   // 注文処理
   const handlePlaceOrder = async (data: CheckoutFormData) => {
     try {
-      // TODO: 実際のAPIエンドポイントに注文データを送信
-      console.log('注文データ:', data);
+      // Clear previous errors
+      setOrderError(null);
+      
+      // Create order request from form data and cart items
+      const orderRequest: CreateOrderRequest = {
+        customer_info: {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone,
+        },
+        items: cartItems.map(item => ({
+          sku_id: item.skuId,
+          quantity: item.quantity,
+        })),
+        shipping_method_id: data.shippingMethod,
+        payment_method_id: data.paymentMethod,
+        shipping_address: {
+          postal_code: data.postalCode,
+          prefecture: data.prefecture,
+          city: data.city,
+          street_address: data.address,
+          building: data.apartment || null,
+        },
+      };
+
+      console.log('注文データ:', orderRequest);
+      
+      // Call create order API
+      const result = await createOrder({ createOrderRequest: orderRequest }).unwrap();
+      
+      console.log('注文作成成功:', result);
       
       // 注文完了後、カートとlocalStorageをクリアして完了ページへ
       dispatch(clearCart());
       clearStorage();
-      router.push('/checkout/success');
+      router.push(`/checkout/success?orderId=${result.order_id}`);
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('注文処理エラー:', error);
-      alert('注文処理中にエラーが発生しました。再度お試しください。');
+      
+      let errorMessage = '注文処理中にエラーが発生しました。再度お試しください。';
+      
+      // Handle RTK Query errors
+      if (error && typeof error === 'object' && 'data' in error) {
+        const apiError = error as { data: { message?: string; details?: string } };
+        if (apiError.data?.message) {
+          errorMessage = apiError.data.message;
+        } else if (apiError.data?.details) {
+          errorMessage = apiError.data.details;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setOrderError(errorMessage);
     }
   };
   
@@ -185,6 +233,9 @@ export default function CheckoutPage() {
                     total={total}
                     isLoadingTotal={isCartCalculationLoading}
                     hasCalculationError={Boolean(cartCalculationError)}
+                    isCreatingOrder={isCreatingOrder}
+                    orderError={orderError}
+                    onClearError={() => setOrderError(null)}
                   />
                 )}
               </div>

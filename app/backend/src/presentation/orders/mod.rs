@@ -11,3 +11,4 @@ pub use requests::{
     CreateOrderRequestShippingAddress,
 };
 pub use responses::CreateOrderResponse;
+pub use routes::routes;

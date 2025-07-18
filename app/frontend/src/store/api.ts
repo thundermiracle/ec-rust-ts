@@ -8,6 +8,7 @@ export { useGetShippingMethodListQuery } from "./generatedApi/shippingApi";
 export { useFindVariantsMutation } from "./generatedApi/variantsApi";
 export { useCalculateCartMutation } from "./generatedApi/cartApi";
 export { useGetPaymentMethodListQuery } from "./generatedApi/paymentApi";
+export { useCreateOrderMutation } from "./generatedApi/ordersApi";
 
 export type {
   GetProductResponse,
@@ -19,3 +20,4 @@ export type {
 export type { FindVariantsItemResponse } from "./generatedApi/variantsApi";
 export type { CategoryResponse, GetCategoryListResponse } from "./generatedApi/categoriesApi";
 export type { GetColorListItemResponse, GetColorListResponse } from "./generatedApi/colorsApi";
+export type { CreateOrderRequest, CreateOrderResponse, CreateOrderApiArg } from "./generatedApi/ordersApi";
