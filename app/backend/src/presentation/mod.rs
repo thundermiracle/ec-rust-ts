@@ -2,6 +2,7 @@ mod cart;
 mod categories;
 mod colors;
 mod common;
+mod orders;
 mod payment_methods;
 mod products;
 mod routes;

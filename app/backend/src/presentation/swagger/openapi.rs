@@ -5,6 +5,11 @@ use crate::presentation::cart::requests::{CalculateCartItemRequest, CalculateCar
 use crate::presentation::cart::responses::{CalculateCartItemResponse, CalculateCartResponse};
 use crate::presentation::categories::responses::{CategoryResponse, GetCategoryListResponse};
 use crate::presentation::colors::responses::{GetColorListItemResponse, GetColorListResponse};
+use crate::presentation::orders::requests::{
+    CreateOrderRequest, CreateOrderRequestCustomerInfo, CreateOrderRequestItem,
+    CreateOrderRequestShippingAddress,
+};
+use crate::presentation::orders::responses::CreateOrderResponse;
 use crate::presentation::payment_methods::responses::{
     GetPaymentMethodListResponse, PaymentMethodListItemResponse,
 };
@@ -28,6 +33,7 @@ use crate::presentation::variants::responses::{FindVariantsItemResponse, FindVar
         crate::presentation::colors::controllers::get_color_list_controller::handle,
         crate::presentation::variants::controllers::find_variants_controller::handle,
         crate::presentation::cart::controllers::calculate_cart_controller::handle,
+        crate::presentation::orders::controllers::create_order_controller::handle,
         crate::presentation::shipping::controllers::get_shipping_method_list_controller::handle,
         crate::presentation::payment_methods::controllers::get_payment_method_list_controller::handle,
     ),
@@ -48,6 +54,11 @@ use crate::presentation::variants::responses::{FindVariantsItemResponse, FindVar
             CalculateCartItemRequest,
             CalculateCartResponse,
             CalculateCartItemResponse,
+            CreateOrderRequest,
+            CreateOrderRequestItem,
+            CreateOrderRequestCustomerInfo,
+            CreateOrderRequestShippingAddress,
+            CreateOrderResponse,
             GetShippingMethodListResponse,
             GetShippingMethodListItemResponse,
             GetPaymentMethodListResponse,
@@ -60,6 +71,8 @@ use crate::presentation::variants::responses::{FindVariantsItemResponse, FindVar
         (name = "Categories", description = "カテゴリ関連のAPI"),
         (name = "Colors", description = "色関連のAPI"),
         (name = "Variants", description = "バリアント関連のAPI"),
+        (name = "Cart", description = "カート関連のAPI"),
+        (name = "Orders", description = "注文関連のAPI"),
         (name = "Shipping", description = "配送関連のAPI"),
         (name = "PaymentMethods", description = "支払い方法関連のAPI")
     ),
