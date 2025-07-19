@@ -55,14 +55,14 @@ impl VariantRepository for SqliteVariantRepository {
         }
 
         let rows = query_builder.fetch_all(&self.pool).await.map_err(|e| {
-            ApplicationError::Repository(RepositoryError::DatabaseError(e.to_string()))
+            ApplicationError::Repository(RepositoryError::QueryExecution(e.to_string()))
         })?;
 
         let mut variants = Vec::new();
         for row in rows {
             let id_str: String = row.get("id");
             let uuid = Uuid::parse_str(&id_str).map_err(|e| {
-                ApplicationError::Repository(RepositoryError::DatabaseError(format!(
+                ApplicationError::Repository(RepositoryError::DataConversionError(format!(
                     "Invalid UUID: {}",
                     e
                 )))

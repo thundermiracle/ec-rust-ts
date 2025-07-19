@@ -24,7 +24,11 @@ impl OrderRepository for SqliteOrderRepository {
             .pool
             .begin()
             .await
-            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+            .map_err(|e| {
+                let error_msg = e.to_string();
+                println!("->> [SqliteOrderRepository::save] Transaction begin failed: {}", error_msg);
+                RepositoryError::QueryExecution(format!("[SqliteOrderRepository::save_transaction_begin] {}", error_msg))
+            })?;
 
         // 注文データを挿入
         sqlx::query(
@@ -76,7 +80,35 @@ impl OrderRepository for SqliteOrderRepository {
         .bind(order.notes.as_deref())
         .execute(&mut *tx)
         .await
-        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            println!("->> [SqliteOrderRepository::save] Order insertion failed: {}", error_msg);
+            
+            if error_msg.contains("FOREIGN KEY constraint failed") {
+                let field = if error_msg.contains("shipping_method_id") {
+                    "shipping_method_id"
+                } else if error_msg.contains("payment_method_id") {
+                    "payment_method_id"
+                } else {
+                    // SQLiteエラーメッセージを解析してカラム名を特定
+                    if error_msg.contains("orders.shipping_method_id") {
+                        "shipping_method_id"
+                    } else if error_msg.contains("orders.payment_method_id") {
+                        "payment_method_id"
+                    } else {
+                        println!("->> [SqliteOrderRepository::save] Could not determine FK field from error: {}", error_msg);
+                        "unknown_order_field"
+                    }
+                };
+                
+                RepositoryError::ForeignKeyConstraint {
+                    field: field.to_string(),
+                    message: format!("[SqliteOrderRepository::save] {}", error_msg),
+                }
+            } else {
+                RepositoryError::QueryExecution(format!("[SqliteOrderRepository::save] {}", error_msg))
+            }
+        })?;
 
         // 注文アイテムを挿入
         for item in &order.items {
@@ -98,12 +130,40 @@ impl OrderRepository for SqliteOrderRepository {
             .bind(item.subtotal().unwrap().amount_in_yen() as i64)
             .execute(&mut *tx)
             .await
-            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+            .map_err(|e| {
+                let error_msg = e.to_string();
+                println!("->> [SqliteOrderRepository::save] Order item insertion failed for SKU {}: {}", 
+                    item.sku_id.value(), error_msg);
+                
+                if error_msg.contains("FOREIGN KEY constraint failed") {
+                    let field = if error_msg.contains("sku_id") || error_msg.contains("order_items.sku_id") {
+                        "sku_id"
+                    } else if error_msg.contains("order_id") || error_msg.contains("order_items.order_id") {
+                        "order_id"  
+                    } else {
+                        println!("->> [SqliteOrderRepository::save] Could not determine FK field from order_items error: {}", error_msg);
+                        "unknown_order_item_field"
+                    };
+                    
+                    RepositoryError::ForeignKeyConstraint {
+                        field: field.to_string(),
+                        message: format!("[SqliteOrderRepository::save_order_item] SKU: {}, Error: {}", 
+                            item.sku_id.value(), error_msg),
+                    }
+                } else {
+                    RepositoryError::QueryExecution(format!("[SqliteOrderRepository::save_order_item] SKU: {}, Error: {}", 
+                        item.sku_id.value(), error_msg))
+                }
+            })?;
         }
 
         tx.commit()
             .await
-            .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
+            .map_err(|e| {
+                let error_msg = e.to_string();
+                println!("->> [SqliteOrderRepository::save] Transaction commit failed: {}", error_msg);
+                RepositoryError::QueryExecution(format!("[SqliteOrderRepository::save_transaction_commit] {}", error_msg))
+            })?;
 
         Ok(())
     }

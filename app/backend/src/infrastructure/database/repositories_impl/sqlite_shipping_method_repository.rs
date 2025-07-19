@@ -31,7 +31,7 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
         )
         .fetch_all(self.pool.as_ref())
         .await
-        .map_err(|e| RepositoryError::DatabaseError(e.to_string()))?;
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
         let mut methods = Vec::new();
         for row in rows {
@@ -63,14 +63,14 @@ impl ShippingMethodRepository for SqliteShippingMethodRepository {
         .bind(id)
         .fetch_optional(self.pool.as_ref())
         .await
-        .map_err(|e| RepositoryError::DatabaseError(e.to_string()))?;
+        .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
         match row {
             Some(row) => {
                 use chrono::{DateTime, Utc};
 
                 let shipping_method_id = ShippingMethodId::new(row.get::<String, _>("id"))
-                    .map_err(|e| RepositoryError::DatabaseError(e.to_string()))?;
+                    .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
                 let shipping_method = ShippingMethod::with_timestamps(
                     shipping_method_id,

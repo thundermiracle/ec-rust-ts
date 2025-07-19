@@ -1,6 +1,6 @@
 use crate::application::ApplicationError;
 use crate::presentation::ErrorResponse;
-use axum::{http::StatusCode, response::IntoResponse, Json};
+use axum::{Json, http::StatusCode, response::IntoResponse};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -73,7 +73,7 @@ impl From<anyhow::Error> for Error {
 // ApplicationErrorからErrorへの変換実装
 impl From<ApplicationError> for Error {
     fn from(app_error: ApplicationError) -> Self {
-        println!("->> ApplicationError conversion: {:?}", app_error);
+        println!("->> [ErrorConverter] ApplicationError conversion: {:?}", app_error);
 
         match app_error {
             ApplicationError::ProductNotFound(_) => Error::NotFound,
@@ -83,10 +83,29 @@ impl From<ApplicationError> for Error {
                 Error::ValidationError(domain_error.to_string())
             }
             ApplicationError::Repository(repo_error) => {
-                println!("->> Repository error details: {:?}", repo_error);
-                match repo_error {
+                println!("->> [ErrorHandler] Repository error details: {:?}", repo_error);
+                println!("->> [ErrorHandler] Converting to user message: {}", repo_error.to_user_message());
+                match &repo_error {
                     crate::application::error::RepositoryError::NotFound => Error::NotFound,
-                    _ => Error::InternalServerError,
+                    crate::application::error::RepositoryError::ForeignKeyConstraint { .. } => {
+                        // 集約されたユーザーメッセージ変換を使用
+                        Error::ValidationError(repo_error.to_user_message())
+                    }
+                    crate::application::error::RepositoryError::QueryExecution(..) => {
+                        Error::InternalServerError
+                    }
+                    crate::application::error::RepositoryError::DatabaseConnection(..) => {
+                        Error::InternalServerError
+                    }
+                    crate::application::error::RepositoryError::DataConversionError(..) => {
+                        Error::InternalServerError
+                    }
+                    crate::application::error::RepositoryError::DatabaseError(..) => {
+                        Error::InternalServerError
+                    }
+                    crate::application::error::RepositoryError::Unknown(..) => {
+                        Error::InternalServerError
+                    }
                 }
             }
             ApplicationError::Validation(msg) => Error::ValidationError(msg),

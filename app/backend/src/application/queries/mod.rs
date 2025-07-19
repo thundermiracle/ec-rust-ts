@@ -5,4 +5,4 @@ pub use handlers::{
     FindVariantsHandler, GetCategoryListHandler, GetColorListHandler, GetProductHandler,
     GetProductListHandler,
 };
-pub use models::{FindVariantsQuery, GetProductQuery};
+pub use models::GetProductQuery;

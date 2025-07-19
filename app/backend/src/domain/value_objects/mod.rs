@@ -15,7 +15,7 @@ pub use self::descriptions::Description;
 pub use self::dimensions_material::{Dimensions, Material};
 pub use self::email::Email;
 pub use self::identifiers::{
-    CategoryId, ColorId, CustomerId, DeliveryInfoId, OrderId, PaymentMethodId, ProductId, SKUId,
+    CategoryId, ColorId, DeliveryInfoId, OrderId, PaymentMethodId, ProductId, SKUId,
     ShippingMethodId,
 };
 pub use self::money::Money;
