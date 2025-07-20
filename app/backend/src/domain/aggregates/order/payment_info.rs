@@ -28,7 +28,7 @@ impl PaymentInfo {
         }
     }
 
-    pub fn method_id_value(&self) -> uuid::Uuid {
+    pub fn method_id_value(&self) -> &str {
         self.method_id.value()
     }
 
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_payment_info() {
-        let method_id = PaymentMethodId::new();
+        let method_id = PaymentMethodId::new("credit_card".to_string()).unwrap();
         let method_name = "Credit Card".to_string();
         let fee = Money::from_yen(100);
         let details =
@@ -78,7 +78,7 @@ mod tests {
 
     #[test]
     fn test_payment_info_without_details() {
-        let method_id = PaymentMethodId::new();
+        let method_id = PaymentMethodId::new("credit_card".to_string()).unwrap();
         let method_name = "Cash on Delivery".to_string();
         let fee = Money::from_yen(300);
 

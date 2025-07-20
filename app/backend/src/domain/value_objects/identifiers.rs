@@ -170,20 +170,26 @@ impl std::fmt::Display for OrderId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PaymentMethodId(Uuid);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PaymentMethodId(String);
 
 impl PaymentMethodId {
-    pub fn new() -> Self {
-        Self(Uuid::new_v4())
+    pub fn new(id: String) -> Result<Self, DomainError> {
+        if id.is_empty() {
+            return Err(DomainError::InvalidProductData(
+                "Payment method ID cannot be empty".to_string(),
+            ));
+        }
+        if id.len() > 50 {
+            return Err(DomainError::InvalidProductData(
+                "Payment method ID cannot exceed 50 characters".to_string(),
+            ));
+        }
+        Ok(Self(id))
     }
 
-    pub fn from_uuid(uuid: Uuid) -> Self {
-        Self(uuid)
-    }
-
-    pub fn value(&self) -> Uuid {
-        self.0
+    pub fn value(&self) -> &str {
+        &self.0
     }
 }
 

@@ -6,6 +6,7 @@ use crate::application::repositories::{
 };
 use crate::domain::aggregates::order::{CustomerInfo, Order, OrderItem, PaymentInfo, ShippingInfo};
 use crate::domain::value_objects::*;
+use chrono::Datelike;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -50,7 +51,12 @@ impl CreateOrderHandler {
         let payment_info = self.create_payment_info(&command).await?;
 
         // 5. 注文番号の生成
-        let order_number = OrderNumber::generate(2024, 1);
+        let current_year = chrono::Utc::now().year();
+        let sequence_number = self.order_repository
+            .get_next_sequence_number(current_year)
+            .await
+            .map_err(ApplicationError::Repository)?;
+        let order_number = OrderNumber::generate(current_year, sequence_number);
 
         // 6. 注文の作成
         let order = Order::new(
@@ -251,7 +257,8 @@ impl CreateOrderHandler {
                 ))
             })?;
 
-        let payment_method_id = PaymentMethodId::new();
+        let payment_method_id = PaymentMethodId::new(command.payment_method_id.clone())
+            .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
         let payment_fee = Money::from_yen(0); // TODO: PaymentMethodDTOにfeeフィールドを追加
 
         Ok(PaymentInfo::new(

@@ -282,7 +282,7 @@ mod tests {
         );
 
         let payment_info = PaymentInfo::new(
-            PaymentMethodId::new(),
+            PaymentMethodId::new("credit_card".to_string()).unwrap(),
             "Credit Card".to_string(),
             Money::from_yen(100),
             None,
@@ -388,7 +388,7 @@ mod tests {
         );
 
         let payment_info = PaymentInfo::new(
-            PaymentMethodId::new(),
+            PaymentMethodId::new("credit_card".to_string()).unwrap(),
             "Credit Card".to_string(),
             Money::from_yen(100),
             None,

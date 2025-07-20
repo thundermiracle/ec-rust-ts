@@ -60,7 +60,7 @@ impl OrderRepository for SqliteOrderRepository {
         .bind(order.shipping_info.address.city())
         .bind(order.shipping_info.address.street())
         .bind(order.shipping_info.address.building())
-        .bind(order.payment_info.method_id.value().to_string())
+        .bind(order.payment_info.method_id.value())
         .bind(order.payment_info.fee.amount_in_yen() as i64)
         .bind(
             order
@@ -204,7 +204,7 @@ impl OrderRepository for SqliteOrderRepository {
         .bind(order.shipping_info.address.city())
         .bind(order.shipping_info.address.street())
         .bind(order.shipping_info.address.building())
-        .bind(order.payment_info.method_id.value().to_string())
+        .bind(order.payment_info.method_id.value())
         .bind(order.payment_info.fee.amount_in_yen() as i64)
         .bind(
             order
@@ -261,5 +261,45 @@ impl OrderRepository for SqliteOrderRepository {
             .map_err(|e| RepositoryError::QueryExecution(e.to_string()))?;
 
         Ok(())
+    }
+    
+    async fn get_next_sequence_number(&self, year: i32) -> Result<u32, RepositoryError> {
+        // 指定された年の注文番号の最大シーケンス番号を取得
+        let pattern = format!("ORD-{}-______", year);
+        
+        let result = sqlx::query_scalar::<_, String>(
+            r#"
+            SELECT order_number 
+            FROM orders 
+            WHERE order_number LIKE ?1
+            ORDER BY order_number DESC 
+            LIMIT 1
+            "#,
+        )
+        .bind(pattern)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            println!("->> [SqliteOrderRepository::get_next_sequence_number] Query failed: {}", error_msg);
+            RepositoryError::QueryExecution(format!("[SqliteOrderRepository::get_next_sequence_number] {}", error_msg))
+        })?;
+
+        match result {
+            Some(order_number) => {
+                // ORD-YYYY-NNNNNN から NNNNNN 部分を抽出
+                if let Some(sequence_part) = order_number.split('-').nth(2) {
+                    if let Ok(current_seq) = sequence_part.parse::<u32>() {
+                        return Ok(current_seq + 1);
+                    }
+                }
+                // パースに失敗した場合は1から開始
+                Ok(1)
+            }
+            None => {
+                // 該当年の注文が存在しない場合は1から開始
+                Ok(1)
+            }
+        }
     }
 }
