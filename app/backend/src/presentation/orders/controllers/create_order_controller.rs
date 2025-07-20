@@ -4,6 +4,7 @@ use std::sync::Arc;
 use crate::error::Result;
 use crate::infrastructure::Container;
 use crate::presentation::ErrorResponse;
+use crate::presentation::common::extractors::ValidatedJson;
 use crate::presentation::orders::{CreateOrderRequest, CreateOrderResponse, OrderPresenter};
 
 pub struct CreateOrderController;
@@ -30,7 +31,7 @@ impl CreateOrderController {
 )]
 pub async fn handle(
     State(container): State<Arc<Container>>,
-    Json(request): Json<CreateOrderRequest>,
+    ValidatedJson(request): ValidatedJson<CreateOrderRequest>,
 ) -> Result<Json<CreateOrderResponse>> {
     println!(
         "->> CreateOrderController::handle - {} items for {}",
@@ -38,10 +39,7 @@ pub async fn handle(
         request.customer_info.email
     );
 
-    // 1. リクエストバリデーション
-    request
-        .validate()
-        .map_err(|msg| crate::application::error::ApplicationError::Validation(msg))?;
+    // 1. バリデーションはValidatedJsonエクストラクターで完了
 
     // 2. アプリケーション層のコマンドに変換
     let command = request.to_command();

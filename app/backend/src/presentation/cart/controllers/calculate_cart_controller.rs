@@ -5,6 +5,7 @@ use crate::error::Result;
 use crate::infrastructure::Container;
 use crate::presentation::ErrorResponse;
 use crate::presentation::cart::{CalculateCartRequest, CalculateCartResponse, CartPresenter};
+use crate::presentation::common::extractors::ValidatedJson;
 
 pub struct CalculateCartController;
 
@@ -30,26 +31,21 @@ impl CalculateCartController {
 )]
 pub async fn handle(
     State(container): State<Arc<Container>>,
-    Json(request): Json<CalculateCartRequest>,
+    ValidatedJson(request): ValidatedJson<CalculateCartRequest>,
 ) -> Result<Json<CalculateCartResponse>> {
     println!(
         "->> CalculateCartController::handle - {} items",
         request.items.len()
     );
 
-    // 1. リクエストバリデーション
-    request
-        .validate()
-        .map_err(|msg| crate::application::error::ApplicationError::Validation(msg))?;
-
-    // 2. アプリケーション層のコマンドに変換
+    // アプリケーション層のコマンドに変換
     let command = request.to_command();
 
-    // 3. Dispatcherを通じてユースケースを実行
+    // Dispatcherを通じてユースケースを実行
     let dispatcher = container.get_dispatcher();
     let result = dispatcher.execute_calculate_cart_command(command).await?; // ApplicationErrorからErrorへの自動変換を利用
 
-    // 4. プレゼンターでレスポンスに変換
+    // プレゼンターでレスポンスに変換
     let response = CartPresenter::to_response(result);
 
     println!(

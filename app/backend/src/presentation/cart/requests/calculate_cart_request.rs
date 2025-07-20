@@ -1,20 +1,27 @@
 use crate::application::commands::{CalculateCartCommand, CalculationCartCommandItem};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use validator::Validate;
 
 /// HTTP リクエスト用のカートアイテム
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CalculateCartItemRequest {
+    #[validate(length(min = 1, message = "SKU ID cannot be empty"))]
     pub sku_id: String,
+    #[validate(range(min = 1, max = 999, message = "Quantity must be between 1 and 999"))]
     pub quantity: u32,
 }
 
 /// HTTP リクエスト用のカート計算
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
 pub struct CalculateCartRequest {
+    #[validate(length(min = 1, message = "Cart items cannot be empty"))]
+    #[validate(nested)]
     pub items: Vec<CalculateCartItemRequest>,
+    #[validate(length(min = 1, message = "Shipping method ID cannot be empty"))]
     pub shipping_method_id: String,
+    #[validate(length(min = 1, message = "Payment method ID cannot be empty"))]
     pub payment_method_id: String,
 }
 
@@ -35,37 +42,6 @@ impl CalculateCartRequest {
             self.shipping_method_id.clone(),
             self.payment_method_id.clone(),
         )
-    }
-
-    /// バリデーション
-    pub fn validate(&self) -> Result<(), String> {
-        if self.items.is_empty() {
-            return Err("Cart items cannot be empty".to_string());
-        }
-
-        for (index, item) in self.items.iter().enumerate() {
-            if item.sku_id.trim().is_empty() {
-                return Err(format!("Item {} has empty SKU ID", index));
-            }
-
-            if item.quantity == 0 {
-                return Err(format!("Item {} has zero quantity", index));
-            }
-
-            if item.quantity > 999 {
-                return Err(format!("Item {} quantity exceeds maximum (999)", index));
-            }
-        }
-
-        // 重複するSKUのチェック
-        let mut seen_skus = std::collections::HashSet::new();
-        for item in &self.items {
-            if !seen_skus.insert(&item.sku_id) {
-                return Err(format!("Duplicate SKU ID: {}", item.sku_id));
-            }
-        }
-
-        Ok(())
     }
 }
 
