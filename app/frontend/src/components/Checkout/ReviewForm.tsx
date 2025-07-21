@@ -126,7 +126,7 @@ export function ReviewForm({
             <div className="flex items-start">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-red-800 text-sm">{orderError}</p>
+                <p className="text-red-800 text-sm whitespace-pre-line">{orderError}</p>
               </div>
               {onClearError && (
                 <button
