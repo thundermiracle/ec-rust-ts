@@ -36,24 +36,9 @@ const Header: FC = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/collections" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Shop All
-              </Link>
-              <Button variant="ghost" size="sm" className="text-sm text-muted-foreground hover:text-foreground">
-                Collections
-              </Button>
-              <Button variant="ghost" size="sm" className="text-sm text-muted-foreground hover:text-foreground">
-                Featured
-              </Button>
-              <Button variant="ghost" size="sm" className="text-sm text-muted-foreground hover:text-foreground">
-                Color
-              </Button>
+            <nav className="hidden md:block items-center space-x-8 flex-1 px-4 text-right">
               <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 About
-              </Link>
-              <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Blog
               </Link>
               <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Contact

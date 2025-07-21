@@ -1,11 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Package, Mail, ArrowRight } from 'lucide-react';
+import { useAppDispatch } from '@/store/hooks';
+import { clearCart } from '@/store/cartSlice';
+import { clearCheckoutData } from '@/lib/utils/checkoutStorage';
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('orderId');
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(clearCart());
+    clearCheckoutData();
+  }, [dispatch]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -29,7 +43,7 @@ export default function CheckoutSuccessPage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-mono font-bold">
-                #ARX-{Date.now().toString().slice(-8)}
+                {orderId ? `#${orderId}` : `#ARX-${Date.now().toString().slice(-8)}`}
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 この番号は注文の追跡に使用できます
@@ -143,5 +157,19 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 } 

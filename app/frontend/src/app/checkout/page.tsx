@@ -5,10 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useAppSelector } from '@/store/hooks';
 import { 
   selectCartItems, 
-  clearCart,
 } from '@/store/cartSlice';
 import { useCreateOrderMutation, type CreateOrderRequest } from '@/store/api';
 import { useCartCalculation } from '@/hooks/useCartCalculation';
@@ -32,7 +31,6 @@ const CHECKOUT_STEPS = [
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   
   const [currentStep, setCurrentStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
@@ -64,7 +62,7 @@ export default function CheckoutPage() {
   });
 
   // localStorage管理のカスタムhook
-  const { saveShipping, savePayment, clearStorage } = useCheckoutStorage({
+  const { saveShipping, savePayment } = useCheckoutStorage({
     formContext
   });
 
@@ -125,9 +123,7 @@ export default function CheckoutPage() {
       
       console.log('注文作成成功:', result);
       
-      // 注文完了後、カートとlocalStorageをクリアして完了ページへ
-      dispatch(clearCart());
-      clearStorage();
+      // 注文完了後、完了ページへリダイレクト（cleanup は success ページで実行）
       router.push(`/checkout/success?orderId=${result.order_id}`);
       
     } catch (error: unknown) {
