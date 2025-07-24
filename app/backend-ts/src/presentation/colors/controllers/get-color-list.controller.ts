@@ -1,12 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { GetColorListQuery } from '../../application/queries/models';
-import { ColorListDto } from '../../application/dto';
+import { ColorListResponse } from '../responses';
+import { ColorsPresenter } from '../presenters';
+import { GetColorListQuery } from '../../../application/queries/models';
+import { ColorListDto } from '../../../application/dto';
 
 @ApiTags('Colors')
 @Controller('colors')
-export class ColorsController {
+export class GetColorListController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
@@ -17,10 +19,13 @@ export class ColorsController {
   @ApiResponse({
     status: 200,
     description: 'Color list retrieved successfully',
-    type: ColorListDto,
+    type: ColorListResponse,
   })
-  async getColorList(): Promise<ColorListDto> {
+  async execute(): Promise<ColorListResponse> {
     const query = new GetColorListQuery();
-    return await this.queryBus.execute(query);
+    const result = await this.queryBus.execute<GetColorListQuery, ColorListDto>(
+      query,
+    );
+    return ColorsPresenter.toColorListResponse(result);
   }
 }

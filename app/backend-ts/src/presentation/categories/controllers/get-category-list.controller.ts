@@ -1,12 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { GetCategoryListQuery } from '../../application/queries/models';
-import { CategoryListDto } from '../../application/dto';
+import { CategoryListResponse } from '../responses';
+import { CategoriesPresenter } from '../presenters';
+import { GetCategoryListQuery } from '../../../application/queries/models';
+import { CategoryListDto } from '../../../application/dto';
 
 @ApiTags('Categories')
 @Controller('categories')
-export class CategoriesController {
+export class GetCategoryListController {
   constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
@@ -17,10 +19,14 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'Category list retrieved successfully',
-    type: CategoryListDto,
+    type: CategoryListResponse,
   })
-  async getCategoryList(): Promise<CategoryListDto> {
+  async execute(): Promise<CategoryListResponse> {
     const query = new GetCategoryListQuery();
-    return await this.queryBus.execute(query);
+    const result = await this.queryBus.execute<
+      GetCategoryListQuery,
+      CategoryListDto
+    >(query);
+    return CategoriesPresenter.toCategoryListResponse(result);
   }
 }

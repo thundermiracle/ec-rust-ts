@@ -4,25 +4,26 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { DatabaseModule } from '../infrastructure/database/database.module';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 
-// Controllers
-import { CartController } from './controllers/cart.controller';
-import { OrdersController } from './controllers/orders.controller';
-import { ProductsController } from './controllers/products.controller';
-import { VariantsController } from './controllers/variants.controller';
-import { CategoriesController } from './controllers/categories.controller';
-import { ColorsController } from './controllers/colors.controller';
-import { ShippingController } from './controllers/shipping.controller';
-import { PaymentController } from './controllers/payment.controller';
+// Domain-based Controllers
+import { CalculateCartController } from './cart';
+import { GetProductListController, GetProductController } from './products';
+import { CreateOrderController } from './orders';
+import { FindVariantsController } from './variants';
+import { GetCategoryListController } from './categories';
+import { GetColorListController } from './colors';
+import { GetShippingMethodListController } from './shipping';
+import { GetPaymentMethodListController } from './payment';
 
 const controllers = [
-  CartController,
-  OrdersController,
-  ProductsController,
-  VariantsController,
-  CategoriesController,
-  ColorsController,
-  ShippingController,
-  PaymentController,
+  CalculateCartController,
+  GetProductListController,
+  GetProductController,
+  CreateOrderController,
+  FindVariantsController,
+  GetCategoryListController,
+  GetColorListController,
+  GetShippingMethodListController,
+  GetPaymentMethodListController,
 ];
 
 @Module({
