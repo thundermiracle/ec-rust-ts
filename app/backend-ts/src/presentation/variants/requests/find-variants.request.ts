@@ -1,10 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString } from 'class-validator';
-import { IQuery } from '../../base';
 import { FindVariantsQuery } from '../../../application/queries/models';
-import { VariantSummaryDto } from '../../../application/dto';
 
-export class FindVariantsRequest implements IQuery<VariantSummaryDto[]> {
+export class FindVariantsRequest {
   @ApiProperty({
     description: 'Array of SKU IDs to find',
     type: [String],

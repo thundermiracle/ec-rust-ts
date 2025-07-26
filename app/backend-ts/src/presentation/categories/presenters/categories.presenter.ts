@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IPresenter } from '../../base';
 import { CategoryListDto, CategoryDto } from '../../../application/dto';
 import { CategoryListResponse, CategoryResponse } from '../responses';
 

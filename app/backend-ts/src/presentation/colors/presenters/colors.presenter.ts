@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IPresenter } from '../../base';
 import { ColorListDto, ColorDto } from '../../../application/dto';
 import { ColorListResponse, ColorResponse } from '../responses';
 

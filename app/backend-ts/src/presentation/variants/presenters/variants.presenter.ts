@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IPresenter } from '../../base';
 import { VariantSummaryDto } from '../../../application/dto';
 import { VariantSummaryResponse } from '../responses';
 

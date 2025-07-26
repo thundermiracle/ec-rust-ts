@@ -1,11 +1,9 @@
 import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IQuery } from '../../base';
 import { GetProductListQuery } from '../../../application/queries/models';
-import { ProductListDto } from '../../../application/dto';
 
-export class GetProductListRequest implements IQuery<ProductListDto> {
+export class GetProductListRequest {
   @ApiPropertyOptional({ description: 'Filter by category ID' })
   @IsOptional()
   @IsString()

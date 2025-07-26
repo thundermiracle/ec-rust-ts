@@ -1,13 +1,10 @@
-import { IPresenter } from '../../base';
 import { CalculateCartResultDto } from '../../../application/dto';
 import {
   CalculateCartResponse,
   CalculatedCartItemResponse,
 } from '../responses';
 
-export class CartPresenter
-  implements IPresenter<CalculateCartResultDto, CalculateCartResponse>
-{
+export class CartPresenter {
   static toCalculateCartResponse(
     dto: CalculateCartResultDto,
   ): CalculateCartResponse {
