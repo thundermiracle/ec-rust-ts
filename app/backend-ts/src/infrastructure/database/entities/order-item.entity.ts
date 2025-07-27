@@ -4,22 +4,24 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { OrderEntity } from './order.entity';
 
 @Entity('order_items')
 export class OrderItemEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column('text')
   order_id: string;
 
+  // SKU information
   @Column('text')
   sku_id: string;
 
   @Column('text')
-  product_id: string;
+  sku_code: string;
 
   @Column('text')
   product_name: string;
@@ -27,6 +29,7 @@ export class OrderItemEntity {
   @Column('text')
   sku_name: string;
 
+  // Price information
   @Column('integer')
   unit_price: number;
 
@@ -35,6 +38,9 @@ export class OrderItemEntity {
 
   @Column('integer')
   subtotal: number;
+
+  @CreateDateColumn()
+  created_at: Date;
 
   @ManyToOne(() => OrderEntity, (order) => order.items)
   @JoinColumn({ name: 'order_id' })

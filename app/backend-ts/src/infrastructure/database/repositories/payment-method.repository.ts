@@ -23,7 +23,7 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
   async findAllPaymentMethods(): Promise<PaymentMethodListDto> {
     const entities = await this.paymentMethodRepository.find({
       where: { is_active: true },
-      order: { display_order: 'ASC', name: 'ASC' },
+      order: { sort_order: 'ASC', name: 'ASC' },
     });
 
     const paymentMethodDtos = entities.map(
@@ -31,7 +31,7 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
         new PaymentMethodDto(
           entity.id,
           entity.name,
-          entity.fee,
+          0, // Payment methods in Rust schema don't have fees
           entity.description,
         ),
     );
@@ -52,7 +52,7 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
     return {
       id: PaymentMethodId.new(entity.id),
       name: entity.name,
-      fee: Money.fromYen(entity.fee),
+      fee: Money.fromYen(0), // Payment methods in Rust schema don't have fees
       description: entity.description,
     };
   }
@@ -61,10 +61,9 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
     const entity = new PaymentMethodEntity();
     entity.id = domain.id.value();
     entity.name = domain.name;
-    entity.fee = domain.fee.yen();
-    entity.description = domain.description;
+    entity.description = domain.description || '';
     entity.is_active = true;
-    entity.display_order = 0;
+    entity.sort_order = 0;
     return entity;
   }
 }

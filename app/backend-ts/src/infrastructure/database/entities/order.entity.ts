@@ -16,6 +16,7 @@ export class OrderEntity {
   @Column('text')
   order_number: string;
 
+  // Customer information
   @Column('text')
   customer_first_name: string;
 
@@ -27,6 +28,13 @@ export class OrderEntity {
 
   @Column('text')
   customer_phone: string;
+
+  // Shipping information
+  @Column('text')
+  shipping_method_id: string;
+
+  @Column('integer')
+  shipping_fee: number;
 
   @Column('text')
   shipping_postal_code: string;
@@ -43,38 +51,35 @@ export class OrderEntity {
   @Column('text', { nullable: true })
   shipping_building?: string;
 
-  @Column('text')
-  shipping_method_id: string;
-
-  @Column('text')
-  shipping_method_name: string;
-
-  @Column('integer')
-  shipping_fee: number;
-
+  // Payment information
   @Column('text')
   payment_method_id: string;
-
-  @Column('text')
-  payment_method_name: string;
 
   @Column('integer')
   payment_fee: number;
 
+  @Column('text', { nullable: true })
+  payment_details?: string;
+
+  // Price information
   @Column('integer')
   subtotal: number;
+
+  @Column('integer')
+  shipping_fee_total: number;
+
+  @Column('integer')
+  payment_fee_total: number;
 
   @Column('integer')
   tax_amount: number;
 
   @Column('integer')
-  total: number;
+  total_amount: number;
 
-  @Column('text')
+  // Status and timestamps
+  @Column('text', { default: 'pending' })
   status: string;
-
-  @Column('text', { nullable: true })
-  notes?: string;
 
   @CreateDateColumn()
   created_at: Date;
@@ -82,17 +87,24 @@ export class OrderEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @Column('datetime', { nullable: true })
-  paid_at?: Date;
+  @Column('text', { nullable: true })
+  paid_at?: string;
 
-  @Column('datetime', { nullable: true })
-  shipped_at?: Date;
+  @Column('text', { nullable: true })
+  shipped_at?: string;
 
-  @Column('datetime', { nullable: true })
-  delivered_at?: Date;
+  @Column('text', { nullable: true })
+  delivered_at?: string;
 
-  @Column('datetime', { nullable: true })
-  cancelled_at?: Date;
+  @Column('text', { nullable: true })
+  cancelled_at?: string;
+
+  // Optional
+  @Column('text', { nullable: true })
+  delivery_info_id?: string;
+
+  @Column('text', { nullable: true })
+  notes?: string;
 
   @OneToMany(() => OrderItemEntity, (item) => item.order)
   items: OrderItemEntity[];

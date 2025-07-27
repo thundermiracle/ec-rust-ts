@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('payment_methods')
 export class PaymentMethodEntity {
@@ -8,15 +14,18 @@ export class PaymentMethodEntity {
   @Column('text')
   name: string;
 
-  @Column('integer')
-  fee: number;
-
-  @Column('text', { nullable: true })
-  description?: string;
+  @Column('text')
+  description: string;
 
   @Column('boolean', { default: true })
   is_active: boolean;
 
   @Column('integer', { default: 0 })
-  display_order: number;
+  sort_order: number;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

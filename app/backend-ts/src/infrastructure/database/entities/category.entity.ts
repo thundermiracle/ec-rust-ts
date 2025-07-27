@@ -5,6 +5,8 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('categories')
@@ -23,6 +25,12 @@ export class CategoryEntity {
 
   @Column('integer', { default: 0 })
   display_order: number;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 
   @ManyToOne(() => CategoryEntity, (category) => category.children, {
     nullable: true,

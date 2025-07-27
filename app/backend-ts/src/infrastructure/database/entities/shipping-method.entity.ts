@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('shipping_methods')
 export class ShippingMethodEntity {
@@ -8,15 +14,21 @@ export class ShippingMethodEntity {
   @Column('text')
   name: string;
 
-  @Column('integer')
-  fee: number;
+  @Column('text')
+  description: string;
 
-  @Column('text', { nullable: true })
-  description?: string;
+  @Column('integer')
+  price: number;
 
   @Column('boolean', { default: true })
   is_active: boolean;
 
   @Column('integer', { default: 0 })
-  display_order: number;
+  sort_order: number;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

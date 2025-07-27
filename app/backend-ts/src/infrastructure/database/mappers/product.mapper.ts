@@ -74,18 +74,19 @@ export class SkuMapper {
       sku.setSalePrice(Money.fromYen(entity.sale_price));
     }
 
+    // Note: status not available in Rust backend schema
     // Set status
-    switch (entity.status) {
-      case 'Active':
-        sku.activate();
-        break;
-      case 'Inactive':
-        sku.deactivate();
-        break;
-      case 'Discontinued':
-        sku.discontinue();
-        break;
-    }
+    // switch (entity.status) {
+    //   case 'Active':
+    //     sku.activate();
+    //     break;
+    //   case 'Inactive':
+    //     sku.deactivate();
+    //     break;
+    //   case 'Discontinued':
+    //     sku.discontinue();
+    //     break;
+    // }
 
     // Adjust stock for reserved quantity
     if (entity.reserved_quantity > 0) {
@@ -105,9 +106,9 @@ export class SkuMapper {
     entity.sale_price = domain.getSalePrice()?.yen();
     entity.stock_quantity = domain.getStock().getTotalQuantity();
     entity.reserved_quantity = domain.getStock().getReservedQuantity();
-    entity.status = domain.getStatus().toString();
+    // entity.status = domain.getStatus().toString(); // Status not available in Rust schema
     entity.display_order = domain.getDisplayOrder();
-    entity.color_id = domain.colorId()?.value();
+    entity.color_id = domain.colorId()?.value() ?? 0;
     entity.dimensions = domain.dimensions();
     entity.material = domain.material();
     return entity;

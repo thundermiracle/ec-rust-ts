@@ -23,7 +23,7 @@ export class ShippingMethodRepository implements IShippingMethodRepository {
   async findAllShippingMethods(): Promise<ShippingMethodListDto> {
     const entities = await this.shippingMethodRepository.find({
       where: { is_active: true },
-      order: { display_order: 'ASC', name: 'ASC' },
+      order: { sort_order: 'ASC', name: 'ASC' },
     });
 
     const shippingMethodDtos = entities.map(
@@ -31,7 +31,7 @@ export class ShippingMethodRepository implements IShippingMethodRepository {
         new ShippingMethodDto(
           entity.id,
           entity.name,
-          entity.fee,
+          entity.price,
           entity.description,
         ),
     );
@@ -52,7 +52,7 @@ export class ShippingMethodRepository implements IShippingMethodRepository {
     return {
       id: ShippingMethodId.new(entity.id),
       name: entity.name,
-      fee: Money.fromYen(entity.fee),
+      fee: Money.fromYen(entity.price),
       description: entity.description,
     };
   }

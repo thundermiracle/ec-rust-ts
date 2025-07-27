@@ -41,14 +41,14 @@ export class OrderMapper {
 
     const shippingInfo = ShippingInfo.create(
       ShippingMethodId.new(entity.shipping_method_id),
-      entity.shipping_method_name,
+      '', // Method name not stored in Rust schema
       Money.fromYen(entity.shipping_fee),
       shippingAddress,
     );
 
     const paymentInfo = PaymentInfo.create(
       PaymentMethodId.new(entity.payment_method_id),
-      entity.payment_method_name,
+      '', // Method name not stored in Rust schema
       Money.fromYen(entity.payment_fee),
     );
 
@@ -98,18 +98,18 @@ export class OrderMapper {
     entity.shipping_street = address.getStreet();
     entity.shipping_building = address.getBuilding();
     entity.shipping_method_id = shippingInfo.getShippingMethodId().value();
-    entity.shipping_method_name = shippingInfo.getShippingMethodName();
     entity.shipping_fee = shippingInfo.getShippingFee().yen();
 
     const paymentInfo = domain.getPaymentInfo();
     entity.payment_method_id = paymentInfo.getPaymentMethodId().value();
-    entity.payment_method_name = paymentInfo.getPaymentMethodName();
     entity.payment_fee = paymentInfo.getPaymentFee().yen();
 
     const pricing = domain.getPricing();
     entity.subtotal = pricing.getSubtotal().yen();
+    entity.shipping_fee_total = shippingInfo.getShippingFee().yen();
+    entity.payment_fee_total = paymentInfo.getPaymentFee().yen();
     entity.tax_amount = pricing.getTaxAmount().yen();
-    entity.total = pricing.getTotal().yen();
+    entity.total_amount = pricing.getTotal().yen();
 
     entity.status = domain.getStatus().toString();
     entity.notes = domain.getNotes();
@@ -117,10 +117,10 @@ export class OrderMapper {
     const timestamps = domain.getTimestamps();
     entity.created_at = timestamps.createdAt;
     entity.updated_at = timestamps.updatedAt;
-    entity.paid_at = timestamps.paidAt;
-    entity.shipped_at = timestamps.shippedAt;
-    entity.delivered_at = timestamps.deliveredAt;
-    entity.cancelled_at = timestamps.cancelledAt;
+    entity.paid_at = timestamps.paidAt?.toISOString();
+    entity.shipped_at = timestamps.shippedAt?.toISOString();
+    entity.delivered_at = timestamps.deliveredAt?.toISOString();
+    entity.cancelled_at = timestamps.cancelledAt?.toISOString();
 
     return entity;
   }
@@ -130,7 +130,7 @@ export class OrderItemMapper {
   static toDomain(entity: OrderItemEntity): OrderItem {
     return OrderItem.create(
       SKUId.fromUuid(entity.sku_id),
-      ProductId.fromUuid(entity.product_id),
+      ProductId.fromUuid(''), // Product ID not stored separately in Rust schema
       entity.product_name,
       entity.sku_name,
       Money.fromYen(entity.unit_price),
@@ -142,12 +142,12 @@ export class OrderItemMapper {
     const entity = new OrderItemEntity();
     entity.order_id = orderId;
     entity.sku_id = domain.getSkuId().value();
-    entity.product_id = domain.getProductId().value();
+    entity.sku_code = ''; // SKU code not available from domain
     entity.product_name = domain.getProductName();
     entity.sku_name = domain.getSkuName();
     entity.unit_price = domain.getUnitPrice().yen();
     entity.quantity = domain.getQuantity();
-    entity.subtotal = domain.subtotal().yen();
+    entity.subtotal = domain.getUnitPrice().yen() * domain.getQuantity();
     return entity;
   }
 }
