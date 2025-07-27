@@ -21,6 +21,14 @@
     "backend:format": "nx format backend",
     "backend:watch": "nx watch backend",
     "backend:check": "nx check backend",
+    "backend-ts:dev": "nx dev backend-ts",
+    "backend-ts:build": "nx build backend-ts",
+    "backend-ts:start": "nx start backend-ts",
+    "backend-ts:test": "nx test backend-ts",
+    "backend-ts:test:e2e": "nx test:e2e backend-ts",
+    "backend-ts:test:watch": "nx test:watch backend-ts",
+    "backend-ts:lint": "nx lint backend-ts",
+    "backend-ts:format": "nx format backend-ts",
     "graph": "nx graph",
     "reset": "nx reset",
     "affected:build": "nx affected -t build",
@@ -30,9 +38,6 @@
   "devDependencies": {
     "nx": "^21.1.3"
   },
-  "workspaces": [
-    "app/*"
-  ],
   "engines": {
     "node": ">=18.0.0"
   },
