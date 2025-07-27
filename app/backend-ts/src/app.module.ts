@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CqrsModule } from '@nestjs/cqrs';
-import { DatabaseModule } from './infrastructure/database/database.module';
+import { DatabaseModule } from './infrastructure';
+import { ApplicationModule } from './application/application.module';
 import { PresentationModule } from './presentation/presentation.module';
 
 // Import entities for TypeORM configuration
@@ -36,6 +37,7 @@ import { PaymentMethodEntity } from './infrastructure/database/entities/payment-
     }),
     CqrsModule,
     DatabaseModule,
+    ApplicationModule,
     PresentationModule,
   ],
 })

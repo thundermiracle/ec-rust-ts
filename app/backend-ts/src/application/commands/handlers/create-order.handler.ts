@@ -16,9 +16,11 @@ import {
 import {
   OrderId,
   SKUId,
+  ProductId,
   ShippingMethodId,
   PaymentMethodId,
   Address,
+  Money,
 } from '../../../domain/value-objects';
 import {
   ValidationError,
@@ -138,35 +140,32 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
     const orderItems: OrderItem[] = [];
 
     for (const commandItem of commandItems) {
-      const sku = skus.find((s) => s.getId().value() === commandItem.skuId);
+      const sku = skus.find((s) => s.id === commandItem.skuId);
 
       if (!sku) {
         throw new NotFoundError('SKU', commandItem.skuId);
       }
 
-      if (!sku.isPurchasable()) {
+      if (!sku.isInStock) {
         throw new BusinessRuleViolationError(
           `SKU ${commandItem.skuId} is not available for purchase`,
         );
       }
 
-      if (sku.availableQuantity() < commandItem.quantity) {
+      if (sku.stockQuantity < commandItem.quantity) {
         throw new InsufficientStockError(
           commandItem.skuId,
           commandItem.quantity,
-          sku.availableQuantity(),
+          sku.stockQuantity,
         );
       }
 
-      // Reserve stock
-      sku.reserveStock(commandItem.quantity);
-
       const orderItem = OrderItem.create(
-        sku.getId(),
-        sku.getProductId(),
-        sku.getName(), // This should be product name from join
-        sku.getName(), // This should be SKU display name
-        sku.currentPrice(),
+        SKUId.fromUuid(sku.id),
+        ProductId.fromUuid(sku.productId),
+        sku.productName,
+        sku.name,
+        Money.fromYen(sku.currentPrice),
         commandItem.quantity,
       );
 

@@ -6,6 +6,10 @@ import {
   PaymentMethodData,
 } from '../../../application/repositories/payment-method.repository.interface';
 import { PaymentMethodId, Money } from '../../../domain/value-objects';
+import {
+  PaymentMethodDto,
+  PaymentMethodListDto,
+} from '../../../application/dto';
 import { PaymentMethodEntity } from '../entities/payment-method.entity';
 
 @Injectable()
@@ -15,38 +19,33 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
     private readonly paymentMethodRepository: Repository<PaymentMethodEntity>,
   ) {}
 
+  // Query methods - return DTOs
+  async findAllPaymentMethods(): Promise<PaymentMethodListDto> {
+    const entities = await this.paymentMethodRepository.find({
+      where: { is_active: true },
+      order: { display_order: 'ASC', name: 'ASC' },
+    });
+
+    const paymentMethodDtos = entities.map(
+      (entity) =>
+        new PaymentMethodDto(
+          entity.id,
+          entity.name,
+          entity.fee,
+          entity.description,
+        ),
+    );
+
+    return new PaymentMethodListDto(paymentMethodDtos);
+  }
+
+  // Command methods - work with data
   async findById(id: PaymentMethodId): Promise<PaymentMethodData | null> {
     const entity = await this.paymentMethodRepository.findOne({
       where: { id: id.value(), is_active: true },
     });
 
     return entity ? this.toDomain(entity) : null;
-  }
-
-  async findAll(): Promise<PaymentMethodData[]> {
-    const entities = await this.paymentMethodRepository.find({
-      where: { is_active: true },
-      order: { display_order: 'ASC', name: 'ASC' },
-    });
-
-    return entities.map((entity) => this.toDomain(entity));
-  }
-
-  async save(method: PaymentMethodData): Promise<void> {
-    const entity = this.toEntity(method);
-    await this.paymentMethodRepository.save(entity);
-  }
-
-  async update(method: PaymentMethodData): Promise<void> {
-    const entity = this.toEntity(method);
-    await this.paymentMethodRepository.save(entity);
-  }
-
-  async delete(id: PaymentMethodId): Promise<void> {
-    await this.paymentMethodRepository.update(
-      { id: id.value() },
-      { is_active: false },
-    );
   }
 
   private toDomain(entity: PaymentMethodEntity): PaymentMethodData {

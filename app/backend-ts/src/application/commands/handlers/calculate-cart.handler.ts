@@ -8,13 +8,15 @@ import {
 import { IProductRepository } from '../../repositories/product.repository.interface';
 import { IShippingMethodRepository } from '../../repositories/shipping-method.repository.interface';
 import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
-import { SKU } from '../../../domain/entities';
+import { VariantSummaryDto } from '../../dto/variant-summary.dto';
 import { ShippingMethodData, PaymentMethodData } from '../../repositories';
 import { Cart, CartItem } from '../../../domain/aggregates';
 import {
   SKUId,
+  ProductId,
   ShippingMethodId,
   PaymentMethodId,
+  Money,
 } from '../../../domain/value-objects';
 import {
   ValidationError,
@@ -115,28 +117,28 @@ export class CalculateCartHandler
 
   private validateSkusAndQuantities(
     items: Array<{ skuId: string; quantity: number }>,
-    skus: SKU[],
+    skus: VariantSummaryDto[],
   ): void {
     // Check all SKUs exist
     for (const item of items) {
-      const sku = skus.find((s: SKU) => s.getId().value() === item.skuId);
+      const sku = skus.find((s) => s.id === item.skuId);
       if (!sku) {
         throw new NotFoundError('SKU', item.skuId);
       }
 
       // Check if SKU is purchasable
-      if (!sku.isPurchasable()) {
+      if (!sku.isInStock) {
         throw new BusinessRuleViolationError(
           `SKU ${item.skuId} is not available for purchase`,
         );
       }
 
       // Check stock availability
-      if (sku.availableQuantity() < item.quantity) {
+      if (sku.stockQuantity < item.quantity) {
         throw new InsufficientStockError(
           item.skuId,
           item.quantity,
-          sku.availableQuantity(),
+          sku.stockQuantity,
         );
       }
     }
@@ -162,23 +164,21 @@ export class CalculateCartHandler
 
   private createCartWithItems(
     commandItems: Array<{ skuId: string; quantity: number }>,
-    skus: SKU[],
+    skus: VariantSummaryDto[],
   ): Cart {
     const cart = new Cart();
 
     for (const commandItem of commandItems) {
-      const sku = skus.find(
-        (s: SKU) => s.getId().value() === commandItem.skuId,
-      );
+      const sku = skus.find((s) => s.id === commandItem.skuId);
       if (!sku) {
         throw new NotFoundError('SKU', commandItem.skuId);
       }
 
       const cartItem = CartItem.create(
-        sku.getId(),
-        sku.getProductId(),
-        sku.getName(), // This should be the product name from a join or separate query
-        sku.currentPrice(),
+        SKUId.fromUuid(sku.id),
+        ProductId.fromUuid(sku.productId),
+        sku.productName,
+        Money.fromYen(sku.currentPrice),
         commandItem.quantity,
       );
 

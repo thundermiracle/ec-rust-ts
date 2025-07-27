@@ -1,5 +1,6 @@
 import { ShippingMethodId } from '../../domain/value-objects';
 import { Money } from '../../domain/value-objects';
+import { ShippingMethodListDto } from '../dto';
 
 export interface ShippingMethodData {
   id: ShippingMethodId;
@@ -9,9 +10,9 @@ export interface ShippingMethodData {
 }
 
 export interface IShippingMethodRepository {
+  // Query methods - return DTOs
+  findAllShippingMethods(): Promise<ShippingMethodListDto>;
+
+  // Command methods - work with data (no domain entities for simple lookup data)
   findById(id: ShippingMethodId): Promise<ShippingMethodData | null>;
-  findAll(): Promise<ShippingMethodData[]>;
-  save(method: ShippingMethodData): Promise<void>;
-  update(method: ShippingMethodData): Promise<void>;
-  delete(id: ShippingMethodId): Promise<void>;
 }

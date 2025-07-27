@@ -1,7 +1,7 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { GetColorListQuery } from '../models/get-product.query';
-import { ColorListDto, ColorDto } from '../../dto/color.dto';
+import { ColorListDto } from '../../dto/color.dto';
 import { IColorRepository } from '../../repositories/color.repository.interface';
 
 @QueryHandler(GetColorListQuery)
@@ -12,17 +12,6 @@ export class GetColorListHandler implements IQueryHandler<GetColorListQuery> {
   ) {}
 
   async execute(): Promise<ColorListDto> {
-    const colors = await this.colorRepository.findAll();
-
-    const colorDtos = colors.map(
-      (color) =>
-        new ColorDto(
-          color.getId().value(),
-          color.getName().getValue(),
-          color.getHex(),
-        ),
-    );
-
-    return new ColorListDto(colorDtos);
+    return await this.colorRepository.findAllColors();
   }
 }

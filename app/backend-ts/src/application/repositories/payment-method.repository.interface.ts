@@ -1,5 +1,6 @@
 import { PaymentMethodId } from '../../domain/value-objects';
 import { Money } from '../../domain/value-objects';
+import { PaymentMethodListDto } from '../dto';
 
 export interface PaymentMethodData {
   id: PaymentMethodId;
@@ -9,9 +10,9 @@ export interface PaymentMethodData {
 }
 
 export interface IPaymentMethodRepository {
+  // Query methods - return DTOs
+  findAllPaymentMethods(): Promise<PaymentMethodListDto>;
+
+  // Command methods - work with data (no domain entities for simple lookup data)
   findById(id: PaymentMethodId): Promise<PaymentMethodData | null>;
-  findAll(): Promise<PaymentMethodData[]>;
-  save(method: PaymentMethodData): Promise<void>;
-  update(method: PaymentMethodData): Promise<void>;
-  delete(id: PaymentMethodId): Promise<void>;
 }

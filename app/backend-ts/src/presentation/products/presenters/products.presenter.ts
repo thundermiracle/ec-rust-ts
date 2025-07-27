@@ -5,7 +5,6 @@ import {
 } from '../../../application/dto';
 import {
   ProductListResponse,
-  ProductResponse,
   ProductDetailResponse,
   VariantResponse,
 } from '../responses';

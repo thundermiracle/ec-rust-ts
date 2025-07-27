@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CqrsModule } from '@nestjs/cqrs';
 
 // Entities
 import { ProductEntity } from './entities/product.entity';
@@ -20,23 +19,6 @@ import { ColorRepository } from './repositories/color.repository';
 import { OrderRepository } from './repositories/order.repository';
 import { ShippingMethodRepository } from './repositories/shipping-method.repository';
 import { PaymentMethodRepository } from './repositories/payment-method.repository';
-
-// Command Handlers
-import {
-  CalculateCartHandler,
-  CreateOrderHandler,
-} from '../../application/commands/handlers';
-
-// Query Handlers
-import {
-  GetProductListHandler,
-  GetProductHandler,
-  FindVariantsHandler,
-  GetCategoryListHandler,
-  GetColorListHandler,
-  GetShippingMethodListHandler,
-  GetPaymentMethodListHandler,
-} from '../../application/queries/handlers';
 
 const entities = [
   ProductEntity,
@@ -77,21 +59,9 @@ const repositories = [
   },
 ];
 
-const commandHandlers = [CalculateCartHandler, CreateOrderHandler];
-
-const queryHandlers = [
-  GetProductListHandler,
-  GetProductHandler,
-  FindVariantsHandler,
-  GetCategoryListHandler,
-  GetColorListHandler,
-  GetShippingMethodListHandler,
-  GetPaymentMethodListHandler,
-];
-
 @Module({
-  imports: [TypeOrmModule.forFeature(entities), CqrsModule],
-  providers: [...repositories, ...commandHandlers, ...queryHandlers],
+  imports: [TypeOrmModule.forFeature(entities)],
+  providers: [...repositories],
   exports: [...repositories],
 })
 export class DatabaseModule {}

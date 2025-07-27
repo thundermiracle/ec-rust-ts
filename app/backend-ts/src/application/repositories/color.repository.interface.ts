@@ -1,10 +1,6 @@
-import { Color } from '../../domain/entities';
-import { ColorId } from '../../domain/value-objects';
+import { ColorListDto } from '../dto';
 
 export interface IColorRepository {
-  findById(id: ColorId): Promise<Color | null>;
-  findAll(): Promise<Color[]>;
-  save(color: Color): Promise<void>;
-  update(color: Color): Promise<void>;
-  delete(id: ColorId): Promise<void>;
+  // Query methods - return DTOs
+  findAllColors(): Promise<ColorListDto>;
 }

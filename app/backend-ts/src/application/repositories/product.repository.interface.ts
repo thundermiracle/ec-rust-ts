@@ -1,13 +1,11 @@
-import { Product, SKU } from '../../domain/entities';
 import { ProductId, SKUId, CategoryId } from '../../domain/value-objects';
+import { ProductDto, ProductListDto } from '../dto';
+import { VariantSummaryDto } from '../dto/variant-summary.dto';
 
 export interface IProductRepository {
-  findById(id: ProductId): Promise<Product | null>;
-  findByCategory(categoryId: CategoryId): Promise<Product[]>;
-  findAll(): Promise<Product[]>;
-  findSkuById(skuId: SKUId): Promise<SKU | null>;
-  findSkusByIds(skuIds: SKUId[]): Promise<SKU[]>;
-  save(product: Product): Promise<void>;
-  update(product: Product): Promise<void>;
-  delete(id: ProductId): Promise<void>;
+  // Query methods - return DTOs
+  findById(id: ProductId): Promise<ProductDto | null>;
+  findByCategory(categoryId: CategoryId): Promise<ProductListDto>;
+  findAll(): Promise<ProductListDto>;
+  findSkusByIds(skuIds: SKUId[]): Promise<VariantSummaryDto[]>;
 }

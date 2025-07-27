@@ -1,10 +1,7 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { GetPaymentMethodListQuery } from '../models/get-product.query';
-import {
-  PaymentMethodListDto,
-  PaymentMethodDto,
-} from '../../dto/payment-method.dto';
+import { PaymentMethodListDto } from '../../dto/payment-method.dto';
 import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
 
 @QueryHandler(GetPaymentMethodListQuery)
@@ -17,18 +14,6 @@ export class GetPaymentMethodListHandler
   ) {}
 
   async execute(): Promise<PaymentMethodListDto> {
-    const methods = await this.paymentMethodRepository.findAll();
-
-    const methodDtos = methods.map(
-      (method) =>
-        new PaymentMethodDto(
-          method.id.value(),
-          method.name,
-          method.fee.yen(),
-          method.description,
-        ),
-    );
-
-    return new PaymentMethodListDto(methodDtos);
+    return await this.paymentMethodRepository.findAllPaymentMethods();
   }
 }

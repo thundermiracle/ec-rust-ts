@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { CqrsModule } from '@nestjs/cqrs';
-import { DatabaseModule } from '../infrastructure/database/database.module';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 // Domain-based Controllers
@@ -27,7 +26,7 @@ const controllers = [
 ];
 
 @Module({
-  imports: [CqrsModule, DatabaseModule],
+  imports: [CqrsModule],
   controllers,
   providers: [
     {
