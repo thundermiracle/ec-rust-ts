@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a modern e-commerce application built with Rust backend and Next.js frontend, managed as a monorepo using Nx.
+This is a modern e-commerce application built with Rust backend, NestJS TypeScript backend, and Next.js frontend, managed as a monorepo using Nx.
 
 ## Architecture
 
@@ -13,6 +13,12 @@ This is a modern e-commerce application built with Rust backend and Next.js fron
 - **Database**: SQLite with SQLx
 - **Architecture**: Clean Architecture with CQRS pattern
 - **Runtime**: Tokio async runtime
+
+### Backend-TS (NestJS)
+- **Framework**: NestJS with TypeScript
+- **Database**: SQLite with TypeORM
+- **Architecture**: Clean Architecture with CQRS pattern
+- **Runtime**: Node.js
 
 ### Frontend (Next.js)
 - **Framework**: Next.js 15 with App Router
@@ -30,6 +36,7 @@ pnpm dev
 # Start individual services
 pnpm frontend:dev    # Next.js dev server
 pnpm backend:dev     # Rust backend with hot reload
+pnpm backend-ts:dev  # NestJS TypeScript backend with hot reload
 ```
 
 ### Building
@@ -40,6 +47,7 @@ pnpm build
 # Build individual applications
 pnpm frontend:build
 pnpm backend:build
+pnpm backend-ts:build
 ```
 
 ### Testing
@@ -50,6 +58,8 @@ pnpm test
 # Run specific tests
 pnpm frontend:test
 pnpm backend:test
+pnpm backend-ts:test
+pnpm backend-ts:test:e2e
 
 # Run single test file (backend)
 cd app/backend && cargo test integration_product_repository_test
@@ -63,9 +73,11 @@ pnpm lint
 # Individual linting
 pnpm frontend:lint
 pnpm backend:lint
+pnpm backend-ts:lint
 
-# Format Rust code
-pnpm backend:format
+# Format code
+pnpm backend:format        # Rust code
+pnpm backend-ts:format     # TypeScript code
 cd app/backend && cargo fmt
 ```
 
@@ -135,12 +147,19 @@ The project follows strict naming conventions and structure patterns:
 
 ## Key Files and Locations
 
-### Backend
+### Backend (Rust)
 - Main entry: `app/backend/src/main.rs`
 - Dependencies: `app/backend/Cargo.toml`
 - Container/DI: `app/backend/src/infrastructure/di/container.rs`
 - Routes: `app/backend/src/presentation/routes.rs`
 - OpenAPI: `app/backend/src/presentation/swagger/openapi.rs`
+
+### Backend-TS (NestJS)
+- Main entry: `app/backend-ts/src/main.ts`
+- Dependencies: `app/backend-ts/package.json`
+- Module: `app/backend-ts/src/app.module.ts`
+- Database: `app/backend-ts/src/infrastructure/database/`
+- Controllers: `app/backend-ts/src/presentation/controllers/`
 
 ### Frontend
 - Main entry: `app/frontend/src/app/page.tsx`
@@ -192,7 +211,9 @@ Built as a monorepo with Nx orchestration:
 
 ## Monitoring and Development Tools
 
-- OpenAPI/Swagger UI available at `http://localhost:4000/swagger-ui/`
-- Backend runs on port 4000
+- Rust Backend: OpenAPI/Swagger UI available at `http://localhost:4000/swagger-ui/`
+- NestJS Backend: OpenAPI/Swagger UI available at `http://localhost:3001/api/`
+- Backend (Rust) runs on port 4000
+- Backend-TS (NestJS) runs on port 3001
 - Frontend runs on port 3000
 - Database can be inspected with SQLite tools
