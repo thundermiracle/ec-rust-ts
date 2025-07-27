@@ -6,6 +6,7 @@ import {
   IsNumber,
   Min,
   ValidateNested,
+  ArrayMinSize,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IRequest } from '../../base';
@@ -32,6 +33,7 @@ export class CalculateCartRequest implements IRequest<CalculateCartCommand> {
     type: [CalculateCartItemRequest],
   })
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CalculateCartItemRequest)
   items: CalculateCartItemRequest[];
@@ -39,20 +41,20 @@ export class CalculateCartRequest implements IRequest<CalculateCartCommand> {
   @ApiProperty({ description: 'Shipping method ID' })
   @IsString()
   @IsNotEmpty()
-  shippingMethodId: string;
+  shipping_method_id: string;
 
   @ApiProperty({ description: 'Payment method ID' })
   @IsString()
   @IsNotEmpty()
-  paymentMethodId: string;
+  payment_method_id: string;
 
   toCommand(): CalculateCartCommand {
     return new CalculateCartCommand(
       this.items.map(
         (item) => new CalculateCartCommandItem(item.skuId, item.quantity),
       ),
-      this.shippingMethodId,
-      this.paymentMethodId,
+      this.shipping_method_id,
+      this.payment_method_id,
     );
   }
 }

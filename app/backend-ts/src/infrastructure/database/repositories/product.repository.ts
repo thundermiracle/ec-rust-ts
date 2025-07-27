@@ -10,6 +10,7 @@ import {
   VariantDto,
 } from '../../../application/dto';
 import { VariantSummaryDto } from '../../../application/dto/variant-summary.dto';
+import { FindVariantsItemDto } from '../../../application/dto/find-variants.dto';
 import { ProductEntity } from '../entities/product.entity';
 import { SkuEntity } from '../entities/sku.entity';
 
@@ -86,6 +87,15 @@ export class ProductRepository implements IProductRepository {
     });
 
     return entities.map((entity) => this.mapToVariantSummaryDto(entity));
+  }
+
+  async findVariantsBySkuIds(skuIds: SKUId[]): Promise<FindVariantsItemDto[]> {
+    const entities = await this.skuRepository.find({
+      where: { id: In(skuIds.map((id) => id.value())) },
+      relations: ['product'],
+    });
+
+    return entities.map((entity) => this.mapToFindVariantsItemDto(entity));
   }
 
   private mapToProductDto(entity: ProductEntity): ProductDto {
@@ -189,6 +199,17 @@ export class ProductRepository implements IProductRepository {
       entity.is_best_seller,
       entity.is_quick_ship,
       stockQuantity,
+    );
+  }
+
+  private mapToFindVariantsItemDto(skuEntity: SkuEntity): FindVariantsItemDto {
+    return new FindVariantsItemDto(
+      skuEntity.id,
+      skuEntity.base_price, // Keep original price without conversion
+      skuEntity.sale_price || null,
+      skuEntity.image_url || null,
+      skuEntity.material || null,
+      skuEntity.dimensions || null,
     );
   }
 }

@@ -1,7 +1,7 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { FindVariantsQuery } from '../models/get-product.query';
-import { VariantSummaryDto } from '../../dto/variant-summary.dto';
+import { FindVariantsItemDto } from '../../dto/find-variants.dto';
 import { IProductRepository } from '../../repositories/product.repository.interface';
 import { SKUId } from '../../../domain/value-objects';
 import { ValidationError } from '../../errors/application.error';
@@ -13,7 +13,7 @@ export class FindVariantsHandler implements IQueryHandler<FindVariantsQuery> {
     private readonly productRepository: IProductRepository,
   ) {}
 
-  async execute(query: FindVariantsQuery): Promise<VariantSummaryDto[]> {
+  async execute(query: FindVariantsQuery): Promise<FindVariantsItemDto[]> {
     if (!query.skuIds || query.skuIds.length === 0) {
       return [];
     }
@@ -28,7 +28,7 @@ export class FindVariantsHandler implements IQueryHandler<FindVariantsQuery> {
       }
     }
 
-    // Fetch variant DTOs directly
-    return await this.productRepository.findSkusByIds(skuIds);
+    // Fetch variant DTOs directly with the new method
+    return await this.productRepository.findVariantsBySkuIds(skuIds);
   }
 }

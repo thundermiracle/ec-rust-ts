@@ -10,23 +10,19 @@ export class CalculatedCartItemResponse {
   @ApiProperty({ description: 'Product name' })
   productName: string;
 
-  @ApiProperty({ description: 'SKU name' })
-  skuName: string;
-
-  @ApiProperty({ description: 'Unit price in cents' })
+  @ApiProperty({ description: 'Unit price in original currency units' })
   unitPrice: number;
 
   @ApiProperty({ description: 'Quantity ordered' })
   quantity: number;
 
-  @ApiProperty({ description: 'Subtotal in cents (unitPrice * quantity)' })
+  @ApiProperty({ description: 'Subtotal (unitPrice * quantity)' })
   subtotal: number;
 
   constructor(data: {
     skuId: string;
     productId: string;
     productName: string;
-    skuName: string;
     unitPrice: number;
     quantity: number;
     subtotal: number;
@@ -34,7 +30,6 @@ export class CalculatedCartItemResponse {
     this.skuId = data.skuId;
     this.productId = data.productId;
     this.productName = data.productName;
-    this.skuName = data.skuName;
     this.unitPrice = data.unitPrice;
     this.quantity = data.quantity;
     this.subtotal = data.subtotal;
@@ -48,54 +43,49 @@ export class CalculateCartResponse {
   })
   items: CalculatedCartItemResponse[];
 
-  @ApiProperty({ description: 'Subtotal in cents (sum of all item subtotals)' })
+  @ApiProperty({ description: 'Total quantity of all items' })
+  totalQuantity: number;
+
+  @ApiProperty({ description: 'Number of different items in cart' })
+  itemCount: number;
+
+  @ApiProperty({ description: 'Subtotal (sum of all item subtotals)' })
   subtotal: number;
 
-  @ApiProperty({ description: 'Shipping fee in cents' })
-  shippingFee: number;
-
-  @ApiProperty({ description: 'Payment processing fee in cents' })
-  paymentFee: number;
-
-  @ApiProperty({ description: 'Tax amount in cents' })
+  @ApiProperty({ description: 'Tax amount' })
   taxAmount: number;
 
-  @ApiProperty({ description: 'Total amount in cents' })
+  @ApiProperty({ description: 'Total amount' })
   total: number;
 
-  @ApiProperty({ description: 'Shipping method ID' })
-  shippingMethodId: string;
+  @ApiProperty({ description: 'Whether the cart is empty' })
+  isEmpty: boolean;
 
-  @ApiProperty({ description: 'Shipping method name' })
-  shippingMethodName: string;
+  @ApiProperty({ description: 'Shipping fee' })
+  shippingFee: number;
 
-  @ApiProperty({ description: 'Payment method ID' })
-  paymentMethodId: string;
-
-  @ApiProperty({ description: 'Payment method name' })
-  paymentMethodName: string;
+  @ApiProperty({ description: 'Payment processing fee' })
+  paymentFee: number;
 
   constructor(data: {
     items: CalculatedCartItemResponse[];
+    totalQuantity: number;
+    itemCount: number;
     subtotal: number;
-    shippingFee: number;
-    paymentFee: number;
     taxAmount: number;
     total: number;
-    shippingMethodId: string;
-    shippingMethodName: string;
-    paymentMethodId: string;
-    paymentMethodName: string;
+    isEmpty: boolean;
+    shippingFee: number;
+    paymentFee: number;
   }) {
     this.items = data.items;
+    this.totalQuantity = data.totalQuantity;
+    this.itemCount = data.itemCount;
     this.subtotal = data.subtotal;
-    this.shippingFee = data.shippingFee;
-    this.paymentFee = data.paymentFee;
     this.taxAmount = data.taxAmount;
     this.total = data.total;
-    this.shippingMethodId = data.shippingMethodId;
-    this.shippingMethodName = data.shippingMethodName;
-    this.paymentMethodId = data.paymentMethodId;
-    this.paymentMethodName = data.paymentMethodName;
+    this.isEmpty = data.isEmpty;
+    this.shippingFee = data.shippingFee;
+    this.paymentFee = data.paymentFee;
   }
 }

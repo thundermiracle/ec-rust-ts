@@ -17,4 +17,5 @@ export {
 } from './shipping-method.dto';
 export { PaymentMethodDto, PaymentMethodListDto } from './payment-method.dto';
 export { VariantSummaryDto } from './variant-summary.dto';
+export { FindVariantsItemDto, FindVariantsDto } from './find-variants.dto';
 export { OrderDto, OrderListDto, OrderItemDto } from './order.dto';

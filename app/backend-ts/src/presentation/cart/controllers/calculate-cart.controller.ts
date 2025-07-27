@@ -12,7 +12,7 @@ import { CalculateCartResultDto } from '../../../application/dto';
 export class CalculateCartController {
   constructor(private readonly commandBus: CommandBus) {}
 
-  @Post('calculate')
+  @Post()
   @ApiOperation({
     summary: 'Calculate cart totals',
     description:

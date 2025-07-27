@@ -14,7 +14,6 @@ export class CartPresenter {
           skuId: item.skuId,
           productId: item.productId,
           productName: item.productName,
-          skuName: item.skuName,
           unitPrice: item.unitPrice,
           quantity: item.quantity,
           subtotal: item.subtotal,
@@ -23,15 +22,14 @@ export class CartPresenter {
 
     return new CalculateCartResponse({
       items,
+      totalQuantity: dto.totalQuantity,
+      itemCount: dto.itemCount,
       subtotal: dto.subtotal,
-      shippingFee: dto.shippingFee,
-      paymentFee: dto.paymentFee,
       taxAmount: dto.taxAmount,
       total: dto.total,
-      shippingMethodId: dto.shippingMethodId,
-      shippingMethodName: dto.shippingMethodName,
-      paymentMethodId: dto.paymentMethodId,
-      paymentMethodName: dto.paymentMethodName,
+      isEmpty: dto.isEmpty,
+      shippingFee: dto.shippingFee,
+      paymentFee: dto.paymentFee,
     });
   }
 }

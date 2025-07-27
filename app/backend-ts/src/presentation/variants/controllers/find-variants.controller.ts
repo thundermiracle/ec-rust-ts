@@ -2,17 +2,17 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FindVariantsRequest } from '../requests';
-import { VariantSummaryResponse } from '../responses';
+import { FindVariantsResponse } from '../responses';
 import { VariantsPresenter } from '../presenters';
 import { FindVariantsQuery } from '../../../application/queries/models';
-import { VariantSummaryDto } from '../../../application/dto';
+import { FindVariantsItemDto } from '../../../application/dto';
 
 @ApiTags('Variants')
 @Controller('variants')
 export class FindVariantsController {
   constructor(private readonly queryBus: QueryBus) {}
 
-  @Post('find')
+  @Post()
   @ApiOperation({
     summary: 'Find variants by SKU IDs',
     description:
@@ -21,7 +21,7 @@ export class FindVariantsController {
   @ApiResponse({
     status: 200,
     description: 'Variants found successfully',
-    type: [VariantSummaryResponse],
+    type: FindVariantsResponse,
   })
   @ApiResponse({
     status: 400,
@@ -29,12 +29,12 @@ export class FindVariantsController {
   })
   async execute(
     @Body() request: FindVariantsRequest,
-  ): Promise<VariantSummaryResponse[]> {
+  ): Promise<FindVariantsResponse> {
     const query = request.toQuery();
     const result = await this.queryBus.execute<
       FindVariantsQuery,
-      VariantSummaryDto[]
+      FindVariantsItemDto[]
     >(query);
-    return VariantsPresenter.toVariantSummaryListResponse(result);
+    return VariantsPresenter.toFindVariantsResponse(result);
   }
 }

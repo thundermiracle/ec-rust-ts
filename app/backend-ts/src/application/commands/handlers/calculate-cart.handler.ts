@@ -9,7 +9,6 @@ import { IProductRepository } from '../../repositories/product.repository.interf
 import { IShippingMethodRepository } from '../../repositories/shipping-method.repository.interface';
 import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
 import { VariantSummaryDto } from '../../dto/variant-summary.dto';
-import { ShippingMethodData, PaymentMethodData } from '../../repositories';
 import { Cart, CartItem } from '../../../domain/aggregates';
 import {
   SKUId,
@@ -71,7 +70,7 @@ export class CalculateCartHandler
     });
 
     // 6. Convert to DTO
-    return this.createResultDto(cart, shippingMethod, paymentMethod);
+    return this.createResultDto(cart);
   }
 
   private validateInput(command: CalculateCartCommand): void {
@@ -188,35 +187,31 @@ export class CalculateCartHandler
     return cart;
   }
 
-  private createResultDto(
-    cart: Cart,
-    shippingMethod: ShippingMethodData,
-    paymentMethod: PaymentMethodData,
-  ): CalculateCartResultDto {
-    const items = cart.getAllItems().map(
-      (item) =>
-        new CalculatedCartItemDto(
-          item.getSkuId().value(),
-          item.getProductId().value(),
-          item.getProductName(),
-          item.getProductName(), // In real implementation, get SKU name
-          item.getUnitPrice().yen(),
-          item.getQuantity(),
-          item.subtotal().yen(),
-        ),
-    );
+  private createResultDto(cart: Cart): CalculateCartResultDto {
+    const items = cart
+      .getAllItems()
+      .map(
+        (item) =>
+          new CalculatedCartItemDto(
+            item.getSkuId().value(),
+            item.getProductId().value(),
+            item.getProductName(),
+            item.getUnitPrice().yen(),
+            item.getQuantity(),
+            item.subtotal().yen(),
+          ),
+      );
 
     return new CalculateCartResultDto(
       items,
+      cart.totalQuantity(),
+      cart.itemCount(),
       cart.subtotal().yen(),
-      cart.shippingFee().yen(),
-      cart.paymentFee().yen(),
       cart.taxAmount().yen(),
       cart.total().yen(),
-      shippingMethod.id.value(),
-      shippingMethod.name,
-      paymentMethod.id.value(),
-      paymentMethod.name,
+      cart.isEmpty(),
+      cart.shippingFee().yen(),
+      cart.paymentFee().yen(),
     );
   }
 }
