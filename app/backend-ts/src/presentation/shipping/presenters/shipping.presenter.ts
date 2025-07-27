@@ -14,7 +14,7 @@ export class ShippingPresenter {
     return new ShippingMethodResponse({
       id: dto.id,
       name: dto.name,
-      fee: dto.fee,
+      price: dto.price,
       description: dto.description,
     });
   }
@@ -22,7 +22,7 @@ export class ShippingPresenter {
   static toShippingMethodListResponse(
     dto: ShippingMethodListDto,
   ): ShippingMethodListResponse {
-    const shippingMethods = dto.shippingMethods.map((method) =>
+    const shippingMethods = dto.methods.map((method) =>
       this.toShippingMethodResponse(method),
     );
 

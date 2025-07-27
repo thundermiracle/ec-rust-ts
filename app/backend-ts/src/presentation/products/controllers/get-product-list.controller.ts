@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GetProductListRequest } from '../requests';
-import { ProductListResponse } from '../responses';
+import { ProductListSimpleResponse } from '../responses';
 import { ProductsPresenter } from '../presenters';
 import { GetProductListQuery } from '../../../application/queries/models';
 import { ProductListDto } from '../../../application/dto';
@@ -36,7 +36,7 @@ export class GetProductListController {
   @ApiResponse({
     status: 200,
     description: 'Product list retrieved successfully',
-    type: ProductListResponse,
+    type: ProductListSimpleResponse,
   })
   @ApiResponse({
     status: 400,
@@ -50,7 +50,7 @@ export class GetProductListController {
     @Query('categoryId') categoryId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-  ): Promise<ProductListResponse> {
+  ): Promise<ProductListSimpleResponse> {
     const request = new GetProductListRequest();
     request.categoryId = categoryId;
     request.page = page ? parseInt(page, 10) : undefined;
@@ -61,6 +61,6 @@ export class GetProductListController {
       GetProductListQuery,
       ProductListDto
     >(query);
-    return ProductsPresenter.toProductListResponse(result);
+    return ProductsPresenter.toProductListSimpleResponse(result);
   }
 }

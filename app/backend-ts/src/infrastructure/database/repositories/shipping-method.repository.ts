@@ -31,8 +31,8 @@ export class ShippingMethodRepository implements IShippingMethodRepository {
         new ShippingMethodDto(
           entity.id,
           entity.name,
+          entity.description || '', // Ensure description is not null
           entity.price,
-          entity.description,
         ),
     );
 

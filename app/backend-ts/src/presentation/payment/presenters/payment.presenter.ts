@@ -9,7 +9,6 @@ export class PaymentPresenter {
     return new PaymentMethodResponse({
       id: dto.id,
       name: dto.name,
-      fee: dto.fee,
       description: dto.description,
     });
   }
@@ -17,10 +16,10 @@ export class PaymentPresenter {
   static toPaymentMethodListResponse(
     dto: PaymentMethodListDto,
   ): PaymentMethodListResponse {
-    const paymentMethods = dto.paymentMethods.map((method) =>
+    const items = dto.items.map((method) =>
       this.toPaymentMethodResponse(method),
     );
 
-    return new PaymentMethodListResponse({ paymentMethods });
+    return new PaymentMethodListResponse({ items });
   }
 }

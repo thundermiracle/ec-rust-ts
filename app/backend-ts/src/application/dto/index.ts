@@ -1,4 +1,9 @@
-export { ProductDto, VariantDto, ProductListDto } from './product.dto';
+export {
+  ProductDto,
+  VariantDto,
+  ProductListDto,
+  ProductSummaryDto,
+} from './product.dto';
 export {
   CalculateCartResultDto,
   CalculatedCartItemDto,

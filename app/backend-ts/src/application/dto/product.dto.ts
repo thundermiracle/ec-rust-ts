@@ -3,19 +3,17 @@ export class VariantDto {
     public readonly id: string,
     public readonly skuCode: string,
     public readonly name: string,
-    public readonly basePrice: number,
+    public readonly color: string,
+    public readonly material: string,
+    public readonly dimensions: string,
+    public readonly price: number,
     public readonly salePrice: number | null,
-    public readonly currentPrice: number,
-    public readonly isOnSale: boolean,
     public readonly stockQuantity: number,
-    public readonly isInStock: boolean,
-    public readonly isSoldOut: boolean,
-    public readonly colorId: number | null,
-    public readonly colorName: string | null,
-    public readonly colorHex: string | null,
-    public readonly dimensions: string | null,
-    public readonly material: string | null,
+    public readonly reservedQuantity: number,
     public readonly displayOrder: number,
+    public readonly image: string | null,
+    public readonly isOnSale: boolean,
+    public readonly isSoldOut: boolean,
   ) {}
 }
 
@@ -23,24 +21,37 @@ export class ProductDto {
   constructor(
     public readonly id: string,
     public readonly name: string,
+    public readonly images: string[],
+    public readonly category: string,
     public readonly description: string,
-    public readonly categoryId: string,
     public readonly isBestSeller: boolean,
     public readonly isQuickShip: boolean,
-    public readonly isAvailable: boolean,
     public readonly variants: VariantDto[],
-    public readonly minPrice: number | null,
-    public readonly maxPrice: number | null,
-    public readonly totalStock: number,
-    public readonly hasVariants: boolean,
+  ) {}
+}
+
+export class ProductSummaryDto {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+    public readonly category: string,
+    public readonly basePrice: number,
+    public readonly salePrice: number | null,
+    public readonly image: string | null,
+    public readonly colors: string[],
+    public readonly isBestSeller: boolean,
+    public readonly isQuickShip: boolean,
+    public readonly stockQuantity: number,
   ) {}
 }
 
 export class ProductListDto {
   constructor(
-    public readonly products: ProductDto[],
-    public readonly total: number,
+    public readonly products: ProductSummaryDto[],
+    public readonly totalCount: number,
     public readonly page: number,
-    public readonly limit: number,
+    public readonly perPage: number,
+    public readonly hasNextPage: boolean,
+    public readonly hasPreviousPage: boolean,
   ) {}
 }

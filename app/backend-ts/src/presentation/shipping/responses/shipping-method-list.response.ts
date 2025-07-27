@@ -7,21 +7,21 @@ export class ShippingMethodResponse {
   @ApiProperty({ description: 'Shipping method name' })
   name: string;
 
-  @ApiProperty({ description: 'Shipping fee in cents' })
-  fee: number;
+  @ApiProperty({ description: 'Shipping price in cents' })
+  price: number;
 
-  @ApiProperty({ description: 'Method description', required: false })
-  description?: string;
+  @ApiProperty({ description: 'Method description' })
+  description: string;
 
   constructor(data: {
     id: string;
     name: string;
-    fee: number;
-    description?: string;
+    price: number;
+    description: string;
   }) {
     this.id = data.id;
     this.name = data.name;
-    this.fee = data.fee;
+    this.price = data.price;
     this.description = data.description;
   }
 }

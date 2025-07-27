@@ -31,8 +31,7 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
         new PaymentMethodDto(
           entity.id,
           entity.name,
-          0, // Payment methods in Rust schema don't have fees
-          entity.description,
+          entity.description || '', // Ensure description is not null
         ),
     );
 
