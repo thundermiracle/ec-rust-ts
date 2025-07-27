@@ -8,13 +8,13 @@ import { PaymentInfo } from './payment-info';
 import { OrderPricing } from './order-pricing';
 
 export enum OrderStatus {
-  Pending = 'Pending',
-  Paid = 'Paid',
-  Processing = 'Processing',
-  Shipped = 'Shipped',
-  Delivered = 'Delivered',
-  Cancelled = 'Cancelled',
-  Refunded = 'Refunded',
+  Pending = 'pending',
+  Paid = 'paid',
+  Processing = 'processing',
+  Shipped = 'shipped',
+  Delivered = 'delivered',
+  Cancelled = 'cancelled',
+  Refunded = 'refunded',
 }
 
 export class OrderTimestamps {

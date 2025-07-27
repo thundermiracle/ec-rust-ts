@@ -5,34 +5,26 @@ export class CreateOrderResponse {
     description: 'Order ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  orderId: string;
+  order_id: string;
 
   @ApiProperty({ description: 'Order number', example: 'ORD24072100001' })
-  orderNumber: string;
+  order_number: string;
 
   @ApiProperty({ description: 'Total amount in yen', example: 7106 })
-  total: number;
+  total_amount: number;
 
-  @ApiProperty({ description: 'Order status', example: 'Pending' })
+  @ApiProperty({ description: 'Order status', example: 'pending' })
   status: string;
 
-  @ApiProperty({
-    description: 'Order creation timestamp',
-    example: '2024-07-21T10:30:00.000Z',
-  })
-  createdAt: string;
-
   constructor(data: {
-    orderId: string;
-    orderNumber: string;
-    total: number;
+    order_id: string;
+    order_number: string;
+    total_amount: number;
     status: string;
-    createdAt: string;
   }) {
-    this.orderId = data.orderId;
-    this.orderNumber = data.orderNumber;
-    this.total = data.total;
+    this.order_id = data.order_id;
+    this.order_number = data.order_number;
+    this.total_amount = data.total_amount;
     this.status = data.status;
-    this.createdAt = data.createdAt;
   }
 }

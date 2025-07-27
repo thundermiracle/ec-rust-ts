@@ -21,10 +21,10 @@ import {
 export class CreateOrderItemRequest {
   @ApiProperty({
     description: 'SKU ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    example: 'sku-tshirt-red-m',
   })
   @IsString()
-  skuId: string;
+  sku_id: string;
 
   @ApiProperty({ description: 'Quantity to order', example: 2, minimum: 1 })
   @IsNumber()
@@ -35,15 +35,15 @@ export class CreateOrderItemRequest {
 export class CreateOrderCustomerInfoRequest {
   @ApiProperty({ description: 'Customer first name', example: '太郎' })
   @IsString()
-  firstName: string;
+  first_name: string;
 
-  @ApiProperty({ description: 'Customer last name', example: '田中' })
+  @ApiProperty({ description: 'Customer last name', example: '山田' })
   @IsString()
-  lastName: string;
+  last_name: string;
 
   @ApiProperty({
     description: 'Customer email',
-    example: 'taro.tanaka@example.com',
+    example: 'taro.yamada@example.com',
   })
   @IsEmail()
   email: string;
@@ -65,7 +65,7 @@ export class CreateOrderShippingAddressRequest {
   @Matches(/^\d{3}-\d{4}$/, {
     message: 'Postal code must be in format 123-4567',
   })
-  postalCode: string;
+  postal_code: string;
 
   @ApiProperty({ description: 'Prefecture', example: '東京都' })
   @IsString()
@@ -75,13 +75,13 @@ export class CreateOrderShippingAddressRequest {
   @IsString()
   city: string;
 
-  @ApiProperty({ description: 'Street address', example: '渋谷1-1-1' })
+  @ApiProperty({ description: 'Street address', example: '道獠4-1-1' })
   @IsString()
-  streetAddress: string;
+  street_address: string;
 
   @ApiProperty({
     description: 'Building name (optional)',
-    example: '渋谷ビル',
+    example: '山田マンション101号室',
     required: false,
   })
   @IsOptional()
@@ -91,9 +91,17 @@ export class CreateOrderShippingAddressRequest {
 
 export class CreateOrderRequest implements IRequest<CreateOrderCommand> {
   @ApiProperty({
+    description: 'Customer information',
+    type: CreateOrderCustomerInfoRequest,
+  })
+  @ValidateNested()
+  @Type(() => CreateOrderCustomerInfoRequest)
+  customer_info: CreateOrderCustomerInfoRequest;
+
+  @ApiProperty({
     description: 'Order items',
     type: [CreateOrderItemRequest],
-    example: [{ skuId: '123e4567-e89b-12d3-a456-426614174000', quantity: 2 }],
+    example: [{ sku_id: 'sku-tshirt-red-m', quantity: 2 }],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -101,12 +109,18 @@ export class CreateOrderRequest implements IRequest<CreateOrderCommand> {
   items: CreateOrderItemRequest[];
 
   @ApiProperty({
-    description: 'Customer information',
-    type: CreateOrderCustomerInfoRequest,
+    description: 'Shipping method ID',
+    example: 'standard',
   })
-  @ValidateNested()
-  @Type(() => CreateOrderCustomerInfoRequest)
-  customerInfo: CreateOrderCustomerInfoRequest;
+  @IsString()
+  shipping_method_id: string;
+
+  @ApiProperty({
+    description: 'Payment method ID',
+    example: 'credit_card',
+  })
+  @IsString()
+  payment_method_id: string;
 
   @ApiProperty({
     description: 'Shipping address',
@@ -114,48 +128,34 @@ export class CreateOrderRequest implements IRequest<CreateOrderCommand> {
   })
   @ValidateNested()
   @Type(() => CreateOrderShippingAddressRequest)
-  shippingAddress: CreateOrderShippingAddressRequest;
-
-  @ApiProperty({
-    description: 'Shipping method ID',
-    example: 'standard-shipping',
-  })
-  @IsString()
-  shippingMethodId: string;
-
-  @ApiProperty({
-    description: 'Payment method ID',
-    example: 'credit-card',
-  })
-  @IsString()
-  paymentMethodId: string;
+  shipping_address: CreateOrderShippingAddressRequest;
 
   toCommand(): CreateOrderCommand {
     const commandItems = this.items.map(
-      (item) => new CreateOrderCommandItem(item.skuId, item.quantity),
+      (item) => new CreateOrderCommandItem(item.sku_id, item.quantity),
     );
 
     const customerInfo = new CreateOrderCommandCustomerInfo(
-      this.customerInfo.firstName,
-      this.customerInfo.lastName,
-      this.customerInfo.email,
-      this.customerInfo.phone,
+      this.customer_info.first_name,
+      this.customer_info.last_name,
+      this.customer_info.email,
+      this.customer_info.phone,
     );
 
     const shippingAddress = new CreateOrderCommandShippingAddress(
-      this.shippingAddress.postalCode,
-      this.shippingAddress.prefecture,
-      this.shippingAddress.city,
-      this.shippingAddress.streetAddress,
-      this.shippingAddress.building,
+      this.shipping_address.postal_code,
+      this.shipping_address.prefecture,
+      this.shipping_address.city,
+      this.shipping_address.street_address,
+      this.shipping_address.building,
     );
 
     return new CreateOrderCommand(
       commandItems,
       customerInfo,
       shippingAddress,
-      this.shippingMethodId,
-      this.paymentMethodId,
+      this.shipping_method_id,
+      this.payment_method_id,
     );
   }
 }
