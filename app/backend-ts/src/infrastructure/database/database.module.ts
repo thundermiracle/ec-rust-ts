@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Entities
@@ -59,6 +59,7 @@ const repositories = [
   },
 ];
 
+@Global()
 @Module({
   imports: [TypeOrmModule.forFeature(entities)],
   providers: [...repositories],
