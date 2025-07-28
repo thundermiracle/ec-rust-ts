@@ -1,7 +1,9 @@
 {
   "mcpServers": {
     "nx-mcp": {
-      "url": "http://localhost:9199/sse"
+      "type": "stdio",
+      "command": "npx",
+      "args": ["nx-mcp@latest"]
     }
   }
 }
