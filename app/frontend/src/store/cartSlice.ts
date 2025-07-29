@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 
 // LocalStorageに保存する軽量なカートアイテム
 export interface StoredCartItem {
@@ -119,20 +119,28 @@ export const {
   toggleCart,
 } = cartSlice.actions;
 
-// Selectors
-export const selectCartItems = (state: { cart: CartState; [key: string]: unknown }) => {
-  // Lazily load from localStorage if cart has not been initialized yet
-  if (!state.cart.initialized) {
-    return loadCartFromStorage();
+// Base selectors
+const selectCartState = (state: { cart: CartState; [key: string]: unknown }) => state.cart;
+
+// Memoized selectors
+export const selectCartItems = createSelector(
+  [selectCartState],
+  (cartState) => {
+    // Lazily load from localStorage if cart has not been initialized yet
+    if (!cartState.initialized) {
+      return loadCartFromStorage();
+    }
+    return cartState.items;
   }
-  return state.cart.items;
-};
+);
 
 export const selectCartInitialized = (state: { cart: CartState; [key: string]: unknown }) => state.cart.initialized;
 
 export const selectCartIsOpen = (state: { cart: CartState; [key: string]: unknown }) => state.cart.isOpen;
 
-export const selectCartItemsCount = (state: { cart: CartState; [key: string]: unknown }) => 
-  selectCartItems(state).reduce((total, item) => total + item.quantity, 0);
+export const selectCartItemsCount = createSelector(
+  [selectCartItems],
+  (items) => items.reduce((total, item) => total + item.quantity, 0)
+);
 
 export default cartSlice.reducer; 
