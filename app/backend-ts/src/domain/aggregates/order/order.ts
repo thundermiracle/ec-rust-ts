@@ -6,6 +6,9 @@ import { CustomerInfo } from './customer-info';
 import { ShippingInfo } from './shipping-info';
 import { PaymentInfo } from './payment-info';
 import { OrderPricing } from './order-pricing';
+import { SKU } from '../../entities/sku';
+import { Address } from '../../value-objects/address';
+import { Money } from '../../value-objects/money';
 
 export enum OrderStatus {
   Pending = 'pending',
@@ -102,6 +105,93 @@ export class Order {
       OrderStatus.Pending,
       timestamps,
     );
+  }
+
+  static createFromCommand(
+    orderId: OrderId,
+    orderNumber: OrderNumber,
+    customerInfo: CustomerInfo,
+    commandItems: Array<{ skuId: string; quantity: number }>,
+    availableSkus: SKU[], // 既存のSKUエンティティを使用
+    shippingMethodData: {
+      id: string;
+      name: string;
+      fee: Money;
+      isActive: boolean;
+    },
+    shippingAddress: Address,
+    paymentMethodData: {
+      id: string;
+      name: string;
+      fee: Money;
+      isActive: boolean;
+    },
+  ): Order {
+    // 既存のSKUエンティティのビジネスロジックを活用
+    const orderItems = this.validateAndCreateOrderItems(
+      commandItems,
+      availableSkus,
+    );
+
+    // 拡張された既存クラスを使用
+    const shippingInfo = ShippingInfo.createFromMethod(
+      shippingMethodData,
+      shippingAddress,
+    );
+    const paymentInfo = PaymentInfo.createFromMethod(paymentMethodData);
+
+    return Order.create(
+      orderId,
+      orderNumber,
+      customerInfo,
+      orderItems,
+      shippingInfo,
+      paymentInfo,
+    );
+  }
+
+  private static validateAndCreateOrderItems(
+    commandItems: Array<{ skuId: string; quantity: number }>,
+    availableSkus: SKU[],
+  ): OrderItem[] {
+    const orderItems: OrderItem[] = [];
+
+    for (const commandItem of commandItems) {
+      const sku = availableSkus.find(
+        (s) => s.getId().value() === commandItem.skuId,
+      );
+
+      if (!sku) {
+        throw new DomainError(`SKU not found: ${commandItem.skuId}`);
+      }
+
+      // 既存のSKUエンティティのビジネスロジックを活用
+      if (!sku.isPurchasable()) {
+        throw new DomainError(
+          `SKU ${commandItem.skuId} is not available for purchase`,
+        );
+      }
+
+      if (sku.availableQuantity() < commandItem.quantity) {
+        throw new DomainError(
+          `Insufficient stock for SKU ${commandItem.skuId}. ` +
+            `Requested: ${commandItem.quantity}, Available: ${sku.availableQuantity()}`,
+        );
+      }
+
+      const orderItem = OrderItem.create(
+        sku.getId(),
+        sku.getProductId(),
+        sku.getName(),
+        sku.getName(),
+        sku.currentPrice(),
+        commandItem.quantity,
+      );
+
+      orderItems.push(orderItem);
+    }
+
+    return orderItems;
   }
 
   // Status management

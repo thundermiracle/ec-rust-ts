@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { IProductRepository } from '../../../application/repositories/product.repository.interface';
-import { ProductId, SKUId, CategoryId } from '../../../domain/value-objects';
+import {
+  ProductId,
+  SKUId,
+  CategoryId,
+  ColorId,
+  Money,
+} from '../../../domain/value-objects';
 import {
   ProductDto,
   ProductListDto,
@@ -13,6 +19,7 @@ import { VariantSummaryDto } from '../../../application/dto/variant-summary.dto'
 import { FindVariantsItemDto } from '../../../application/dto/find-variants.dto';
 import { ProductEntity } from '../entities/product.entity';
 import { SkuEntity } from '../entities/sku.entity';
+import { SKU, VariantAttributes } from '../../../domain/entities/sku';
 
 @Injectable()
 export class ProductRepository implements IProductRepository {
@@ -96,6 +103,15 @@ export class ProductRepository implements IProductRepository {
     });
 
     return entities.map((entity) => this.mapToFindVariantsItemDto(entity));
+  }
+
+  async findSkuEntitiesByIds(skuIds: SKUId[]): Promise<SKU[]> {
+    const entities = await this.skuRepository.find({
+      where: { id: In(skuIds.map((id) => id.value())) },
+      relations: ['product', 'color'],
+    });
+
+    return entities.map((entity) => this.mapToSkuEntity(entity));
   }
 
   private mapToProductDto(entity: ProductEntity): ProductDto {
@@ -211,5 +227,35 @@ export class ProductRepository implements IProductRepository {
       skuEntity.material || null,
       skuEntity.dimensions || null,
     );
+  }
+
+  private mapToSkuEntity(entity: SkuEntity): SKU {
+    // Create variant attributes
+    const variantAttributes: VariantAttributes = {
+      colorId: entity.color_id ? ColorId.new(entity.color_id) : undefined,
+      dimensions: entity.dimensions || undefined,
+      material: entity.material || undefined,
+    };
+
+    // Create SKU entity
+    const sku = SKU.create(
+      SKUId.fromUuid(entity.id),
+      ProductId.fromUuid(entity.product_id),
+      entity.sku_code,
+      entity.name,
+      variantAttributes,
+      Money.fromYen(entity.base_price),
+      entity.stock_quantity,
+      entity.display_order,
+    );
+
+    // Set sale price if exists
+    if (entity.sale_price) {
+      sku.setSalePrice(Money.fromYen(entity.sale_price));
+    }
+
+    // Note: Status handling can be added when status field is available in SkuEntity
+
+    return sku;
   }
 }

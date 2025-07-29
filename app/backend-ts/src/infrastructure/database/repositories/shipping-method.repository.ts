@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  IShippingMethodRepository,
-  ShippingMethodData,
-} from '../../../application/repositories/shipping-method.repository.interface';
+import { IShippingMethodRepository } from '../../../application/repositories/shipping-method.repository.interface';
+import { ShippingMethod } from '../../../domain';
 import { ShippingMethodId, Money } from '../../../domain/value-objects';
 import {
   ShippingMethodDto,
@@ -40,7 +38,7 @@ export class ShippingMethodRepository implements IShippingMethodRepository {
   }
 
   // Command methods - work with data
-  async findById(id: ShippingMethodId): Promise<ShippingMethodData | null> {
+  async findById(id: ShippingMethodId): Promise<ShippingMethod | null> {
     const entity = await this.shippingMethodRepository.findOne({
       where: { id: id.value(), is_active: true },
     });
@@ -48,12 +46,13 @@ export class ShippingMethodRepository implements IShippingMethodRepository {
     return entity ? this.toDomain(entity) : null;
   }
 
-  private toDomain(entity: ShippingMethodEntity): ShippingMethodData {
-    return {
-      id: ShippingMethodId.new(entity.id),
-      name: entity.name,
-      fee: Money.fromYen(entity.price),
-      description: entity.description,
-    };
+  private toDomain(entity: ShippingMethodEntity): ShippingMethod {
+    return ShippingMethod.create(
+      ShippingMethodId.new(entity.id),
+      entity.name,
+      Money.fromYen(entity.price),
+      entity.description,
+      entity.is_active,
+    );
   }
 }

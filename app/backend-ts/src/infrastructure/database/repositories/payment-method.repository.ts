@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  IPaymentMethodRepository,
-  PaymentMethodData,
-} from '../../../application/repositories/payment-method.repository.interface';
+import { IPaymentMethodRepository } from '../../../application/repositories/payment-method.repository.interface';
+import { PaymentMethod } from '../../../domain';
 import { PaymentMethodId, Money } from '../../../domain/value-objects';
 import {
   PaymentMethodDto,
@@ -39,7 +37,7 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
   }
 
   // Command methods - work with data
-  async findById(id: PaymentMethodId): Promise<PaymentMethodData | null> {
+  async findById(id: PaymentMethodId): Promise<PaymentMethod | null> {
     const entity = await this.paymentMethodRepository.findOne({
       where: { id: id.value(), is_active: true },
     });
@@ -47,21 +45,22 @@ export class PaymentMethodRepository implements IPaymentMethodRepository {
     return entity ? this.toDomain(entity) : null;
   }
 
-  private toDomain(entity: PaymentMethodEntity): PaymentMethodData {
-    return {
-      id: PaymentMethodId.new(entity.id),
-      name: entity.name,
-      fee: Money.fromYen(0), // Payment methods in Rust schema don't have fees
-      description: entity.description,
-    };
+  private toDomain(entity: PaymentMethodEntity): PaymentMethod {
+    return PaymentMethod.create(
+      PaymentMethodId.new(entity.id),
+      entity.name,
+      Money.fromYen(0), // Payment methods in Rust schema don't have fees
+      entity.description,
+      entity.is_active,
+    );
   }
 
-  private toEntity(domain: PaymentMethodData): PaymentMethodEntity {
+  private toEntity(domain: PaymentMethod): PaymentMethodEntity {
     const entity = new PaymentMethodEntity();
-    entity.id = domain.id.value();
-    entity.name = domain.name;
-    entity.description = domain.description || '';
-    entity.is_active = true;
+    entity.id = domain.getId().value();
+    entity.name = domain.getName();
+    entity.description = domain.getDescription() || '';
+    entity.is_active = domain.isAvailable();
     entity.sort_order = 0;
     return entity;
   }

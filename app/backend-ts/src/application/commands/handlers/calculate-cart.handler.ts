@@ -58,16 +58,8 @@ export class CalculateCartHandler
 
     // 5. Create domain objects and calculate
     const cart = this.createCartWithItems(command.items, skus);
-    cart.applyShippingMethod({
-      id: shippingMethod.id,
-      name: shippingMethod.name,
-      fee: shippingMethod.fee,
-    });
-    cart.applyPaymentMethod({
-      id: paymentMethod.id,
-      name: paymentMethod.name,
-      fee: paymentMethod.fee,
-    });
+    cart.applyShippingMethod(shippingMethod);
+    cart.applyPaymentMethod(paymentMethod);
 
     // 6. Convert to DTO
     return this.createResultDto(cart);

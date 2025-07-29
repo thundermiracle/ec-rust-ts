@@ -1,2 +1,2 @@
-export { Cart, ShippingMethod, PaymentMethod } from './cart';
+export { Cart } from './cart';
 export { CartItem } from './cart-item';

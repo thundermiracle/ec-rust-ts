@@ -1,23 +1,8 @@
-import {
-  SKUId,
-  ShippingMethodId,
-  PaymentMethodId,
-} from '../../value-objects/identifiers';
+import { SKUId } from '../../value-objects/identifiers';
 import { Money } from '../../value-objects/money';
 import { DomainError } from '../../errors/domain.error';
 import { CartItem } from './cart-item';
-
-export interface ShippingMethod {
-  id: ShippingMethodId;
-  name: string;
-  fee: Money;
-}
-
-export interface PaymentMethod {
-  id: PaymentMethodId;
-  name: string;
-  fee: Money;
-}
+import { ShippingMethod, PaymentMethod } from '../../entities';
 
 export class Cart {
   private readonly items: Map<string, CartItem> = new Map();
@@ -68,11 +53,11 @@ export class Cart {
   }
 
   shippingFee(): Money {
-    return this.shippingMethod?.fee || Money.zero();
+    return this.shippingMethod?.getFee() || Money.zero();
   }
 
   paymentFee(): Money {
-    return this.paymentMethod?.fee || Money.zero();
+    return this.paymentMethod?.getFee() || Money.zero();
   }
 
   totalBeforeTax(): Money {

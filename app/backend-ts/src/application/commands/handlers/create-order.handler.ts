@@ -6,28 +6,15 @@ import { IProductRepository } from '../../repositories/product.repository.interf
 import { IShippingMethodRepository } from '../../repositories/shipping-method.repository.interface';
 import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
 import { IOrderRepository } from '../../repositories/order.repository.interface';
-import {
-  Order,
-  OrderItem,
-  CustomerInfo,
-  ShippingInfo,
-  PaymentInfo,
-} from '../../../domain/aggregates';
+import { Order, CustomerInfo } from '../../../domain/aggregates';
 import {
   OrderId,
   SKUId,
-  ProductId,
   ShippingMethodId,
   PaymentMethodId,
   Address,
-  Money,
 } from '../../../domain/value-objects';
-import {
-  ValidationError,
-  NotFoundError,
-  BusinessRuleViolationError,
-  InsufficientStockError,
-} from '../../errors/application.error';
+import { ValidationError, NotFoundError } from '../../errors/application.error';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
@@ -46,35 +33,40 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
     // 1. Input Validation
     this.validateInput(command);
 
-    // 2. Create Customer Info
+    // 2. SKUエンティティを取得（DTO使用を廃止）
+    const skus = await this.getSkusWithValidation(command.items);
+
+    // 3. 配送・支払方法データを取得（既存のrepositoryメソッドを使用）
+    const shippingMethodData = await this.getShippingMethodData(
+      command.shippingMethodId,
+    );
+    const paymentMethodData = await this.getPaymentMethodData(
+      command.paymentMethodId,
+    );
+
+    // 4. 顧客情報・配送先住所を作成
     const customerInfo = this.createCustomerInfo(command);
+    const shippingAddress = this.createShippingAddress(command.shippingAddress);
 
-    // 3. Create Order Items
-    const orderItems = await this.createOrderItems(command.items);
-
-    // 4. Create Shipping Info
-    const shippingInfo = await this.createShippingInfo(command);
-
-    // 5. Create Payment Info
-    const paymentInfo = await this.createPaymentInfo(command.paymentMethodId);
-
-    // 6. Generate Order Number and Create Order
+    // 5. Order集約で全体を組み立て
     const orderId = OrderId.new();
     const orderNumber = await this.orderRepository.generateOrderNumber();
 
-    const order = Order.create(
+    const order = Order.createFromCommand(
       orderId,
       orderNumber,
       customerInfo,
-      orderItems,
-      shippingInfo,
-      paymentInfo,
+      command.items,
+      skus, // SKUエンティティを直接使用
+      shippingMethodData, // プレーンオブジェクト
+      shippingAddress,
+      paymentMethodData, // プレーンオブジェクト
     );
 
-    // 7. Save Order
+    // 6. Save Order
     await this.orderRepository.save(order);
 
-    // 8. Return Result DTO
+    // 7. Return Result DTO
     return new CreateOrderResultDto(
       order.getId().value(),
       order.getOrderNumber().getValue(),
@@ -121,10 +113,9 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
     );
   }
 
-  private async createOrderItems(
+  private async getSkusWithValidation(
     commandItems: Array<{ skuId: string; quantity: number }>,
-  ): Promise<OrderItem[]> {
-    // Parse SKU IDs
+  ) {
     const skuIds = commandItems.map((item) => {
       try {
         return SKUId.fromUuid(item.skuId);
@@ -133,80 +124,27 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
       }
     });
 
-    // Fetch SKUs
-    const skus = await this.productRepository.findSkusByIds(skuIds);
-
-    // Create order items with validation
-    const orderItems: OrderItem[] = [];
-
-    for (const commandItem of commandItems) {
-      const sku = skus.find((s) => s.id === commandItem.skuId);
-
-      if (!sku) {
-        throw new NotFoundError('SKU', commandItem.skuId);
-      }
-
-      if (!sku.isInStock) {
-        throw new BusinessRuleViolationError(
-          `SKU ${commandItem.skuId} is not available for purchase`,
-        );
-      }
-
-      if (sku.stockQuantity < commandItem.quantity) {
-        throw new InsufficientStockError(
-          commandItem.skuId,
-          commandItem.quantity,
-          sku.stockQuantity,
-        );
-      }
-
-      const orderItem = OrderItem.create(
-        SKUId.fromUuid(sku.id),
-        ProductId.fromUuid(sku.productId),
-        sku.productName,
-        sku.name,
-        Money.fromYen(sku.currentPrice),
-        commandItem.quantity,
-      );
-
-      orderItems.push(orderItem);
-    }
-
-    return orderItems;
+    return await this.productRepository.findSkuEntitiesByIds(skuIds);
   }
 
-  private async createShippingInfo(
-    command: CreateOrderCommand,
-  ): Promise<ShippingInfo> {
-    // Fetch shipping method
-    const methodId = ShippingMethodId.new(command.shippingMethodId);
+  private async getShippingMethodData(shippingMethodId: string) {
+    const methodId = ShippingMethodId.new(shippingMethodId);
     const shippingMethod =
       await this.shippingMethodRepository.findById(methodId);
 
     if (!shippingMethod) {
-      throw new NotFoundError('Shipping method', command.shippingMethodId);
+      throw new NotFoundError('Shipping method', shippingMethodId);
     }
 
-    // Create shipping address
-    const address = Address.new(
-      command.shippingAddress.postalCode,
-      command.shippingAddress.prefecture,
-      command.shippingAddress.city,
-      command.shippingAddress.streetAddress,
-      command.shippingAddress.building,
-    );
-
-    return ShippingInfo.create(
-      shippingMethod.id,
-      shippingMethod.name,
-      shippingMethod.fee,
-      address,
-    );
+    return {
+      id: shippingMethod.getId().value(),
+      name: shippingMethod.getName(),
+      fee: shippingMethod.getFee(),
+      isActive: shippingMethod.isAvailable(),
+    };
   }
 
-  private async createPaymentInfo(
-    paymentMethodId: string,
-  ): Promise<PaymentInfo> {
+  private async getPaymentMethodData(paymentMethodId: string) {
     const methodId = PaymentMethodId.new(paymentMethodId);
     const paymentMethod = await this.paymentMethodRepository.findById(methodId);
 
@@ -214,10 +152,27 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {
       throw new NotFoundError('Payment method', paymentMethodId);
     }
 
-    return PaymentInfo.create(
-      paymentMethod.id,
-      paymentMethod.name,
-      paymentMethod.fee,
+    return {
+      id: paymentMethod.getId().value(),
+      name: paymentMethod.getName(),
+      fee: paymentMethod.getFee(),
+      isActive: paymentMethod.isAvailable(),
+    };
+  }
+
+  private createShippingAddress(addressData: {
+    postalCode: string;
+    prefecture: string;
+    city: string;
+    streetAddress: string;
+    building?: string;
+  }): Address {
+    return Address.new(
+      addressData.postalCode,
+      addressData.prefecture,
+      addressData.city,
+      addressData.streetAddress,
+      addressData.building,
     );
   }
 }
