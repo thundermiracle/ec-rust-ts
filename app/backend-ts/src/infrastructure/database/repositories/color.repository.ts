@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { IColorRepository } from '../../../application/repositories/color.repository.interface';
-import { ColorDto, ColorListDto } from '../../../application/dto';
-import { ColorEntity } from '../entities/color.entity';
+
+import { ColorDto, ColorListDto } from '$application/dto';
+import { IColorRepository } from '$application/repositories';
+import { ColorEntity } from '$infrastructure/database/entities/color.entity';
 
 @Injectable()
 export class ColorRepository implements IColorRepository {

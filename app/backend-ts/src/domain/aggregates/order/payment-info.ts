@@ -1,6 +1,5 @@
-import { PaymentMethodId } from '../../value-objects/identifiers';
-import { Money } from '../../value-objects/money';
-import { DomainError } from '../../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { Money, PaymentMethodId } from '$domain/value-objects';
 
 export class PaymentInfo {
   private constructor(

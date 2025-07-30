@@ -1,5 +1,4 @@
-import { ShippingMethodId } from '../value-objects/identifiers';
-import { Money } from '../value-objects/money';
+import { Money, ShippingMethodId } from '$domain/value-objects';
 
 export class ShippingMethod {
   private constructor(

@@ -1,4 +1,4 @@
-import { PhoneNumberError } from '../errors/domain.error';
+import { PhoneNumberError } from '$domain/errors/domain.error';
 
 export class PhoneNumber {
   private readonly phoneValue: string;

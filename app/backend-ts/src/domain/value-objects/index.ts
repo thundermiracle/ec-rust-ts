@@ -1,16 +1,16 @@
-export { Money } from './money';
+export { Address } from './address';
+export { Email } from './email';
 export {
-  ProductId,
-  SKUId,
-  DeliveryInfoId,
-  OrderId,
-  CustomerId,
   CategoryId,
   ColorId,
-  ShippingMethodId,
+  CustomerId,
+  DeliveryInfoId,
+  OrderId,
   PaymentMethodId,
+  ProductId,
+  ShippingMethodId,
+  SKUId,
 } from './identifiers';
-export { Email } from './email';
-export { PhoneNumber } from './phone-number';
-export { Address } from './address';
+export { Money } from './money';
 export { OrderNumber } from './order-number';
+export { PhoneNumber } from './phone-number';

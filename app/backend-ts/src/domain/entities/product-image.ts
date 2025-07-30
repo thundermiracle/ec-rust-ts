@@ -1,5 +1,5 @@
-import { ProductId } from '../value-objects/identifiers';
-import { DomainError } from '../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { ProductId } from '$domain/value-objects';
 
 export class ProductImage {
   private constructor(

@@ -1,8 +1,8 @@
-import { ProductId, CategoryId, ColorId } from '../value-objects/identifiers';
-import { Money } from '../value-objects/money';
-import { DomainError } from '../errors/domain.error';
-import { SKU } from './sku';
+import { DomainError } from '$domain/errors/domain.error';
+import { CategoryId, ColorId, Money, ProductId } from '$domain/value-objects';
+
 import { ProductImage } from './product-image';
+import { SKU } from './sku';
 import { Tag } from './tag';
 
 export class Product {

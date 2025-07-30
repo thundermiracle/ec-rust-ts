@@ -1,5 +1,5 @@
-import { Order } from '../../domain/aggregates';
-import { OrderNumber } from '../../domain/value-objects';
+import { Order } from '$domain/aggregates';
+import { OrderNumber } from '$domain/value-objects';
 
 export interface IOrderRepository {
   // Command methods - work with entities

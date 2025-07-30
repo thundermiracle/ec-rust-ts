@@ -1,13 +1,13 @@
-import { Product, SKU } from '../../../domain/entities';
+import { Product, SKU } from '$domain/entities';
 import {
-  ProductId,
   CategoryId,
-  SKUId,
   ColorId,
   Money,
-} from '../../../domain/value-objects';
-import { ProductEntity } from '../entities/product.entity';
-import { SkuEntity } from '../entities/sku.entity';
+  ProductId,
+  SKUId,
+} from '$domain/value-objects';
+import { ProductEntity } from '$infrastructure/database/entities/product.entity';
+import { SkuEntity } from '$infrastructure/database/entities/sku.entity';
 
 export class ProductMapper {
   static toDomain(entity: ProductEntity): Product {

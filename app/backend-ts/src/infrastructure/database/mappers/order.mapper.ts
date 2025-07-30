@@ -1,21 +1,22 @@
 import {
+  CustomerInfo,
   Order,
   OrderItem,
-  CustomerInfo,
-  ShippingInfo,
-  PaymentInfo,
   OrderStatus,
-} from '../../../domain/aggregates';
+  PaymentInfo,
+  ShippingInfo,
+} from '$domain/aggregates';
 import {
-  OrderId,
-  OrderNumber,
-  SKUId,
-  ProductId,
-  ShippingMethodId,
-  PaymentMethodId,
   Address,
   Money,
-} from '../../../domain/value-objects';
+  OrderId,
+  OrderNumber,
+  PaymentMethodId,
+  ProductId,
+  ShippingMethodId,
+  SKUId,
+} from '$domain/value-objects';
+
 import { OrderEntity } from '../entities/order.entity';
 import { OrderItemEntity } from '../entities/order-item.entity';
 

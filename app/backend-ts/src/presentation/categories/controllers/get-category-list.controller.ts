@@ -1,10 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { CategoryListResponse } from '../responses';
-import { CategoriesPresenter } from '../presenters';
-import { GetCategoryListQuery } from '../../../application/queries/models';
-import { CategoryListDto } from '../../../application/dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CategoryListDto } from '$application/dto';
+import { GetCategoryListQuery } from '$application/queries';
+import { CategoriesPresenter } from '$presentation/categories/presenters';
+import { CategoryListResponse } from '$presentation/categories/responses';
 
 @ApiTags('Categories')
 @Controller('categories')

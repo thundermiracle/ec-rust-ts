@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { IdentifierError } from '../errors/domain.error';
+
+import { IdentifierError } from '$domain/errors/domain.error';
 
 // UUID-based identifiers
 abstract class UuidIdentifier {

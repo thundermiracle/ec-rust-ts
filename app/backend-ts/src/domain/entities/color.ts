@@ -1,5 +1,5 @@
-import { ColorId } from '../value-objects/identifiers';
-import { DomainError } from '../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { ColorId } from '$domain/value-objects';
 
 export class ColorName {
   private constructor(private readonly value: string) {}

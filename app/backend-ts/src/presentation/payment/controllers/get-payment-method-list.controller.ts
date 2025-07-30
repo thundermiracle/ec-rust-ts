@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { PaymentMethodListResponse } from '../responses';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { PaymentMethodListDto } from '$application/dto';
+import { GetPaymentMethodListQuery } from '$application/queries/models';
+
 import { PaymentPresenter } from '../presenters';
-import { GetPaymentMethodListQuery } from '../../../application/queries/models';
-import { PaymentMethodListDto } from '../../../application/dto';
+import { PaymentMethodListResponse } from '../responses';
 
 @ApiTags('Payment')
 @Controller('payment-methods')

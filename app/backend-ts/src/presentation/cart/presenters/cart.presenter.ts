@@ -1,4 +1,5 @@
-import { CalculateCartResultDto } from '../../../application/dto';
+import { CalculateCartResultDto } from '$application/dto';
+
 import {
   CalculateCartResponse,
   CalculatedCartItemResponse,

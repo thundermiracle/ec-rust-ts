@@ -1,8 +1,9 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetShippingMethodListQuery } from '../models/get-product.query';
-import { ShippingMethodListDto } from '../../dto/shipping-method.dto';
-import { IShippingMethodRepository } from '../../repositories/shipping-method.repository.interface';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { ShippingMethodListDto } from '$application/dto';
+import { GetShippingMethodListQuery } from '$application/queries';
+import { IShippingMethodRepository } from '$application/repositories';
 
 @QueryHandler(GetShippingMethodListQuery)
 export class GetShippingMethodListHandler

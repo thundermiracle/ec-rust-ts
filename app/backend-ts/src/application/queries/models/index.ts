@@ -1,9 +1,9 @@
 export {
-  GetProductQuery,
-  GetProductListQuery,
   FindVariantsQuery,
   GetCategoryListQuery,
   GetColorListQuery,
-  GetShippingMethodListQuery,
   GetPaymentMethodListQuery,
+  GetProductListQuery,
+  GetProductQuery,
+  GetShippingMethodListQuery,
 } from './get-product.query';

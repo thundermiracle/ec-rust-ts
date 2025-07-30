@@ -1,6 +1,6 @@
-import { Category } from '../../domain/entities';
-import { CategoryId } from '../../domain/value-objects';
-import { CategoryListDto } from '../dto';
+import { CategoryListDto } from '$application/dto';
+import { Category } from '$domain/entities';
+import { CategoryId } from '$domain/value-objects';
 
 export interface ICategoryRepository {
   // Query methods - return DTOs

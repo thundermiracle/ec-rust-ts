@@ -1,28 +1,31 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { CalculateCartCommand } from '../models/calculate-cart.command';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+
+import { CalculateCartCommand } from '$application/commands';
 import {
   CalculateCartResultDto,
   CalculatedCartItemDto,
-} from '../../dto/calculate-cart-result.dto';
-import { IProductRepository } from '../../repositories/product.repository.interface';
-import { IShippingMethodRepository } from '../../repositories/shipping-method.repository.interface';
-import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
-import { VariantSummaryDto } from '../../dto/variant-summary.dto';
-import { Cart, CartItem } from '../../../domain/aggregates';
+  VariantSummaryDto,
+} from '$application/dto';
 import {
-  SKUId,
-  ProductId,
-  ShippingMethodId,
-  PaymentMethodId,
-  Money,
-} from '../../../domain/value-objects';
-import {
-  ValidationError,
-  NotFoundError,
   BusinessRuleViolationError,
   InsufficientStockError,
-} from '../../errors/application.error';
+  NotFoundError,
+  ValidationError,
+} from '$application/errors/application.error';
+import {
+  IPaymentMethodRepository,
+  IProductRepository,
+  IShippingMethodRepository,
+} from '$application/repositories';
+import { Cart, CartItem } from '$domain/aggregates';
+import {
+  Money,
+  PaymentMethodId,
+  ProductId,
+  ShippingMethodId,
+  SKUId,
+} from '$domain/value-objects';
 
 @CommandHandler(CalculateCartCommand)
 export class CalculateCartHandler

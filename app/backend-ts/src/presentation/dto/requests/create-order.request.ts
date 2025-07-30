@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsString,
+  IsEmail,
   IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
   Min,
   ValidateNested,
-  IsEmail,
-  IsOptional,
-  Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class CreateOrderItemRequest {
   @ApiProperty({

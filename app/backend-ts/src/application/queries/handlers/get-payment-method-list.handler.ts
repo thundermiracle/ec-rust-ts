@@ -1,8 +1,9 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetPaymentMethodListQuery } from '../models/get-product.query';
-import { PaymentMethodListDto } from '../../dto/payment-method.dto';
-import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { PaymentMethodListDto } from '$application/dto';
+import { GetPaymentMethodListQuery } from '$application/queries';
+import { IPaymentMethodRepository } from '$application/repositories';
 
 @QueryHandler(GetPaymentMethodListQuery)
 export class GetPaymentMethodListHandler

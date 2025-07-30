@@ -1,11 +1,12 @@
 import {
-  Entity,
   Column,
-  PrimaryColumn,
-  OneToMany,
   CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { OrderItemEntity } from './order-item.entity';
 
 @Entity('orders')

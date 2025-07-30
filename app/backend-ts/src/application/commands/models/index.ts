@@ -4,7 +4,7 @@ export {
 } from './calculate-cart.command';
 export {
   CreateOrderCommand,
-  CreateOrderCommandItem,
   CreateOrderCommandCustomerInfo,
+  CreateOrderCommandItem,
   CreateOrderCommandShippingAddress,
 } from './create-order.command';

@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { CqrsModule } from '@nestjs/cqrs';
-import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 // Domain-based Controllers
 import { CalculateCartController } from './cart';
-import { GetProductListController, GetProductController } from './products';
-import { CreateOrderController } from './orders';
-import { FindVariantsController } from './variants';
 import { GetCategoryListController } from './categories';
 import { GetColorListController } from './colors';
-import { GetShippingMethodListController } from './shipping';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { CreateOrderController } from './orders';
 import { GetPaymentMethodListController } from './payment';
+import { GetProductController, GetProductListController } from './products';
+import { GetShippingMethodListController } from './shipping';
+import { FindVariantsController } from './variants';
 
 const controllers = [
   CalculateCartController,

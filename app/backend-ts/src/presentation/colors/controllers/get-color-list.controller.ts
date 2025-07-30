@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ColorListResponse } from '../responses';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { ColorListDto } from '$application/dto';
+import { GetColorListQuery } from '$application/queries/models';
+
 import { ColorsPresenter } from '../presenters';
-import { GetColorListQuery } from '../../../application/queries/models';
-import { ColorListDto } from '../../../application/dto';
+import { ColorListResponse } from '../responses';
 
 @ApiTags('Colors')
 @Controller('colors')

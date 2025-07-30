@@ -1,15 +1,12 @@
+import { ProductDto, ProductListDto, VariantDto } from '$application/dto';
+
 import {
-  ProductListDto,
-  ProductDto,
-  VariantDto,
-} from '../../../application/dto';
-import {
-  ProductListResponse,
   ProductDetailResponse,
+  ProductListItemResponse,
+  ProductListResponse,
+  ProductListSimpleResponse,
   ProductResponse,
   VariantResponse,
-  ProductListSimpleResponse,
-  ProductListItemResponse,
   VariantSimpleResponse,
 } from '../responses';
 

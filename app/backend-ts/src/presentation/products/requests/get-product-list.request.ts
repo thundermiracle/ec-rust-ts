@@ -1,7 +1,8 @@
-import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { GetProductListQuery } from '../../../application/queries/models';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+
+import { GetProductListQuery } from '$application/queries/models';
 
 export class GetProductListRequest {
   @ApiPropertyOptional({ description: 'Filter by category ID' })

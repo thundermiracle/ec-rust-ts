@@ -1,16 +1,17 @@
 import {
-  Entity,
   Column,
-  PrimaryColumn,
-  OneToMany,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { SkuEntity } from './sku.entity';
+
 import { CategoryEntity } from './category.entity';
 import { ProductImageEntity } from './product-image.entity';
+import { SkuEntity } from './sku.entity';
 
 @Entity('products')
 export class ProductEntity {

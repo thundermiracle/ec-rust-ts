@@ -1,14 +1,15 @@
 import {
-  Entity,
   Column,
-  PrimaryColumn,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ProductEntity } from './product.entity';
+
 import { ColorEntity } from './color.entity';
+import { ProductEntity } from './product.entity';
 
 @Entity('skus')
 export class SkuEntity {

@@ -1,6 +1,5 @@
-import { SKUId, ProductId } from '../../value-objects/identifiers';
-import { Money } from '../../value-objects/money';
-import { DomainError } from '../../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { Money, ProductId, SKUId } from '$domain/value-objects';
 
 export class CartItem {
   private constructor(

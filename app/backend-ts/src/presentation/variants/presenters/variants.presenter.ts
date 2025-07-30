@@ -1,11 +1,9 @@
+import { FindVariantsItemDto, VariantSummaryDto } from '$application/dto';
+
 import {
-  VariantSummaryDto,
-  FindVariantsItemDto,
-} from '../../../application/dto';
-import {
-  VariantSummaryResponse,
-  FindVariantsResponse,
   FindVariantsItemResponse,
+  FindVariantsResponse,
+  VariantSummaryResponse,
 } from '../responses';
 
 export class VariantsPresenter {

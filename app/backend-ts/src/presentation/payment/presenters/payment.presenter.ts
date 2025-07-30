@@ -1,7 +1,5 @@
-import {
-  PaymentMethodListDto,
-  PaymentMethodDto,
-} from '../../../application/dto';
+import { PaymentMethodDto, PaymentMethodListDto } from '$application/dto';
+
 import { PaymentMethodListResponse, PaymentMethodResponse } from '../responses';
 
 export class PaymentPresenter {

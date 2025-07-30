@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { IShippingMethodRepository } from '../../../application/repositories/shipping-method.repository.interface';
-import { ShippingMethod } from '../../../domain';
-import { ShippingMethodId, Money } from '../../../domain/value-objects';
-import {
-  ShippingMethodDto,
-  ShippingMethodListDto,
-} from '../../../application/dto';
+
+import { ShippingMethodDto, ShippingMethodListDto } from '$application/dto';
+import { IShippingMethodRepository } from '$application/repositories/shipping-method.repository.interface';
+import { ShippingMethod } from '$domain/entities';
+import { Money, ShippingMethodId } from '$domain/value-objects';
+
 import { ShippingMethodEntity } from '../entities/shipping-method.entity';
 
 @Injectable()

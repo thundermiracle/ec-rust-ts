@@ -1,19 +1,20 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+
 import {
   ApplicationError,
-  ValidationError,
-  NotFoundError,
   BusinessRuleViolationError,
   InsufficientStockError,
-} from '../../application/errors/application.error';
-import { DomainError } from '../../domain/errors/domain.error';
+  NotFoundError,
+  ValidationError,
+} from '$application/errors/application.error';
+import { DomainError } from '$domain/errors/domain.error';
 
 interface ErrorResponse {
   statusCode: number;

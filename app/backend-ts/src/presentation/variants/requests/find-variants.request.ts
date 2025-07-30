@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString } from 'class-validator';
-import { FindVariantsQuery } from '../../../application/queries/models';
+
+import { FindVariantsQuery } from '$application/queries/models';
 
 export class FindVariantsRequest {
   @ApiProperty({

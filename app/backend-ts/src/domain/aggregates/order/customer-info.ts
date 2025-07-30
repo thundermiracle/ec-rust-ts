@@ -1,6 +1,5 @@
-import { Email } from '../../value-objects/email';
-import { PhoneNumber } from '../../value-objects/phone-number';
-import { DomainError } from '../../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { Email, PhoneNumber } from '$domain/value-objects';
 
 export class PersonalInfo {
   private constructor(

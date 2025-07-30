@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ShippingMethodListResponse } from '../responses';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { ShippingMethodListDto } from '$application/dto';
+import { GetShippingMethodListQuery } from '$application/queries/models';
+
 import { ShippingPresenter } from '../presenters';
-import { GetShippingMethodListQuery } from '../../../application/queries/models';
-import { ShippingMethodListDto } from '../../../application/dto';
+import { ShippingMethodListResponse } from '../responses';
 
 @ApiTags('Shipping')
 @Controller('shipping-methods')

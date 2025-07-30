@@ -1,5 +1,4 @@
-import { PaymentMethodId } from '../value-objects/identifiers';
-import { Money } from '../value-objects/money';
+import { Money, PaymentMethodId } from '$domain/value-objects';
 
 export class PaymentMethod {
   private constructor(

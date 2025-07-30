@@ -1,4 +1,5 @@
-import { ColorListDto, ColorDto } from '../../../application/dto';
+import { ColorDto, ColorListDto } from '$application/dto';
+
 import { ColorListResponse, ColorResponse } from '../responses';
 
 export class ColorsPresenter {

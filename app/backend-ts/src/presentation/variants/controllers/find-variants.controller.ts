@@ -1,11 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { FindVariantsItemDto } from '$application/dto';
+import { FindVariantsQuery } from '$application/queries/models';
+
+import { VariantsPresenter } from '../presenters';
 import { FindVariantsRequest } from '../requests';
 import { FindVariantsResponse } from '../responses';
-import { VariantsPresenter } from '../presenters';
-import { FindVariantsQuery } from '../../../application/queries/models';
-import { FindVariantsItemDto } from '../../../application/dto';
 
 @ApiTags('Variants')
 @Controller('variants')

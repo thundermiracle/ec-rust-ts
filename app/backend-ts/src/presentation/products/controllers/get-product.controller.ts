@@ -1,10 +1,12 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-import { ProductDetailResponse } from '../responses';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { ProductDto } from '$application/dto';
+import { GetProductQuery } from '$application/queries/models';
+
 import { ProductsPresenter } from '../presenters';
-import { GetProductQuery } from '../../../application/queries/models';
-import { ProductDto } from '../../../application/dto';
+import { ProductDetailResponse } from '../responses';
 
 @ApiTags('Products')
 @Controller('products')

@@ -1,4 +1,5 @@
-import { CreateOrderResultDto } from '../../../application/dto';
+import { CreateOrderResultDto } from '$application/dto';
+
 import { CreateOrderResponse } from '../responses';
 
 export class OrdersPresenter {

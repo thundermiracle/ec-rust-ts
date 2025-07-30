@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { IPaymentMethodRepository } from '../../../application/repositories/payment-method.repository.interface';
-import { PaymentMethod } from '../../../domain';
-import { PaymentMethodId, Money } from '../../../domain/value-objects';
-import {
-  PaymentMethodDto,
-  PaymentMethodListDto,
-} from '../../../application/dto';
+
+import { PaymentMethodDto, PaymentMethodListDto } from '$application/dto';
+import { IPaymentMethodRepository } from '$application/repositories/payment-method.repository.interface';
+import { PaymentMethod } from '$domain/entities';
+import { Money, PaymentMethodId } from '$domain/value-objects';
+
 import { PaymentMethodEntity } from '../entities/payment-method.entity';
 
 @Injectable()

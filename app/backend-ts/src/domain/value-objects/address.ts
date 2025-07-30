@@ -1,4 +1,4 @@
-import { AddressError } from '../errors/domain.error';
+import { AddressError } from '$domain/errors/domain.error';
 
 export class Address {
   private constructor(

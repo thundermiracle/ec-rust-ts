@@ -1,6 +1,6 @@
-import { PaymentMethodId } from '../../domain/value-objects';
-import { PaymentMethodListDto } from '../dto';
-import { PaymentMethod } from '../../domain';
+import { PaymentMethodListDto } from '$application/dto';
+import { PaymentMethod } from '$domain/entities';
+import { PaymentMethodId } from '$domain/value-objects';
 
 export interface IPaymentMethodRepository {
   // Query methods - return DTOs

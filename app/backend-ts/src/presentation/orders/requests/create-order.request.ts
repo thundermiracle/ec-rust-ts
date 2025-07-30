@@ -1,22 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsString,
+  IsEmail,
   IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
   Min,
   ValidateNested,
-  IsEmail,
-  IsOptional,
-  Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { IRequest } from '../../base';
+
 import {
   CreateOrderCommand,
-  CreateOrderCommandItem,
   CreateOrderCommandCustomerInfo,
+  CreateOrderCommandItem,
   CreateOrderCommandShippingAddress,
-} from '../../../application/commands/models';
+} from '$application/commands/models';
+
+import { IRequest } from '../../base';
 
 export class CreateOrderItemRequest {
   @ApiProperty({

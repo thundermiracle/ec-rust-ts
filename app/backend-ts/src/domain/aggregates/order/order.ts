@@ -1,14 +1,12 @@
-import { OrderId } from '../../value-objects/identifiers';
-import { OrderNumber } from '../../value-objects/order-number';
-import { DomainError } from '../../errors/domain.error';
-import { OrderItem } from './order-item';
+import { SKU } from '$domain/entities';
+import { DomainError } from '$domain/errors/domain.error';
+import { Address, Money, OrderId, OrderNumber } from '$domain/value-objects';
+
 import { CustomerInfo } from './customer-info';
-import { ShippingInfo } from './shipping-info';
-import { PaymentInfo } from './payment-info';
+import { OrderItem } from './order-item';
 import { OrderPricing } from './order-pricing';
-import { SKU } from '../../entities/sku';
-import { Address } from '../../value-objects/address';
-import { Money } from '../../value-objects/money';
+import { PaymentInfo } from './payment-info';
+import { ShippingInfo } from './shipping-info';
 
 export enum OrderStatus {
   Pending = 'pending',

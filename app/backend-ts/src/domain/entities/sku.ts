@@ -1,6 +1,5 @@
-import { SKUId, ProductId, ColorId } from '../value-objects/identifiers';
-import { Money } from '../value-objects/money';
-import { DomainError } from '../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { ColorId, Money, ProductId, SKUId } from '$domain/value-objects';
 
 export enum SKUStatus {
   Active = 'Active',

@@ -1,8 +1,9 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetColorListQuery } from '../models/get-product.query';
-import { ColorListDto } from '../../dto/color.dto';
-import { IColorRepository } from '../../repositories/color.repository.interface';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { ColorListDto } from '$application/dto';
+import { GetColorListQuery } from '$application/queries';
+import { IColorRepository } from '$application/repositories';
 
 @QueryHandler(GetColorListQuery)
 export class GetColorListHandler implements IQueryHandler<GetColorListQuery> {

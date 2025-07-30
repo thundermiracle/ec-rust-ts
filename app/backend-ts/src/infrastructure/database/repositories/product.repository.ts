@@ -1,25 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { IProductRepository } from '../../../application/repositories/product.repository.interface';
-import {
-  ProductId,
-  SKUId,
-  CategoryId,
-  ColorId,
-  Money,
-} from '../../../domain/value-objects';
+import { In, Repository } from 'typeorm';
+
 import {
   ProductDto,
   ProductListDto,
   ProductSummaryDto,
   VariantDto,
-} from '../../../application/dto';
-import { VariantSummaryDto } from '../../../application/dto/variant-summary.dto';
-import { FindVariantsItemDto } from '../../../application/dto/find-variants.dto';
+} from '$application/dto';
+import { FindVariantsItemDto } from '$application/dto/find-variants.dto';
+import { VariantSummaryDto } from '$application/dto/variant-summary.dto';
+import { IProductRepository } from '$application/repositories/product.repository.interface';
+import { SKU, VariantAttributes } from '$domain/entities/sku';
+import {
+  CategoryId,
+  ColorId,
+  Money,
+  ProductId,
+  SKUId,
+} from '$domain/value-objects';
+
 import { ProductEntity } from '../entities/product.entity';
 import { SkuEntity } from '../entities/sku.entity';
-import { SKU, VariantAttributes } from '../../../domain/entities/sku';
 
 @Injectable()
 export class ProductRepository implements IProductRepository {

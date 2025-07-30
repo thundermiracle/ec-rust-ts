@@ -1,20 +1,26 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { CreateOrderCommand } from '../models/create-order.command';
-import { CreateOrderResultDto } from '../../dto/create-order-result.dto';
-import { IProductRepository } from '../../repositories/product.repository.interface';
-import { IShippingMethodRepository } from '../../repositories/shipping-method.repository.interface';
-import { IPaymentMethodRepository } from '../../repositories/payment-method.repository.interface';
-import { IOrderRepository } from '../../repositories/order.repository.interface';
-import { Order, CustomerInfo } from '../../../domain/aggregates';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+
+import { CreateOrderCommand } from '$application/commands';
+import { CreateOrderResultDto } from '$application/dto';
 import {
-  OrderId,
-  SKUId,
-  ShippingMethodId,
-  PaymentMethodId,
+  NotFoundError,
+  ValidationError,
+} from '$application/errors/application.error';
+import {
+  IOrderRepository,
+  IPaymentMethodRepository,
+  IProductRepository,
+  IShippingMethodRepository,
+} from '$application/repositories';
+import { CustomerInfo, Order } from '$domain/aggregates';
+import {
   Address,
-} from '../../../domain/value-objects';
-import { ValidationError, NotFoundError } from '../../errors/application.error';
+  OrderId,
+  PaymentMethodId,
+  ShippingMethodId,
+  SKUId,
+} from '$domain/value-objects';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand> {

@@ -1,4 +1,5 @@
-import { CategoryListDto, CategoryDto } from '../../../application/dto';
+import { CategoryDto, CategoryListDto } from '$application/dto';
+
 import { CategoryListResponse, CategoryResponse } from '../responses';
 
 export class CategoriesPresenter {

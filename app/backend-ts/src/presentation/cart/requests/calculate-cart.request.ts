@@ -1,19 +1,21 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
-  IsString,
   IsNotEmpty,
   IsNumber,
+  IsString,
   Min,
   ValidateNested,
-  ArrayMinSize,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { IRequest } from '../../base';
+
 import {
   CalculateCartCommand,
   CalculateCartCommandItem,
-} from '../../../application/commands/models';
+} from '$application/commands/models';
+
+import { IRequest } from '../../base';
 
 export class CalculateCartItemRequest {
   @ApiProperty({ description: 'SKU ID of the product variant' })

@@ -1,6 +1,6 @@
-import { Category } from '../../../domain/entities';
-import { CategoryId } from '../../../domain/value-objects';
-import { CategoryEntity } from '../entities/category.entity';
+import { Category } from '$domain/entities';
+import { CategoryId } from '$domain/value-objects';
+import { CategoryEntity } from '$infrastructure/database/entities/category.entity';
 
 export class CategoryMapper {
   static toDomain(entity: CategoryEntity): Category {

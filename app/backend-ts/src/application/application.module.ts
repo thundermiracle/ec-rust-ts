@@ -3,16 +3,15 @@ import { CqrsModule } from '@nestjs/cqrs';
 
 // Command Handlers
 import { CalculateCartHandler, CreateOrderHandler } from './commands/handlers';
-
 // Query Handlers
 import {
-  GetProductListHandler,
-  GetProductHandler,
   FindVariantsHandler,
   GetCategoryListHandler,
   GetColorListHandler,
-  GetShippingMethodListHandler,
   GetPaymentMethodListHandler,
+  GetProductHandler,
+  GetProductListHandler,
+  GetShippingMethodListHandler,
 } from './queries/handlers';
 
 const commandHandlers = [CalculateCartHandler, CreateOrderHandler];

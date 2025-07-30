@@ -1,6 +1,6 @@
-import { Color } from '../../../domain/entities';
-import { ColorId } from '../../../domain/value-objects';
-import { ColorEntity } from '../entities/color.entity';
+import { Color } from '$domain/entities';
+import { ColorId } from '$domain/value-objects';
+import { ColorEntity } from '$infrastructure/database/entities/color.entity';
 
 export class ColorMapper {
   static toDomain(entity: ColorEntity): Color {

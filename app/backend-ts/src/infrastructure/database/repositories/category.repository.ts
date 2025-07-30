@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ICategoryRepository } from '../../../application/repositories/category.repository.interface';
-import { Category } from '../../../domain/entities';
-import { CategoryId } from '../../../domain/value-objects';
-import { CategoryDto, CategoryListDto } from '../../../application/dto';
-import { CategoryEntity } from '../entities/category.entity';
-import { CategoryMapper } from '../mappers/category.mapper';
+
+import { CategoryDto, CategoryListDto } from '$application/dto';
+import { ICategoryRepository } from '$application/repositories';
+import { Category } from '$domain/entities';
+import { CategoryId } from '$domain/value-objects';
+import { CategoryEntity } from '$infrastructure/database/entities/category.entity';
+import { CategoryMapper } from '$infrastructure/database/mappers/category.mapper';
 
 @Injectable()
 export class CategoryRepository implements ICategoryRepository {

@@ -1,5 +1,5 @@
-import { CategoryId } from '../value-objects/identifiers';
-import { DomainError } from '../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { CategoryId } from '$domain/value-objects';
 
 export class Category {
   private constructor(

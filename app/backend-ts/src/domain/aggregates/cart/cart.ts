@@ -1,8 +1,8 @@
-import { SKUId } from '../../value-objects/identifiers';
-import { Money } from '../../value-objects/money';
-import { DomainError } from '../../errors/domain.error';
+import { PaymentMethod, ShippingMethod } from '$domain/entities';
+import { DomainError } from '$domain/errors/domain.error';
+import { Money, SKUId } from '$domain/value-objects';
+
 import { CartItem } from './cart-item';
-import { ShippingMethod, PaymentMethod } from '../../entities';
 
 export class Cart {
   private readonly items: Map<string, CartItem> = new Map();

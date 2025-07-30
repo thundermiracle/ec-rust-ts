@@ -1,6 +1,6 @@
-import { ShippingMethodId } from '../../domain/value-objects';
-import { ShippingMethodListDto } from '../dto';
-import { ShippingMethod } from '../../domain';
+import { ShippingMethodListDto } from '$application/dto';
+import { ShippingMethod } from '$domain/entities';
+import { ShippingMethodId } from '$domain/value-objects';
 
 export interface IShippingMethodRepository {
   // Query methods - return DTOs

@@ -1,4 +1,4 @@
-import { EmailError } from '../errors/domain.error';
+import { EmailError } from '$domain/errors/domain.error';
 
 export class Email {
   private readonly emailValue: string;

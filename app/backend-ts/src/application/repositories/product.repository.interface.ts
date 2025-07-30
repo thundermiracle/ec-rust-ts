@@ -1,8 +1,11 @@
-import { ProductId, SKUId, CategoryId } from '../../domain/value-objects';
-import { ProductDto, ProductListDto } from '../dto';
-import { VariantSummaryDto } from '../dto/variant-summary.dto';
-import { FindVariantsItemDto } from '../dto/find-variants.dto';
-import { SKU } from '../../domain/entities/sku';
+import {
+  FindVariantsItemDto,
+  ProductDto,
+  ProductListDto,
+  VariantSummaryDto,
+} from '$application/dto';
+import { SKU } from '$domain/entities';
+import { CategoryId, ProductId, SKUId } from '$domain/value-objects';
 
 export interface IProductRepository {
   // Query methods - return DTOs

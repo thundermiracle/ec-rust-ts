@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import { VariantSimpleResponse } from './variant-simple.response';
 
 export class ProductDetailResponse {

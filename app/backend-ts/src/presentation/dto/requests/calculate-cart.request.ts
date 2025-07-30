@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsString,
   IsNumber,
+  IsString,
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class CalculateCartItemRequest {
   @ApiProperty({

@@ -1,10 +1,11 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { FindVariantsQuery } from '../models/get-product.query';
-import { FindVariantsItemDto } from '../../dto/find-variants.dto';
-import { IProductRepository } from '../../repositories/product.repository.interface';
-import { SKUId } from '../../../domain/value-objects';
-import { ValidationError } from '../../errors/application.error';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { FindVariantsItemDto } from '$application/dto';
+import { ValidationError } from '$application/errors/application.error';
+import { FindVariantsQuery } from '$application/queries';
+import { IProductRepository } from '$application/repositories';
+import { SKUId } from '$domain/value-objects';
 
 @QueryHandler(FindVariantsQuery)
 export class FindVariantsHandler implements IQueryHandler<FindVariantsQuery> {

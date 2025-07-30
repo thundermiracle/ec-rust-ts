@@ -1,4 +1,4 @@
-import { Money } from '../../value-objects/money';
+import { Money } from '$domain/value-objects';
 
 export class OrderPricing {
   private constructor(

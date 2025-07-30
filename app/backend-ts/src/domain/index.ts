@@ -1,4 +1,4 @@
-export * from './entities';
 export * from './aggregates';
-export * from './value-objects';
+export * from './entities';
 export * from './errors/domain.error';
+export * from './value-objects';

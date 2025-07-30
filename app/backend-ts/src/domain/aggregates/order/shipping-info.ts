@@ -1,7 +1,5 @@
-import { ShippingMethodId } from '../../value-objects/identifiers';
-import { Address } from '../../value-objects/address';
-import { Money } from '../../value-objects/money';
-import { DomainError } from '../../errors/domain.error';
+import { DomainError } from '$domain/errors/domain.error';
+import { Address, Money, ShippingMethodId } from '$domain/value-objects';
 
 export class ShippingInfo {
   private constructor(

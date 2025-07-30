@@ -1,4 +1,4 @@
-import { ColorListDto } from '../dto';
+import { ColorListDto } from '$application/dto';
 
 export interface IColorRepository {
   // Query methods - return DTOs

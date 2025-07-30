@@ -1,7 +1,5 @@
-import {
-  ShippingMethodListDto,
-  ShippingMethodDto,
-} from '../../../application/dto';
+import { ShippingMethodDto, ShippingMethodListDto } from '$application/dto';
+
 import {
   ShippingMethodListResponse,
   ShippingMethodResponse,

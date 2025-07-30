@@ -1,8 +1,9 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetCategoryListQuery } from '../models/get-product.query';
-import { CategoryListDto } from '../../dto/category.dto';
-import { ICategoryRepository } from '../../repositories/category.repository.interface';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { CategoryListDto } from '$application/dto';
+import { GetCategoryListQuery } from '$application/queries';
+import { ICategoryRepository } from '$application/repositories';
 
 @QueryHandler(GetCategoryListQuery)
 export class GetCategoryListHandler

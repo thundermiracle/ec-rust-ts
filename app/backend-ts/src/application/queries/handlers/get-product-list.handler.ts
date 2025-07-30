@@ -1,11 +1,17 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetProductListQuery } from '../models/get-product.query';
-import { ProductListDto } from '../../dto/product.dto';
-import { IProductRepository } from '../../repositories/product.repository.interface';
-import { ICategoryRepository } from '../../repositories/category.repository.interface';
-import { CategoryId } from '../../../domain/value-objects';
-import { ValidationError, NotFoundError } from '../../errors/application.error';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+
+import { ProductListDto } from '$application/dto';
+import {
+  NotFoundError,
+  ValidationError,
+} from '$application/errors/application.error';
+import { GetProductListQuery } from '$application/queries';
+import {
+  ICategoryRepository,
+  IProductRepository,
+} from '$application/repositories';
+import { CategoryId } from '$domain/value-objects';
 
 @QueryHandler(GetProductListQuery)
 export class GetProductListHandler
