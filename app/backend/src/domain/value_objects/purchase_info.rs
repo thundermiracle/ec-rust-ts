@@ -1,5 +1,4 @@
 use crate::domain::aggregates::CartItem;
-use crate::domain::error::DomainError;
 use crate::domain::value_objects::Money;
 
 /// 購入情報値オブジェクト
@@ -17,30 +16,19 @@ pub struct PurchaseInfo {
 }
 
 impl PurchaseInfo {
-    /// カートアイテムのリストから作成（小計は自動計算）
-    pub fn from_cart_items(
+    /// 計算済みデータから作成
+    pub fn new(
         cart_items: Vec<CartItem>,
+        subtotal: Money,
         shipping_fee: Option<Money>,
         payment_fee: Option<Money>,
-    ) -> Result<Self, DomainError> {
-        let subtotal = Self::calculate_subtotal(&cart_items)?;
-
-        Ok(Self {
+    ) -> Self {
+        Self {
             cart_items,
             subtotal,
             shipping_fee,
             payment_fee,
-        })
-    }
-
-    /// カートアイテムから小計を計算
-    fn calculate_subtotal(cart_items: &[CartItem]) -> Result<Money, DomainError> {
-        let mut subtotal = Money::from_yen(0);
-        for item in cart_items {
-            let item_subtotal = item.subtotal()?;
-            subtotal = subtotal.add(item_subtotal)?;
         }
-        Ok(subtotal)
     }
 
     /// 配送料と支払い手数料を含まない総額（商品のみ）
@@ -88,8 +76,8 @@ mod tests {
         let shipping_fee = Some(Money::from_yen(500));
         let payment_fee = Some(Money::from_yen(100));
 
-        let purchase_info =
-            PurchaseInfo::from_cart_items(items, shipping_fee, payment_fee).unwrap();
+        let subtotal = Money::from_yen(4000); // (1000 * 2) + (2000 * 1)
+        let purchase_info = PurchaseInfo::new(items, subtotal, shipping_fee, payment_fee);
 
         assert_eq!(purchase_info.subtotal().yen(), 4000); // (1000 * 2) + (2000 * 1)
     }
@@ -97,7 +85,8 @@ mod tests {
     #[test]
     fn meets_minimum_amount_check() {
         let items = vec![create_test_cart_item("Product", 1000, 1)];
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(1000);
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         assert!(purchase_info.meets_minimum_amount(Money::from_yen(1000)));
         assert!(purchase_info.meets_minimum_amount(Money::from_yen(500)));
@@ -118,7 +107,8 @@ mod tests {
         )
         .unwrap();
 
-        let purchase_info = PurchaseInfo::from_cart_items(vec![item], None, None).unwrap();
+        let subtotal = Money::from_yen(1000);
+        let purchase_info = PurchaseInfo::new(vec![item], subtotal, None, None);
 
         assert!(purchase_info.contains_product(&product_id));
 

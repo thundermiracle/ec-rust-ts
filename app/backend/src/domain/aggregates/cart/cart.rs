@@ -80,7 +80,7 @@ impl Cart {
 
         // クーポンの適用
         if let Some(coupon) = &self.coupon {
-            let purchase_info = self.to_purchase_info()?;
+            let purchase_info = self.to_purchase_info(subtotal)?;
             let discount_result = CouponDiscountService::apply_coupon(coupon, &purchase_info)?;
             subtotal = subtotal.subtract(discount_result.discount_amount)?;
         }
@@ -228,8 +228,13 @@ impl Cart {
 
     /// PurchaseInfoに変換
     /// クーポン割引計算に必要な情報を集約したPurchaseInfoを生成
-    fn to_purchase_info(&self) -> Result<PurchaseInfo, DomainError> {
-        PurchaseInfo::from_cart_items(self.items.clone(), self.shipping_fee, self.payment_fee)
+    fn to_purchase_info(&self, items_subtotal: Money) -> Result<PurchaseInfo, DomainError> {
+        Ok(PurchaseInfo::new(
+            self.items.clone(),
+            items_subtotal,
+            self.shipping_fee,
+            self.payment_fee,
+        ))
     }
 }
 
@@ -375,7 +380,8 @@ mod tests {
         cart.shipping_fee = Some(Money::from_yen(500));
         cart.payment_fee = Some(Money::from_yen(100));
 
-        let purchase_info = cart.to_purchase_info().unwrap();
+        let subtotal = Money::from_yen(3500); // (1000 * 2) + (1500 * 1)
+        let purchase_info = cart.to_purchase_info(subtotal).unwrap();
 
         assert_eq!(purchase_info.subtotal().yen(), 3500); // (1000 * 2) + (1500 * 1)
         assert!(purchase_info.meets_minimum_amount(Money::from_yen(3000)));
@@ -388,7 +394,8 @@ mod tests {
         let item = create_test_cart_item("Product", 2000, 1);
         cart.add_item(item).unwrap();
 
-        let purchase_info = cart.to_purchase_info().unwrap();
+        let subtotal = Money::from_yen(2000);
+        let purchase_info = cart.to_purchase_info(subtotal).unwrap();
 
         assert_eq!(purchase_info.subtotal().yen(), 2000);
     }

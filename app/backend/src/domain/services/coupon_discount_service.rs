@@ -184,7 +184,8 @@ mod tests {
         let coupon = create_valid_coupon("SAVE20", "20% Off", DiscountType::Percentage(20), None);
 
         let items = vec![create_test_cart_item("Product", 1000, 2)];
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(2000); // 1000 * 2
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info).unwrap();
 
@@ -203,7 +204,8 @@ mod tests {
         );
 
         let items = vec![create_test_cart_item("Product", 1000, 2)];
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(2000); // 1000 * 2
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info).unwrap();
 
@@ -221,7 +223,8 @@ mod tests {
         );
 
         let items = vec![create_test_cart_item("Product", 1000, 2)];
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(2000); // 1000 * 2
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info).unwrap();
 
@@ -239,7 +242,8 @@ mod tests {
         );
 
         let items = vec![create_test_cart_item("Product", 3000, 2)]; // 6000円
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(2000); // 1000 * 2
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info).unwrap();
 
@@ -257,7 +261,8 @@ mod tests {
         );
 
         let items = vec![create_test_cart_item("Product", 2000, 1)]; // 2000円
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(2000); // 1000 * 2
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info);
 
@@ -291,7 +296,8 @@ mod tests {
         )
         .unwrap();
 
-        let purchase_info = PurchaseInfo::from_cart_items(vec![item], None, None).unwrap();
+        let subtotal = Money::from_yen(1000); // 1000 * 1
+        let purchase_info = PurchaseInfo::new(vec![item], subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info).unwrap();
 
@@ -311,7 +317,8 @@ mod tests {
         );
 
         let items = vec![create_test_cart_item("Other Product", 1000, 1)];
-        let purchase_info = PurchaseInfo::from_cart_items(items, None, None).unwrap();
+        let subtotal = Money::from_yen(2000); // 1000 * 2
+        let purchase_info = PurchaseInfo::new(items, subtotal, None, None);
 
         let result = CouponDiscountService::apply_coupon(&coupon, &purchase_info);
 
