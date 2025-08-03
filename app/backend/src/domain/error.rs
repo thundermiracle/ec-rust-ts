@@ -16,6 +16,8 @@ pub enum DomainError {
     BusinessRuleViolation(String),
     /// 無効な商品状態エラー
     InvalidProductState(String),
+    /// 無効なクーポン
+    InvalidCoupon { code: String, message: String },
 }
 
 impl std::fmt::Display for DomainError {
@@ -51,6 +53,9 @@ impl std::fmt::Display for DomainError {
             }
             DomainError::InvalidProductState(msg) => {
                 write!(f, "Invalid product state: {}", msg)
+            }
+            DomainError::InvalidCoupon { code, message } => {
+                write!(f, "Invalid coupon: {} - {}", code, message)
             }
         }
     }

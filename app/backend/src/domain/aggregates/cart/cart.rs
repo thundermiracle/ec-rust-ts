@@ -1,6 +1,7 @@
 use crate::domain::aggregates::CartItem;
 use crate::domain::error::DomainError;
 use crate::domain::value_objects::*;
+use crate::domain::{Coupon, CouponDiscountService};
 
 /// カートアグリゲート
 #[derive(Debug, Clone, PartialEq)]
@@ -8,6 +9,7 @@ pub struct Cart {
     items: Vec<CartItem>,
     shipping_fee: Option<Money>,
     payment_fee: Option<Money>,
+    coupon: Option<Coupon>,
 }
 
 impl Cart {
@@ -17,6 +19,7 @@ impl Cart {
             items: Vec::new(),
             shipping_fee: None,
             payment_fee: None,
+            coupon: None,
         }
     }
 
@@ -26,6 +29,7 @@ impl Cart {
             items,
             shipping_fee: None,
             payment_fee: None,
+            coupon: None,
         }
     }
 
@@ -73,6 +77,14 @@ impl Cart {
             let item_subtotal = item.subtotal()?;
             subtotal = subtotal.add(item_subtotal)?;
         }
+
+        // クーポンの適用
+        if let Some(coupon) = &self.coupon {
+            let purchase_info = self.to_purchase_info(subtotal)?;
+            let discount_result = CouponDiscountService::apply_coupon(coupon, &purchase_info)?;
+            subtotal = subtotal.subtract(discount_result.discount_amount)?;
+        }
+
         Ok(subtotal)
     }
 
@@ -213,6 +225,17 @@ impl Cart {
     pub fn payment_fee(&self) -> Option<Money> {
         self.payment_fee
     }
+
+    /// PurchaseInfoに変換
+    /// クーポン割引計算に必要な情報を集約したPurchaseInfoを生成
+    fn to_purchase_info(&self, items_subtotal: Money) -> Result<PurchaseInfo, DomainError> {
+        Ok(PurchaseInfo::new(
+            self.items.clone(),
+            items_subtotal,
+            self.shipping_fee,
+            self.payment_fee,
+        ))
+    }
 }
 
 impl Default for Cart {
@@ -344,5 +367,36 @@ mod tests {
 
         assert_eq!(tax_amount.yen(), 100); // 10% of 1000
         assert_eq!(total_with_tax.yen(), 1100); // 1000 + 100
+    }
+
+    #[test]
+    fn convert_to_purchase_info() {
+        let mut cart = Cart::new();
+        let item1 = create_test_cart_item("Product 1", 1000, 2);
+        let item2 = create_test_cart_item("Product 2", 1500, 1);
+
+        cart.add_item(item1).unwrap();
+        cart.add_item(item2).unwrap();
+        cart.shipping_fee = Some(Money::from_yen(500));
+        cart.payment_fee = Some(Money::from_yen(100));
+
+        let subtotal = Money::from_yen(3500); // (1000 * 2) + (1500 * 1)
+        let purchase_info = cart.to_purchase_info(subtotal).unwrap();
+
+        assert_eq!(purchase_info.subtotal().yen(), 3500); // (1000 * 2) + (1500 * 1)
+        assert!(purchase_info.meets_minimum_amount(Money::from_yen(3000)));
+        assert!(!purchase_info.meets_minimum_amount(Money::from_yen(4000)));
+    }
+
+    #[test]
+    fn convert_simple_cart_to_purchase_info() {
+        let mut cart = Cart::new();
+        let item = create_test_cart_item("Product", 2000, 1);
+        cart.add_item(item).unwrap();
+
+        let subtotal = Money::from_yen(2000);
+        let purchase_info = cart.to_purchase_info(subtotal).unwrap();
+
+        assert_eq!(purchase_info.subtotal().yen(), 2000);
     }
 }
