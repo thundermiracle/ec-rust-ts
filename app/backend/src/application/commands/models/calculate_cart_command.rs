@@ -13,6 +13,7 @@ pub struct CalculateCartCommand {
     pub items: Vec<CalculationCartCommandItem>,
     pub shipping_method_id: String,
     pub payment_method_id: String,
+    pub coupon_code: Option<String>,
 }
 
 impl CalculateCartCommand {
@@ -20,11 +21,13 @@ impl CalculateCartCommand {
         items: Vec<CalculationCartCommandItem>,
         shipping_method_id: String,
         payment_method_id: String,
+        coupon_code: Option<String>,
     ) -> Self {
         Self {
             items,
             shipping_method_id,
             payment_method_id,
+            coupon_code,
         }
     }
 }

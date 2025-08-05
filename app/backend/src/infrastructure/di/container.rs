@@ -15,7 +15,7 @@ use crate::application::{
 };
 use crate::infrastructure::database::db::get_db;
 use crate::infrastructure::database::repositories_impl::{
-    SqliteCategoryRepository, SqliteColorRepository, SqliteOrderRepository,
+    SqliteCategoryRepository, SqliteColorRepository, SqliteCouponRepository, SqliteOrderRepository,
     SqlitePaymentMethodRepository, SqliteProductRepository, SqliteShippingMethodRepository,
     SqliteVariantRepository,
 };
@@ -70,6 +70,7 @@ impl Container {
         let shipping_method_repository =
             Arc::new(SqliteShippingMethodRepository::new(Arc::new(pool.clone())));
         let payment_method_repository = Arc::new(SqlitePaymentMethodRepository::new(pool.clone()));
+        let coupon_repository = Arc::new(SqliteCouponRepository::new(pool.clone()));
         let order_repository = Arc::new(SqliteOrderRepository::new(pool.clone()));
 
         // ハンドラを作成
@@ -77,6 +78,7 @@ impl Container {
             product_repository.clone(),
             shipping_method_repository.clone(),
             payment_method_repository.clone(),
+            coupon_repository.clone(),
         ));
         let get_product_handler = Arc::new(GetProductHandler::new(product_repository.clone()));
         let get_product_list_handler =

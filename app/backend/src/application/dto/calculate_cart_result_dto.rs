@@ -11,6 +11,22 @@ pub struct CalculatedCartItemDto {
     pub subtotal: Money,
 }
 
+/// クーポン適用結果DTO
+#[derive(Debug, Clone)]
+pub struct AppliedCouponDto {
+    pub coupon_code: String,
+    pub coupon_name: String,
+    pub discount_amount: Money,
+    pub message: String,
+}
+
+/// クーポンエラー詳細DTO
+#[derive(Debug, Clone)]
+pub struct CouponErrorDto {
+    pub coupon_code: Option<String>,
+    pub error_message: String,
+}
+
 /// カート計算結果DTO
 /// CQRS命名規則: CalculateCartCommand の結果
 /// すべての計算済みの値を含む
@@ -25,10 +41,25 @@ pub struct CalculateCartResultDto {
     pub is_empty: bool,
     pub shipping_fee: Money,
     pub payment_fee: Money,
+    pub applied_coupon: Option<AppliedCouponDto>,
+    pub coupon_error: Option<CouponErrorDto>,
 }
 
 impl CalculateCartResultDto {
-    pub fn from_cart(cart: Cart, shipping_fee: Money, payment_fee: Money) -> Result<Self, String> {
+    pub fn from_cart(cart: Cart, coupon_error: Option<CouponErrorDto>) -> Result<Self, String> {
+        // カート計算を一括実行
+        let calculation = cart
+            .calculate()
+            .map_err(|e| format!("Failed to calculate cart: {}", e))?;
+
+        // クーポン情報をCartから取得
+        let applied_coupon = cart.coupon().map(|coupon| AppliedCouponDto {
+            coupon_code: coupon.code().value().to_string(),
+            coupon_name: coupon.name().to_string(),
+            discount_amount: calculation.discount_amount,
+            message: format!("Coupon '{}' applied", coupon.name()),
+        });
+
         // カートアイテムの計算
         let mut items = Vec::new();
         for item in cart.items() {
@@ -46,29 +77,18 @@ impl CalculateCartResultDto {
             });
         }
 
-        // カート全体の計算
-        let subtotal = cart
-            .subtotal()
-            .map_err(|e| format!("Failed to calculate cart subtotal: {}", e))?;
-
-        let tax_amount = cart
-            .tax_amount()
-            .map_err(|e| format!("Failed to calculate tax amount: {}", e))?;
-
-        let total_with_tax = cart
-            .total_with_tax()
-            .map_err(|e| format!("Failed to calculate total with tax: {}", e))?;
-
         Ok(Self {
             items,
             total_quantity: cart.total_quantity(),
             item_count: cart.item_count(),
-            subtotal,
-            tax_amount,
-            total_with_tax,
+            subtotal: calculation.final_subtotal,
+            tax_amount: calculation.tax_amount,
+            total_with_tax: calculation.total_with_tax,
             is_empty: cart.is_empty(),
-            shipping_fee,
-            payment_fee,
+            shipping_fee: calculation.shipping_fee,
+            payment_fee: calculation.payment_fee,
+            applied_coupon,
+            coupon_error,
         })
     }
 }

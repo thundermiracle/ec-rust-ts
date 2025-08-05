@@ -1,9 +1,10 @@
 use crate::application::commands::models::CalculateCartCommand;
-use crate::application::dto::CalculateCartResultDto;
+use crate::application::dto::{CalculateCartResultDto, CouponErrorDto};
 use crate::application::error::ApplicationError;
 use crate::application::repositories::{
-    PaymentMethodRepository, ProductRepository, ShippingMethodRepository,
+    CouponRepository, PaymentMethodRepository, ProductRepository, ShippingMethodRepository,
 };
+use crate::domain::value_objects::CouponCode;
 use crate::domain::{Cart, CartItem, Money, ProductId, ProductName, SKUId};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -13,6 +14,7 @@ pub struct CalculateCartHandler {
     product_repository: Arc<dyn ProductRepository>,
     shipping_method_repository: Arc<dyn ShippingMethodRepository>,
     payment_method_repository: Arc<dyn PaymentMethodRepository>,
+    coupon_repository: Arc<dyn CouponRepository>,
 }
 
 impl CalculateCartHandler {
@@ -20,11 +22,53 @@ impl CalculateCartHandler {
         product_repository: Arc<dyn ProductRepository>,
         shipping_method_repository: Arc<dyn ShippingMethodRepository>,
         payment_method_repository: Arc<dyn PaymentMethodRepository>,
+        coupon_repository: Arc<dyn CouponRepository>,
     ) -> Self {
         Self {
             product_repository,
             shipping_method_repository,
             payment_method_repository,
+            coupon_repository,
+        }
+    }
+
+    async fn try_apply_coupon(
+        &self,
+        cart: &mut Cart,
+        coupon_code_str: String,
+    ) -> Option<CouponErrorDto> {
+        let coupon_code = match CouponCode::from_string(coupon_code_str.clone()) {
+            Ok(code) => code,
+            Err(e) => {
+                return Some(CouponErrorDto {
+                    coupon_code: Some(coupon_code_str),
+                    error_message: e.to_string(),
+                });
+            }
+        };
+
+        let coupon = match self.coupon_repository.find_by_code(&coupon_code).await {
+            Ok(Some(coupon)) => coupon,
+            Ok(None) => {
+                return Some(CouponErrorDto {
+                    coupon_code: Some(coupon_code_str),
+                    error_message: "Coupon not found".to_string(),
+                });
+            }
+            Err(e) => {
+                return Some(CouponErrorDto {
+                    coupon_code: Some(coupon_code_str),
+                    error_message: format!("Failed to find coupon: {}", e),
+                });
+            }
+        };
+
+        match cart.apply_coupon(coupon) {
+            Ok(_) => None,
+            Err(e) => Some(CouponErrorDto {
+                coupon_code: Some(coupon_code_str),
+                error_message: e.to_string(),
+            }),
         }
     }
 
@@ -164,11 +208,14 @@ impl CalculateCartHandler {
         cart.apply_payment_method(&payment_method)
             .map_err(ApplicationError::Domain)?;
 
-        // 8. 手数料をCartから取得
-        let shipping_fee = cart.shipping_fee().unwrap_or(Money::from_yen(0));
-        let payment_fee = cart.payment_fee().unwrap_or(Money::from_yen(0));
+        // 8. クーポン適用処理（エラーハンドリング改善）
+        let coupon_error = if let Some(coupon_code_str) = command.coupon_code.clone() {
+            self.try_apply_coupon(&mut cart, coupon_code_str).await
+        } else {
+            None
+        };
 
-        CalculateCartResultDto::from_cart(cart, shipping_fee, payment_fee)
+        CalculateCartResultDto::from_cart(cart, coupon_error)
             .map_err(ApplicationError::InvalidInput)
     }
 }

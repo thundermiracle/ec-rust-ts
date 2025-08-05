@@ -1,4 +1,5 @@
 mod address;
+mod cart_calculation_result;
 mod coupon_code;
 mod descriptions;
 mod dimensions_material;
@@ -16,6 +17,7 @@ mod purchase_info;
 mod variant_attributes;
 
 pub use self::address::Address;
+pub use self::cart_calculation_result::CartCalculationResult;
 pub use self::coupon_code::CouponCode;
 pub use self::descriptions::Description;
 pub use self::dimensions_material::{Dimensions, Material};

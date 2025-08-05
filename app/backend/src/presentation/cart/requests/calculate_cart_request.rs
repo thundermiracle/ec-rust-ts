@@ -23,6 +23,7 @@ pub struct CalculateCartRequest {
     pub shipping_method_id: String,
     #[validate(length(min = 1, message = "Payment method ID cannot be empty"))]
     pub payment_method_id: String,
+    pub coupon_code: Option<String>,
 }
 
 impl CalculateCartRequest {
@@ -41,6 +42,7 @@ impl CalculateCartRequest {
             items,
             self.shipping_method_id.clone(),
             self.payment_method_id.clone(),
+            self.coupon_code.clone(),
         )
     }
 }
@@ -64,6 +66,7 @@ mod tests {
             ],
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
+            coupon_code: None,
         };
 
         assert!(request.validate().is_ok());
@@ -82,6 +85,7 @@ mod tests {
             items: vec![],
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
+            coupon_code: None,
         };
 
         assert!(request.validate().is_err());
@@ -96,6 +100,7 @@ mod tests {
             }],
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
+            coupon_code: None,
         };
 
         assert!(request.validate().is_err());
@@ -116,6 +121,7 @@ mod tests {
             ],
             shipping_method_id: "standard".to_string(),
             payment_method_id: "credit_card".to_string(),
+            coupon_code: None,
         };
 
         assert!(request.validate().is_err());
