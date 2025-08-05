@@ -8,7 +8,9 @@ mod product_list_dto;
 mod shipping_method_list_dto;
 mod variant_summary_dto;
 
-pub use self::calculate_cart_result_dto::CalculateCartResultDto;
+pub use self::calculate_cart_result_dto::{
+    AppliedCouponDto, CalculateCartResultDto, CalculatedCartItemDto, CouponErrorDto,
+};
 pub use self::category_list_dto::{CategoryDTO, CategoryListDTO};
 pub use self::color_list_dto::{ColorDTO, ColorListDTO};
 pub use self::create_order_result_dto::CreateOrderResultDTO;

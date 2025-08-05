@@ -70,40 +70,6 @@ impl Cart {
         Ok(())
     }
 
-    /// カートアイテムの小計を計算（配送料・支払い手数料を除く）
-    pub fn subtotal(&self) -> Result<Money, DomainError> {
-        let mut subtotal = Money::from_yen(0);
-        for item in &self.items {
-            let item_subtotal = item.subtotal()?;
-            subtotal = subtotal.add(item_subtotal)?;
-        }
-
-        // クーポンの適用
-        if let Some(coupon) = &self.coupon {
-            let purchase_info = self.to_purchase_info(subtotal)?;
-            let discount_result = CouponDiscountService::apply_coupon(coupon, &purchase_info)?;
-            subtotal = subtotal.subtract(discount_result.discount_amount)?;
-        }
-
-        Ok(subtotal)
-    }
-
-    /// カートの総額を計算（配送料・支払い手数料を含む）
-    pub fn total(&self) -> Result<Money, DomainError> {
-        let mut total = self.subtotal()?;
-
-        // 配送料を追加
-        if let Some(shipping_fee) = self.shipping_fee {
-            total = total.add(shipping_fee)?;
-        }
-
-        // 支払い手数料を追加
-        if let Some(payment_fee) = self.payment_fee {
-            total = total.add(payment_fee)?;
-        }
-
-        Ok(total)
-    }
 
     /// カート内の全アイテムの総数量
     pub fn total_quantity(&self) -> u32 {
@@ -133,7 +99,8 @@ impl Cart {
             ));
         }
 
-        let _cart_total = self.subtotal()?;
+        let calculation = self.calculate()?;
+        let _cart_total = calculation.final_subtotal;
 
         // 将来的にはカート金額による配送料無料、重量制限、地域制限なども考慮可能
         // 現在はシンプルに配送方法の料金をそのまま適用
@@ -146,7 +113,8 @@ impl Cart {
         &self,
         payment_method: &crate::domain::entities::PaymentMethod,
     ) -> Result<Money, DomainError> {
-        let cart_total = self.subtotal()?;
+        let calculation = self.calculate()?;
+        let cart_total = calculation.final_subtotal;
 
         // PaymentMethodエンティティに委譲してより豊富な情報を活用
         payment_method.calculate_fee(cart_total)
@@ -174,6 +142,34 @@ impl Cart {
         Ok(())
     }
 
+    /// クーポンを適用
+    /// Clean Architecture: エンティティ内で状態管理とビジネスロジック完結
+    pub fn apply_coupon(
+        &mut self,
+        coupon: crate::domain::entities::Coupon,
+    ) -> Result<(), DomainError> {
+        // クーポンの有効性チェック
+        if !coupon.is_valid() {
+            return Err(DomainError::InvalidProductData(
+                "Coupon is expired or invalid".to_string(),
+            ));
+        }
+
+        if !coupon.is_valid_usage_limit() {
+            return Err(DomainError::InvalidProductData(
+                "Coupon usage limit exceeded".to_string(),
+            ));
+        }
+
+        self.coupon = Some(coupon);
+        Ok(())
+    }
+
+    /// クーポンを削除
+    pub fn remove_coupon(&mut self) {
+        self.coupon = None;
+    }
+
     /// カートをクリア
     pub fn clear(&mut self) {
         self.items.clear();
@@ -189,28 +185,52 @@ impl Cart {
         self.items.iter().find(|item| item.sku_id() == sku_id)
     }
 
-    /// 税込み総額を計算
-    pub fn total_with_tax(&self) -> Result<Money, DomainError> {
-        let subtotal = self.subtotal()?;
-        let mut total_with_tax = subtotal.with_tax();
 
-        // 配送料を追加（配送料は税込み）
-        if let Some(shipping_fee) = self.shipping_fee {
-            total_with_tax = total_with_tax.add(shipping_fee)?;
+    /// カート計算を一度に実行（重複計算を避ける）
+    pub fn calculate(&self) -> Result<CartCalculationResult, DomainError> {
+        // 1. 原価小計を計算
+        let mut original_subtotal = Money::from_yen(0);
+        for item in &self.items {
+            let item_subtotal = item.subtotal()?;
+            original_subtotal = original_subtotal.add(item_subtotal)?;
         }
 
-        // 支払い手数料を追加（支払い手数料は税込み）
-        if let Some(payment_fee) = self.payment_fee {
-            total_with_tax = total_with_tax.add(payment_fee)?;
-        }
+        // 2. クーポン割引を計算
+        let discount_amount = if let Some(coupon) = &self.coupon {
+            let purchase_info = self.to_purchase_info(original_subtotal)?;
+            let discount_result = CouponDiscountService::apply_coupon(coupon, &purchase_info)?;
+            discount_result.discount_amount
+        } else {
+            Money::from_yen(0)
+        };
 
-        Ok(total_with_tax)
-    }
+        // 3. 割引後小計
+        let final_subtotal = original_subtotal.subtract(discount_amount)?;
 
-    /// 税額を計算
-    pub fn tax_amount(&self) -> Result<Money, DomainError> {
-        let subtotal = self.subtotal()?;
-        Ok(subtotal.tax_amount())
+        // 4. 税額と税込み合計
+        let tax_amount = final_subtotal.tax_amount();
+        let total_with_tax = final_subtotal.with_tax();
+
+        // 5. 手数料
+        let shipping_fee = self.shipping_fee.unwrap_or(Money::from_yen(0));
+        let payment_fee = self.payment_fee.unwrap_or(Money::from_yen(0));
+
+        // 6. 最終合計を計算
+        let grand_total = total_with_tax
+            .add(shipping_fee)?
+            .add(payment_fee)?;
+
+        // 7. 結果を構築
+        Ok(CartCalculationResult::new(
+            original_subtotal,
+            discount_amount,
+            final_subtotal,
+            tax_amount,
+            total_with_tax,
+            shipping_fee,
+            payment_fee,
+            grand_total,
+        ))
     }
 
     // Getters
@@ -224,6 +244,10 @@ impl Cart {
 
     pub fn payment_fee(&self) -> Option<Money> {
         self.payment_fee
+    }
+
+    pub fn coupon(&self) -> Option<&crate::domain::entities::Coupon> {
+        self.coupon.as_ref()
     }
 
     /// PurchaseInfoに変換
@@ -280,8 +304,8 @@ mod tests {
         assert_eq!(cart.item_count(), 2);
         assert_eq!(cart.total_quantity(), 3); // 2 + 1
 
-        let total = cart.total().unwrap();
-        assert_eq!(total.yen(), 4000); // (1000 * 2) + (2000 * 1)
+        let calculation = cart.calculate().unwrap();
+        assert_eq!(calculation.final_subtotal.yen(), 4000); // (1000 * 2) + (2000 * 1)
     }
 
     #[test]
@@ -313,8 +337,8 @@ mod tests {
         assert_eq!(cart.item_count(), 1); // Still 1 unique item
         assert_eq!(cart.total_quantity(), 5); // 2 + 3
 
-        let total = cart.total().unwrap();
-        assert_eq!(total.yen(), 5000); // 1000 * 5
+        let calculation = cart.calculate().unwrap();
+        assert_eq!(calculation.final_subtotal.yen(), 5000); // 1000 * 5
     }
 
     #[test]
@@ -340,8 +364,8 @@ mod tests {
         cart.update_item_quantity(&sku_id, 5).unwrap();
 
         assert_eq!(cart.total_quantity(), 5);
-        let total = cart.total().unwrap();
-        assert_eq!(total.yen(), 5000);
+        let calculation = cart.calculate().unwrap();
+        assert_eq!(calculation.final_subtotal.yen(), 5000);
     }
 
     #[test]
@@ -362,11 +386,10 @@ mod tests {
         let item = create_test_cart_item("Product", 1000, 1);
         cart.add_item(item).unwrap();
 
-        let total_with_tax = cart.total_with_tax().unwrap();
-        let tax_amount = cart.tax_amount().unwrap();
+        let calculation = cart.calculate().unwrap();
 
-        assert_eq!(tax_amount.yen(), 100); // 10% of 1000
-        assert_eq!(total_with_tax.yen(), 1100); // 1000 + 100
+        assert_eq!(calculation.tax_amount.yen(), 100); // 10% of 1000
+        assert_eq!(calculation.total_with_tax.yen(), 1100); // 1000 + 100
     }
 
     #[test]
