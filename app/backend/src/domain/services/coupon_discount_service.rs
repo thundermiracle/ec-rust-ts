@@ -131,7 +131,7 @@ impl CouponDiscountService {
             }
             DiscountType::Percentage(percentage) => {
                 // パーセンテージ割引の場合
-                base_amount.apply_discount(*percentage)
+                base_amount.subtract(base_amount.apply_discount(*percentage)?)
             }
         }
     }
