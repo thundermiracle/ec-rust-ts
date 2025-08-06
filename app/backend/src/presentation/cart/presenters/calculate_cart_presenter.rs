@@ -1,6 +1,5 @@
 use crate::application::dto::CalculateCartResultDto;
-use crate::presentation::cart::responses::CalculateCartItemResponse;
-use crate::presentation::cart::responses::CalculateCartResponse;
+use crate::presentation::cart::responses::{AppliedCouponResponse, CalculateCartItemResponse, CalculateCartResponse, CouponErrorResponse};
 
 /// カートプレゼンター
 pub struct CartPresenter;
@@ -23,6 +22,20 @@ impl CartPresenter {
             })
             .collect();
 
+        // クーポン適用結果を変換
+        let applied_coupon = result.applied_coupon.map(|coupon| AppliedCouponResponse {
+            coupon_code: coupon.coupon_code,
+            coupon_name: coupon.coupon_name,
+            discount_amount: coupon.discount_amount.yen(),
+            message: coupon.message,
+        });
+
+        // クーポンエラーを変換
+        let coupon_error = result.coupon_error.map(|error| CouponErrorResponse {
+            coupon_code: error.coupon_code,
+            error_message: error.error_message,
+        });
+
         CalculateCartResponse {
             items,
             total_quantity: result.total_quantity,
@@ -33,6 +46,8 @@ impl CartPresenter {
             is_empty: result.is_empty,
             shipping_fee: result.shipping_fee.yen(),
             payment_fee: result.payment_fee.yen(),
+            applied_coupon,
+            coupon_error,
         }
     }
 }
@@ -58,7 +73,7 @@ mod tests {
     fn empty_cart_to_response() {
         let cart = Cart::new();
         let result =
-            CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(200))
+            CalculateCartResultDto::from_cart(cart, None)
                 .unwrap();
         let response = CartPresenter::to_response(result);
 
@@ -68,8 +83,8 @@ mod tests {
         assert_eq!(response.subtotal, 0);
         assert_eq!(response.tax_amount, 0);
         assert_eq!(response.total, 0);
-        assert_eq!(response.shipping_fee, 500);
-        assert_eq!(response.payment_fee, 200);
+        assert_eq!(response.shipping_fee, 0);
+        assert_eq!(response.payment_fee, 0);
         assert!(response.items.is_empty());
     }
 
@@ -90,7 +105,7 @@ mod tests {
         cart.add_item(item2).unwrap();
 
         let result =
-            CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(330))
+            CalculateCartResultDto::from_cart(cart, None)
                 .unwrap();
         let response = CartPresenter::to_response(result);
 
@@ -100,8 +115,8 @@ mod tests {
         assert_eq!(response.subtotal, 3500); // (1000 * 2) + (1500 * 1)
         assert_eq!(response.tax_amount, 350); // 10% tax
         assert_eq!(response.total, 3850); // subtotal + tax
-        assert_eq!(response.shipping_fee, 500);
-        assert_eq!(response.payment_fee, 330);
+        assert_eq!(response.shipping_fee, 0);
+        assert_eq!(response.payment_fee, 0);
         assert_eq!(response.items.len(), 2);
     }
 
@@ -114,7 +129,7 @@ mod tests {
 
         cart.add_item(item).unwrap();
         let result =
-            CalculateCartResultDto::from_cart(cart, Money::from_yen(500), Money::from_yen(0))
+            CalculateCartResultDto::from_cart(cart, None)
                 .unwrap();
         let response = CartPresenter::to_response(result);
 

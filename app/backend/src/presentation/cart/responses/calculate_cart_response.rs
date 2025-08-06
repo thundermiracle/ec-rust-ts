@@ -13,6 +13,24 @@ pub struct CalculateCartItemResponse {
     pub subtotal: u32,
 }
 
+/// クーポン適用結果レスポンス
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AppliedCouponResponse {
+    pub coupon_code: String,
+    pub coupon_name: String,
+    pub discount_amount: u32,
+    pub message: String,
+}
+
+/// クーポンエラーレスポンス
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]  
+pub struct CouponErrorResponse {
+    pub coupon_code: Option<String>,
+    pub error_message: String,
+}
+
 /// HTTP レスポンス用のカート
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -26,4 +44,6 @@ pub struct CalculateCartResponse {
     pub is_empty: bool,
     pub shipping_fee: u32,
     pub payment_fee: u32,
+    pub applied_coupon: Option<AppliedCouponResponse>,
+    pub coupon_error: Option<CouponErrorResponse>,
 }

@@ -23,6 +23,9 @@ pub async fn run_migrations(database_url: &str) -> Result<()> {
     // Phase 6: 注文関連テーブル作成
     create_order_tables(&pool).await?;
 
+    // Phase 7: クーポンテーブル作成
+    create_coupon_tables(&pool).await?;
+
     println!("✅ All migrations completed successfully!");
     Ok(())
 }
@@ -504,5 +507,68 @@ async fn create_order_tables(pool: &sqlx::SqlitePool) -> Result<()> {
     .await?;
 
     println!("📦 Order tables created (orders, order_items, order_events)");
+    Ok(())
+}
+
+/// Phase 7: クーポンテーブル作成
+async fn create_coupon_tables(pool: &sqlx::SqlitePool) -> Result<()> {
+    // クーポンテーブル
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS coupons (
+            id TEXT PRIMARY KEY NOT NULL,
+            code TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            description TEXT,
+            discount_type TEXT NOT NULL,
+            discount_value INTEGER NOT NULL,
+            minimum_amount INTEGER,
+            usage_limit INTEGER,
+            used_count INTEGER NOT NULL DEFAULT 0,
+            valid_from TEXT NOT NULL,
+            valid_until TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            
+            CONSTRAINT valid_discount_type CHECK (discount_type IN ('percentage', 'fixed_amount')),
+            CONSTRAINT positive_discount_value CHECK (discount_value > 0),
+            CONSTRAINT positive_minimum_amount CHECK (minimum_amount IS NULL OR minimum_amount >= 0),
+            CONSTRAINT positive_usage_limit CHECK (usage_limit IS NULL OR usage_limit > 0),
+            CONSTRAINT positive_used_count CHECK (used_count >= 0)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // クーポンインデックス
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code)")
+        .execute(pool)
+        .await?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_coupons_validity ON coupons(valid_from, valid_until)",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_coupons_usage ON coupons(usage_limit, used_count)")
+        .execute(pool)
+        .await?;
+
+    // 初期データ挿入（テスト用）
+    sqlx::query(
+        r#"
+        INSERT OR IGNORE INTO coupons (
+            id, code, name, description, discount_type, discount_value, 
+            minimum_amount, usage_limit, valid_from, valid_until
+        ) VALUES
+        ('welcome10', 'WELCOME10', '新規顧客10%オフ', '初回購入時に10%割引', 'percentage', 10, 5000, 100, '2024-01-01', '2044-12-31'),
+        ('save20', 'SAVE20', '20%オフクーポン', '全商品20%割引', 'percentage', 20, 10000, 50, '2024-01-01', '2044-12-31'),
+        ('flat1000', 'FLAT1000', '1000円割引', '1000円固定割引', 'fixed_amount', 1000, 3000, 200, '2024-01-01', '2044-12-31')
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    println!("🎫 Coupon tables created with initial test data");
     Ok(())
 }

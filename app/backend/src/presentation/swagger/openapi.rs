@@ -2,7 +2,7 @@ use utoipa::OpenApi;
 
 use crate::presentation::ErrorResponse;
 use crate::presentation::cart::requests::{CalculateCartItemRequest, CalculateCartRequest};
-use crate::presentation::cart::responses::{CalculateCartItemResponse, CalculateCartResponse};
+use crate::presentation::cart::responses::{AppliedCouponResponse, CalculateCartItemResponse, CalculateCartResponse, CouponErrorResponse};
 use crate::presentation::categories::responses::{CategoryResponse, GetCategoryListResponse};
 use crate::presentation::colors::responses::{GetColorListItemResponse, GetColorListResponse};
 use crate::presentation::orders::requests::{
@@ -54,6 +54,8 @@ use crate::presentation::variants::responses::{FindVariantsItemResponse, FindVar
             CalculateCartItemRequest,
             CalculateCartResponse,
             CalculateCartItemResponse,
+            AppliedCouponResponse,
+            CouponErrorResponse,
             CreateOrderRequest,
             CreateOrderRequestItem,
             CreateOrderRequestCustomerInfo,
