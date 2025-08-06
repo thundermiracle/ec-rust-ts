@@ -21,3 +21,9 @@ export type { FindVariantsItemResponse } from "./generatedApi/variantsApi";
 export type { CategoryResponse, GetCategoryListResponse } from "./generatedApi/categoriesApi";
 export type { GetColorListItemResponse, GetColorListResponse } from "./generatedApi/colorsApi";
 export type { CreateOrderRequest, CreateOrderResponse, CreateOrderApiArg } from "./generatedApi/ordersApi";
+export type { 
+  CalculateCartRequest, 
+  CalculateCartResponse, 
+  AppliedCouponResponse, 
+  CouponErrorResponse 
+} from "./generatedApi/cartApi";

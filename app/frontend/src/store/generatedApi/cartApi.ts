@@ -26,6 +26,16 @@ export type CalculateCartApiResponse =
 export type CalculateCartApiArg = {
   calculateCartRequest: CalculateCartRequest;
 };
+export type AppliedCouponResponse = {
+  couponCode: string;
+  couponName: string;
+  discountAmount: number;
+  message: string;
+};
+export type CouponErrorResponse = {
+  couponCode?: string | null;
+  errorMessage: string;
+};
 export type CalculateCartItemResponse = {
   productId: string;
   productName: string;
@@ -35,6 +45,8 @@ export type CalculateCartItemResponse = {
   unitPrice: number;
 };
 export type CalculateCartResponse = {
+  appliedCoupon?: null | AppliedCouponResponse;
+  couponError?: null | CouponErrorResponse;
   isEmpty: boolean;
   itemCount: number;
   items: CalculateCartItemResponse[];
@@ -58,6 +70,7 @@ export type CalculateCartItemRequest = {
   skuId: string;
 };
 export type CalculateCartRequest = {
+  coupon_code?: string | null;
   items: CalculateCartItemRequest[];
   payment_method_id: string;
   shipping_method_id: string;

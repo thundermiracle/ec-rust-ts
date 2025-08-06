@@ -212,8 +212,8 @@ Built as a monorepo with Nx orchestration:
 ## Monitoring and Development Tools
 
 - Rust Backend: OpenAPI/Swagger UI available at `http://localhost:4000/swagger-ui/`
-- NestJS Backend: OpenAPI/Swagger UI available at `http://localhost:3001/api/`
+- NestJS Backend: OpenAPI/Swagger UI available at `http://localhost:4100/api/`
 - Backend (Rust) runs on port 4000
-- Backend-TS (NestJS) runs on port 3001
+- Backend-TS (NestJS) runs on port 4100
 - Frontend runs on port 3000
 - Database can be inspected with SQLite tools

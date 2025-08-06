@@ -561,9 +561,9 @@ async fn create_coupon_tables(pool: &sqlx::SqlitePool) -> Result<()> {
             id, code, name, description, discount_type, discount_value, 
             minimum_amount, usage_limit, valid_from, valid_until
         ) VALUES
-        ('welcome10', 'WELCOME10', '新規顧客10%オフ', '初回購入時に10%割引', 'percentage', 10, 5000, 100, '2024-01-01', '2044-12-31'),
-        ('save20', 'SAVE20', '20%オフクーポン', '全商品20%割引', 'percentage', 20, 10000, 50, '2024-01-01', '2044-12-31'),
-        ('flat1000', 'FLAT1000', '1000円割引', '1000円固定割引', 'fixed_amount', 1000, 3000, 200, '2024-01-01', '2044-12-31')
+        ('550e8400-e29b-41d4-a716-446655440001', 'WELCOME10', '新規顧客10%オフ', '初回購入時に10%割引', 'percentage', 10, 5000, 100, '2024-01-01', '2044-12-31'),
+        ('550e8400-e29b-41d4-a716-446655440002', 'SAVE20', '20%オフクーポン', '全商品20%割引', 'percentage', 20, 10000, 50, '2024-01-01', '2044-12-31'),
+        ('550e8400-e29b-41d4-a716-446655440003', 'FLAT1000', '1000円割引', '1000円固定割引', 'fixed_amount', 1000, 3000, 200, '2024-01-01', '2044-12-31')
         "#,
     )
     .execute(pool)

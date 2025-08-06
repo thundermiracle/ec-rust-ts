@@ -53,14 +53,14 @@ impl CouponRepository for SqliteCouponRepository {
             let valid_until_str: String = row.get("valid_until");
 
             // 日付パース
-            let valid_from = DateTime::parse_from_str(&format!("{}T00:00:00Z", valid_from_str), "%Y-%m-%dT%H:%M:%SZ")
+            let valid_from = DateTime::parse_from_str(&format!("{}T00:00:00+00:00", valid_from_str), "%Y-%m-%dT%H:%M:%S%z")
                 .map_err(|e| DomainError::InvalidCoupon { 
                     code: code_str.to_string(), 
                     message: format!("Invalid date format: {}", e) 
                 })?
                 .with_timezone(&Utc);
             
-            let valid_until = DateTime::parse_from_str(&format!("{}T23:59:59Z", valid_until_str), "%Y-%m-%dT%H:%M:%SZ")
+            let valid_until = DateTime::parse_from_str(&format!("{}T23:59:59+00:00", valid_until_str), "%Y-%m-%dT%H:%M:%S%z")
                 .map_err(|e| DomainError::InvalidCoupon { 
                     code: code_str.to_string(), 
                     message: format!("Invalid date format: {}", e) 

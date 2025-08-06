@@ -30,10 +30,13 @@ impl CartPresenter {
             message: coupon.message,
         });
 
-        // クーポンエラーを変換
-        let coupon_error = result.coupon_error.map(|error| CouponErrorResponse {
-            coupon_code: error.coupon_code,
-            error_message: error.error_message,
+        // クーポンエラーを変換（セキュリティのため、全てのクーポンエラーを統一メッセージに変換）
+        let coupon_error = result.coupon_error.map(|error| {
+            println!("Converting coupon error to user-friendly message. Original: {}", error.error_message);
+            CouponErrorResponse {
+                coupon_code: error.coupon_code,
+                error_message: "クーポンが有効ではありません".to_string(),
+            }
         });
 
         CalculateCartResponse {

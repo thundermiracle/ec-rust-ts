@@ -6,11 +6,12 @@ import { selectCartItems } from '@/store/cartSlice';
 interface UseCartCalculationOptions {
   shippingMethod?: string;
   paymentMethod?: string;
+  couponCode?: string;
   enabled?: boolean;
 }
 
 export function useCartCalculation(options: UseCartCalculationOptions = {}) {
-  const { shippingMethod, paymentMethod, enabled = true } = options;
+  const { shippingMethod, paymentMethod, couponCode, enabled = true } = options;
   const cartItems = useAppSelector(selectCartItems);
   
   const [calculateCart, { 
@@ -34,10 +35,11 @@ export function useCartCalculation(options: UseCartCalculationOptions = {}) {
         })),
         shipping_method_id: shippingMethod,
         payment_method_id: paymentMethod,
+        ...(couponCode && { coupon_code: couponCode }),
       };
       calculateCart({ calculateCartRequest });
     }
-  }, [cartItems, shippingMethod, paymentMethod, calculateCart, enabled]);
+  }, [cartItems, shippingMethod, paymentMethod, couponCode, calculateCart, enabled]);
 
   return {
     cartCalculationData,
