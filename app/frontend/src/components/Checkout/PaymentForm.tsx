@@ -3,18 +3,32 @@ import { useFormContext, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { CreditCard } from 'lucide-react';
 import { useGetPaymentMethodListQuery } from '@/store/api';
 import { type PaymentFormData } from '@/lib/validators/checkout';
 import { FormInputField } from '@/components/ui/form-input-field';
 import { FormRadioGroup } from '@/components/ui/form-radio-group';
+import { CouponForm } from '@/components/ui/coupon-form';
 
 interface PaymentFormProps {
   onPrev: () => void;
   onNext: () => void;
+  applyCoupon?: (code: string) => void;
+  removeCoupon?: () => void;
+  isCartCalculationLoading?: boolean;
+  appliedCoupon?: {
+    couponName: string;
+    discountAmount: number;
+  } | null;
+  couponError?: {
+    errorMessage: string;
+  } | null;
+  couponCode?: string;
+  setCouponCode?: (code: string) => void;
 }
 
-export function PaymentForm({ onPrev, onNext }: PaymentFormProps) {
+export function PaymentForm({ onPrev, onNext, applyCoupon, removeCoupon, isCartCalculationLoading, appliedCoupon, couponError, couponCode, setCouponCode }: PaymentFormProps) {
   const { control, watch } = useFormContext<PaymentFormData>();
   const paymentMethod = watch('paymentMethod');
   
@@ -124,6 +138,25 @@ export function PaymentForm({ onPrev, onNext }: PaymentFormProps) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* クーポン入力セクション */}
+        {applyCoupon && removeCoupon && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="font-medium text-sm mb-3">クーポンコード</h4>
+              <CouponForm
+                onApply={applyCoupon}
+                onRemove={removeCoupon}
+                isLoading={isCartCalculationLoading}
+                appliedCoupon={appliedCoupon}
+                couponError={couponError}
+                couponCode={couponCode}
+                setCouponCode={setCouponCode}
+              />
+            </div>
+          </>
         )}
 
         <Controller

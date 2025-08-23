@@ -7,6 +7,7 @@ import { selectCartItems } from '@/store/cartSlice';
 import { 
   useGetProductListQuery, 
   useFindVariantsMutation, 
+  type CalculateCartResponse
 } from '@/store/api';
 import { enhanceCartItemsWithVariantAPI } from '@/components/Cart/CartDrawer/helper';
 import { useFormContext } from 'react-hook-form';
@@ -25,7 +26,11 @@ interface OrderSummaryItem {
   material?: string;
 }
 
-export function OrderSummary() {
+interface OrderSummaryProps {
+  cartCalculationData?: CalculateCartResponse;
+}
+
+export function OrderSummary({ cartCalculationData }: OrderSummaryProps) {
   // カート情報
   const cartItems = useAppSelector(selectCartItems);
 
@@ -40,18 +45,27 @@ export function OrderSummary() {
   // バリアント詳細取得
   const [findVariants, { data: variantsData, isLoading: isVariantsLoading }] = useFindVariantsMutation();
 
-  // カート計算フック
+  // フォールバック用カート計算フック
   const { 
-    subtotal, 
-    tax, 
-    shippingFee, 
-    paymentFee, 
-    total, 
+    subtotal: fallbackSubtotal, 
+    tax: fallbackTax, 
+    shippingFee: fallbackShippingFee, 
+    paymentFee: fallbackPaymentFee, 
+    total: fallbackTotal, 
     isCartCalculationLoading 
   } = useCartCalculation({
     shippingMethod,
     paymentMethod,
+    enabled: !cartCalculationData, // データがない場合のみ実行
   });
+
+  // 表示用データの決定
+  const subtotal = cartCalculationData?.subtotal ?? fallbackSubtotal;
+  const tax = cartCalculationData?.taxAmount ?? fallbackTax;
+  const shippingFee = cartCalculationData?.shippingFee ?? fallbackShippingFee;
+  const paymentFee = cartCalculationData?.paymentFee ?? fallbackPaymentFee;
+  const total = cartCalculationData?.total ?? fallbackTotal;
+  const appliedCoupon = cartCalculationData?.appliedCoupon;
 
   // SKU ID 一意キー
   const skuIdsKey = useMemo(() => {
@@ -153,6 +167,12 @@ export function OrderSummary() {
             <span>小計</span>
             <span>¥{subtotal.toLocaleString()}</span>
           </div>
+          {appliedCoupon && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>クーポン割引 ({appliedCoupon.couponName})</span>
+              <span>-¥{appliedCoupon.discountAmount.toLocaleString()}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span>配送料</span>
             <span>¥{shippingFee.toLocaleString()}</span>

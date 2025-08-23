@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useCalculateCartMutation } from '@/store/api';
 import { useAppSelector } from '@/store/hooks';
 import { selectCartItems } from '@/store/cartSlice';
@@ -6,13 +6,13 @@ import { selectCartItems } from '@/store/cartSlice';
 interface UseCartCalculationOptions {
   shippingMethod?: string;
   paymentMethod?: string;
-  couponCode?: string;
   enabled?: boolean;
 }
 
 export function useCartCalculation(options: UseCartCalculationOptions = {}) {
-  const { shippingMethod, paymentMethod, couponCode, enabled = true } = options;
+  const { shippingMethod, paymentMethod, enabled = true } = options;
   const cartItems = useAppSelector(selectCartItems);
+  const [couponCode, setCouponCode] = useState<string | null>(null);
   
   const [calculateCart, { 
     data: cartCalculationData, 
@@ -21,7 +21,7 @@ export function useCartCalculation(options: UseCartCalculationOptions = {}) {
   }] = useCalculateCartMutation();
 
   // カート計算実行
-  useEffect(() => {
+  const triggerCalculation = useCallback((appliedCouponCode?: string | null) => {
     if (
       enabled &&
       cartItems.length > 0 && 
@@ -35,11 +35,28 @@ export function useCartCalculation(options: UseCartCalculationOptions = {}) {
         })),
         shipping_method_id: shippingMethod,
         payment_method_id: paymentMethod,
-        ...(couponCode && { coupon_code: couponCode }),
+        ...(appliedCouponCode && { coupon_code: appliedCouponCode }),
       };
       calculateCart({ calculateCartRequest });
     }
-  }, [cartItems, shippingMethod, paymentMethod, couponCode, calculateCart, enabled]);
+  }, [cartItems, shippingMethod, paymentMethod, calculateCart, enabled]);
+
+  // 自動計算実行
+  useEffect(() => {
+    triggerCalculation(couponCode);
+  }, [triggerCalculation, couponCode]);
+
+  // クーポン適用
+  const applyCoupon = useCallback((code: string) => {
+    setCouponCode(code);
+    triggerCalculation(code);
+  }, [triggerCalculation]);
+
+  // クーポン削除
+  const removeCoupon = useCallback(() => {
+    setCouponCode(null);
+    triggerCalculation(null);
+  }, [triggerCalculation]);
 
   return {
     cartCalculationData,
@@ -50,5 +67,10 @@ export function useCartCalculation(options: UseCartCalculationOptions = {}) {
     tax: cartCalculationData?.taxAmount || 0,
     shippingFee: cartCalculationData?.shippingFee || 0,
     paymentFee: cartCalculationData?.paymentFee || 0,
+    appliedCoupon: cartCalculationData?.appliedCoupon || null,
+    couponError: cartCalculationData?.couponError || null,
+    currentCouponCode: couponCode,
+    applyCoupon,
+    removeCoupon,
   };
 }
