@@ -163,16 +163,16 @@ export function OrderSummary({ cartCalculationData }: OrderSummaryProps) {
 
         {/* 金額詳細 */}
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>小計</span>
-            <span>¥{subtotal.toLocaleString()}</span>
-          </div>
           {appliedCoupon && (
             <div className="flex justify-between text-sm text-green-600">
               <span>クーポン割引 ({appliedCoupon.couponName})</span>
               <span>-¥{appliedCoupon.discountAmount.toLocaleString()}</span>
             </div>
           )}
+          <div className="flex justify-between text-sm">
+            <span>小計</span>
+            <span>¥{subtotal.toLocaleString()}</span>
+          </div>
           <div className="flex justify-between text-sm">
             <span>配送料</span>
             <span>¥{shippingFee.toLocaleString()}</span>
