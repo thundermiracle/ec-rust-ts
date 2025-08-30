@@ -100,7 +100,7 @@ impl Cart {
         }
 
         let calculation = self.calculate()?;
-        let _cart_total = calculation.final_subtotal;
+        let _cart_total = calculation.subtotal;
 
         // 将来的にはカート金額による配送料無料、重量制限、地域制限なども考慮可能
         // 現在はシンプルに配送方法の料金をそのまま適用
@@ -114,7 +114,7 @@ impl Cart {
         payment_method: &crate::domain::entities::PaymentMethod,
     ) -> Result<Money, DomainError> {
         let calculation = self.calculate()?;
-        let cart_total = calculation.final_subtotal;
+        let cart_total = calculation.subtotal;
 
         // PaymentMethodエンティティに委譲してより豊富な情報を活用
         payment_method.calculate_fee(cart_total)
@@ -205,18 +205,18 @@ impl Cart {
         };
 
         // 3. 割引後小計
-        let final_subtotal = original_subtotal.subtract(discount_amount)?;
+        let subtotal = original_subtotal.subtract(discount_amount)?;
 
         // 4. 税額と税込み合計
-        let tax_amount = final_subtotal.tax_amount();
-        let total_with_tax = final_subtotal.with_tax();
+        let tax_amount = subtotal.tax_amount();
+        let subsubtotal_with_tax = subtotal.with_tax();
 
         // 5. 手数料
         let shipping_fee = self.shipping_fee.unwrap_or(Money::from_yen(0));
         let payment_fee = self.payment_fee.unwrap_or(Money::from_yen(0));
 
         // 6. 最終合計を計算
-        let grand_total = total_with_tax
+        let total = subsubtotal_with_tax
             .add(shipping_fee)?
             .add(payment_fee)?;
 
@@ -224,12 +224,12 @@ impl Cart {
         Ok(CartCalculationResult::new(
             original_subtotal,
             discount_amount,
-            final_subtotal,
+            subtotal,
             tax_amount,
-            total_with_tax,
+            subsubtotal_with_tax,
             shipping_fee,
             payment_fee,
-            grand_total,
+            total,
         ))
     }
 
@@ -305,7 +305,7 @@ mod tests {
         assert_eq!(cart.total_quantity(), 3); // 2 + 1
 
         let calculation = cart.calculate().unwrap();
-        assert_eq!(calculation.final_subtotal.yen(), 4000); // (1000 * 2) + (2000 * 1)
+        assert_eq!(calculation.subtotal.yen(), 4000); // (1000 * 2) + (2000 * 1)
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod tests {
         assert_eq!(cart.total_quantity(), 5); // 2 + 3
 
         let calculation = cart.calculate().unwrap();
-        assert_eq!(calculation.final_subtotal.yen(), 5000); // 1000 * 5
+        assert_eq!(calculation.subtotal.yen(), 5000); // 1000 * 5
     }
 
     #[test]
@@ -365,7 +365,7 @@ mod tests {
 
         assert_eq!(cart.total_quantity(), 5);
         let calculation = cart.calculate().unwrap();
-        assert_eq!(calculation.final_subtotal.yen(), 5000);
+        assert_eq!(calculation.subtotal.yen(), 5000);
     }
 
     #[test]
@@ -389,7 +389,7 @@ mod tests {
         let calculation = cart.calculate().unwrap();
 
         assert_eq!(calculation.tax_amount.yen(), 100); // 10% of 1000
-        assert_eq!(calculation.total_with_tax.yen(), 1100); // 1000 + 100
+        assert_eq!(calculation.subtotal_with_tax.yen(), 1100); // 1000 + 100
     }
 
     #[test]
