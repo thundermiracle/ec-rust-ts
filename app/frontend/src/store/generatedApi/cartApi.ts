@@ -54,6 +54,7 @@ export type CalculateCartResponse = {
   shippingFee: number;
   subtotal: number;
   taxAmount: number;
+  subtotalWithTax: number;
   total: number;
   totalQuantity: number;
 };

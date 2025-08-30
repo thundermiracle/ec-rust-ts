@@ -2,12 +2,10 @@
 
 import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Plus, Minus, Ticket } from 'lucide-react';
+import { Trash2, Plus, Minus } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
   selectCartItems, 
@@ -16,7 +14,7 @@ import {
   updateQuantity, 
   removeFromCart
 } from '@/store/cartSlice';
-import { useGetProductListQuery, useFindVariantsMutation, useCalculateCartMutation } from '@/store/api';
+import { useGetProductListQuery, useFindVariantsMutation } from '@/store/api';
 import Image from 'next/image';
 import { enhanceCartItemsWithVariantAPI, calculateCartTotal } from './helper';
 
@@ -26,24 +24,6 @@ export const CartDrawer: React.FC = () => {
   const cartItems = useAppSelector(selectCartItems);
   const isOpen = useAppSelector(selectCartIsOpen);
 
-  // クーポンフォーム管理
-  interface CouponForm {
-    couponCode: string;
-  }
-  
-  const { register, handleSubmit, reset, formState: { isValid } } = useForm<CouponForm>({
-    defaultValues: { couponCode: '' },
-    mode: 'onChange'
-  });
-  
-  // couponCode は現在使用していないが、必要に応じて可能
-  // const couponCode = watch('couponCode');
-  
-  // カート計算のmutation（手動トリガー用）
-  const [triggerCalculation, cartCalculationResult] = useCalculateCartMutation();
-  
-  // カート計算データの取得
-  const { data: cartCalculationData, isLoading: isCartCalculationLoading, error: cartCalculationError } = cartCalculationResult;
 
   // 商品リストを取得（カートにある商品の基本情報を取得）
   const { data: productListData, isLoading: isProductListLoading } = useGetProductListQuery();
@@ -78,47 +58,10 @@ export const CartDrawer: React.FC = () => {
     );
   }, [cartItems, productListData, variantsData]);
 
-  // 合計金額を計算（クーポン適用時は計算結果を使用）
+  // 合計金額を計算
   const total = useMemo(() => {
-    if (cartCalculationData) {
-      return cartCalculationData.total;
-    }
     return calculateCartTotal(enhancedCartItems);
-  }, [enhancedCartItems, cartCalculationData]);
-  
-  // クーポン適用処理
-  const handleCouponApply = handleSubmit((data) => {
-    if (data.couponCode.trim() && cartItems.length > 0) {
-      triggerCalculation({
-        calculateCartRequest: {
-          items: cartItems.map(item => ({
-            skuId: item.skuId,
-            quantity: item.quantity,
-          })),
-          shipping_method_id: 'standard',
-          payment_method_id: 'credit_card',
-          coupon_code: data.couponCode.trim(),
-        }
-      });
-    }
-  });
-  
-  // クーポン削除処理
-  const handleCouponRemove = () => {
-    reset();
-    // クーポンなしで再計算
-    triggerCalculation({
-      calculateCartRequest: {
-        items: cartItems.map(item => ({
-          skuId: item.skuId,
-          quantity: item.quantity,
-        })),
-        shipping_method_id: 'standard',
-        payment_method_id: 'credit_card',
-        coupon_code: null,
-      }
-    });
-  };
+  }, [enhancedCartItems]);
 
   const handleClose = () => {
     dispatch(setCartOpen(false));
@@ -240,90 +183,6 @@ export const CartDrawer: React.FC = () => {
           <>
             <Separator />
             <div className="p-4 space-y-4">
-              {/* クーポン入力セクション */}
-              <form onSubmit={handleCouponApply} className="space-y-2">
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      {...register('couponCode', { 
-                        required: true,
-                        setValueAs: (value: string) => value.toUpperCase()
-                      })}
-                      placeholder="クーポンコードを入力"
-                      className="text-sm"
-                      disabled={!!cartCalculationData?.appliedCoupon}
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    disabled={!isValid || !!cartCalculationData?.appliedCoupon || isCartCalculationLoading}
-                    className="flex items-center gap-1"
-                  >
-                    <Ticket className="h-3 w-3" />
-                    {isCartCalculationLoading ? '適用中...' : '適用'}
-                  </Button>
-                </div>
-                
-                {cartCalculationData?.appliedCoupon && (
-                  <div className="flex items-center justify-between text-sm text-green-600 bg-green-50 px-2 py-1 rounded">
-                    <span>クーポン適用: {cartCalculationData.appliedCoupon.couponName} (-¥{cartCalculationData.appliedCoupon.discountAmount.toLocaleString()})</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCouponRemove}
-                      className="h-6 w-6 p-0 hover:bg-green-100"
-                    >
-                      ×
-                    </Button>
-                  </div>
-                )}
-                
-                {cartCalculationData?.couponError && (
-                  <div className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
-                    {cartCalculationData.couponError.errorMessage}
-                  </div>
-                )}
-                
-                {cartCalculationError && (
-                  <div className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
-                    クーポンの処理中にエラーが発生しました
-                  </div>
-                )}
-              </form>
-              
-              {/* 割引情報を表示 */}
-              {cartCalculationData?.appliedCoupon && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>小計:</span>
-                    <span>¥{cartCalculationData.subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-green-600">
-                    <span>クーポン割引 ({cartCalculationData.appliedCoupon.couponName}):</span>
-                    <span>-¥{cartCalculationData.appliedCoupon.discountAmount.toLocaleString()}</span>
-                  </div>
-                  {cartCalculationData.shippingFee > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span>配送料:</span>
-                      <span>¥{cartCalculationData.shippingFee.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {cartCalculationData.paymentFee > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span>手数料:</span>
-                      <span>¥{cartCalculationData.paymentFee.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between text-sm">
-                    <span>税額:</span>
-                    <span>¥{cartCalculationData.taxAmount.toLocaleString()}</span>
-                  </div>
-                </div>
-              )}
-              
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total:</span>
                 <span className="font-bold text-lg">¥{total.toLocaleString()}</span>

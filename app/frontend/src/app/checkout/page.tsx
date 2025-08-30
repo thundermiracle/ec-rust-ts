@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState<'shipping' | 'payment' | 'review'>('shipping');
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState<string>('');
   
   const formContext = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -74,11 +75,22 @@ export default function CheckoutPage() {
   const { 
     total, 
     isCartCalculationLoading, 
-    cartCalculationError 
+    cartCalculationError,
+    appliedCoupon,
+    couponError,
+    applyCoupon,
+    removeCoupon,
+    cartCalculationData,
   } = useCartCalculation({
     shippingMethod,
     paymentMethod,
   });
+
+  // クーポン削除のラッパー関数
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    removeCoupon();
+  };
 
   // カートの初期化が完了してから、カートが空の場合は/に戻る
   useEffect(() => {
@@ -221,7 +233,17 @@ export default function CheckoutPage() {
                   <ShippingForm onNext={handleNextStep} />
                 )}
                 {currentStep === 'payment' && (
-                  <PaymentForm onNext={handleNextStep} onPrev={handlePrevStep} />
+                  <PaymentForm 
+                    onNext={handleNextStep} 
+                    onPrev={handlePrevStep}
+                    applyCoupon={applyCoupon}
+                    removeCoupon={handleRemoveCoupon}
+                    isCartCalculationLoading={isCartCalculationLoading}
+                    appliedCoupon={appliedCoupon}
+                    couponError={couponError}
+                    couponCode={couponCode}
+                    setCouponCode={setCouponCode}
+                  />
                 )}
                 {currentStep === 'review' && (
                   <ReviewForm 
@@ -237,7 +259,7 @@ export default function CheckoutPage() {
               </div>
 
               <aside className="lg:col-span-1">
-                <OrderSummary />
+                <OrderSummary cartCalculationData={cartCalculationData} />
               </aside>
             </div>
           </main>

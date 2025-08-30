@@ -40,6 +40,7 @@ pub struct CalculateCartResponse {
     pub item_count: usize,
     pub subtotal: u32,
     pub tax_amount: u32,
+    pub subtotal_with_tax: u32,
     pub total: u32,
     pub is_empty: bool,
     pub shipping_fee: u32,
