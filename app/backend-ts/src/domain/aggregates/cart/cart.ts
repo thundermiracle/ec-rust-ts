@@ -1,5 +1,6 @@
-import { PaymentMethod, ShippingMethod } from '$domain/entities';
+import { Coupon, PaymentMethod, ShippingMethod } from '$domain/entities';
 import { DomainError } from '$domain/errors/domain.error';
+import { DiscountResult } from '$domain/services/coupon-discount.service';
 import { Money, SKUId } from '$domain/value-objects';
 
 import { CartItem } from './cart-item';
@@ -8,6 +9,8 @@ export class Cart {
   private readonly items: Map<string, CartItem> = new Map();
   private shippingMethod: ShippingMethod | null = null;
   private paymentMethod: PaymentMethod | null = null;
+  private appliedCoupon: Coupon | null = null;
+  private discountResult: DiscountResult | null = null;
 
   constructor() {}
 
@@ -52,6 +55,17 @@ export class Cart {
       .reduce((total, itemSubtotal) => total.add(itemSubtotal));
   }
 
+  subtotalWithDiscount(): Money {
+    if (this.discountResult) {
+      return this.discountResult.discountedAmount;
+    }
+    return this.subtotal();
+  }
+
+  discountAmount(): Money {
+    return this.discountResult?.discountAmount || Money.zero();
+  }
+
   shippingFee(): Money {
     return this.shippingMethod?.getFee() || Money.zero();
   }
@@ -61,7 +75,9 @@ export class Cart {
   }
 
   totalBeforeTax(): Money {
-    return this.subtotal().add(this.shippingFee()).add(this.paymentFee());
+    return this.subtotalWithDiscount()
+      .add(this.shippingFee())
+      .add(this.paymentFee());
   }
 
   taxAmount(): Money {
@@ -87,6 +103,17 @@ export class Cart {
 
   clearPaymentMethod(): void {
     this.paymentMethod = null;
+  }
+
+  // Coupon methods
+  applyCoupon(coupon: Coupon, discountResult: DiscountResult): void {
+    this.appliedCoupon = coupon;
+    this.discountResult = discountResult;
+  }
+
+  clearCoupon(): void {
+    this.appliedCoupon = null;
+    this.discountResult = null;
   }
 
   // Utility methods
@@ -126,10 +153,20 @@ export class Cart {
     return this.paymentMethod;
   }
 
+  getCoupon(): Coupon | null {
+    return this.appliedCoupon;
+  }
+
+  getDiscountResult(): DiscountResult | null {
+    return this.discountResult;
+  }
+
   clear(): void {
     this.items.clear();
     this.shippingMethod = null;
     this.paymentMethod = null;
+    this.appliedCoupon = null;
+    this.discountResult = null;
   }
 
   // Validation

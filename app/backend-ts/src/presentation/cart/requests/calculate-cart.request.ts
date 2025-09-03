@@ -5,6 +5,7 @@ import {
   IsArray,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Min,
   ValidateNested,
@@ -50,6 +51,11 @@ export class CalculateCartRequest implements IRequest<CalculateCartCommand> {
   @IsNotEmpty()
   payment_method_id: string;
 
+  @ApiProperty({ description: 'Coupon code (optional)', required: false })
+  @IsString()
+  @IsOptional()
+  coupon_code?: string;
+
   toCommand(): CalculateCartCommand {
     return new CalculateCartCommand(
       this.items.map(
@@ -57,6 +63,7 @@ export class CalculateCartRequest implements IRequest<CalculateCartCommand> {
       ),
       this.shipping_method_id,
       this.payment_method_id,
+      this.coupon_code,
     );
   }
 }

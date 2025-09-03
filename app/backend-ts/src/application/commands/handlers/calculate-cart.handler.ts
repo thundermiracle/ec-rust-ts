@@ -3,8 +3,10 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 import { CalculateCartCommand } from '$application/commands';
 import {
+  AppliedCouponDto,
   CalculateCartResultDto,
   CalculatedCartItemDto,
+  CouponErrorDto,
   VariantSummaryDto,
 } from '$application/dto';
 import {
@@ -14,15 +16,19 @@ import {
   ValidationError,
 } from '$application/errors/application.error';
 import {
+  ICouponRepository,
   IPaymentMethodRepository,
   IProductRepository,
   IShippingMethodRepository,
 } from '$application/repositories';
 import { Cart, CartItem } from '$domain/aggregates';
+import { CouponDiscountService } from '$domain/services/coupon-discount.service';
 import {
+  CouponCode,
   Money,
   PaymentMethodId,
   ProductId,
+  PurchaseInfo,
   ShippingMethodId,
   SKUId,
 } from '$domain/value-objects';
@@ -38,6 +44,8 @@ export class CalculateCartHandler
     private readonly shippingMethodRepository: IShippingMethodRepository,
     @Inject('IPaymentMethodRepository')
     private readonly paymentMethodRepository: IPaymentMethodRepository,
+    @Inject('ICouponRepository')
+    private readonly couponRepository: ICouponRepository,
   ) {}
 
   async execute(
@@ -64,8 +72,14 @@ export class CalculateCartHandler
     cart.applyShippingMethod(shippingMethod);
     cart.applyPaymentMethod(paymentMethod);
 
-    // 6. Convert to DTO
-    return this.createResultDto(cart);
+    // 6. Apply coupon if provided
+    let couponError: CouponErrorDto | undefined;
+    if (command.couponCode) {
+      couponError = await this.applyCouponToCart(cart, command.couponCode);
+    }
+
+    // 7. Convert to DTO
+    return this.createResultDto(cart, couponError);
   }
 
   private validateInput(command: CalculateCartCommand): void {
@@ -182,7 +196,44 @@ export class CalculateCartHandler
     return cart;
   }
 
-  private createResultDto(cart: Cart): CalculateCartResultDto {
+  private async applyCouponToCart(
+    cart: Cart,
+    couponCode: string,
+  ): Promise<CouponErrorDto | undefined> {
+    try {
+      const couponCodeObj = CouponCode.fromString(couponCode);
+      const coupon = await this.couponRepository.findByCode(couponCodeObj);
+
+      if (!coupon) {
+        return new CouponErrorDto(couponCode, 'クーポンが見つかりません');
+      }
+
+      const purchaseInfo = new PurchaseInfo(
+        cart.getAllItems(),
+        cart.subtotal(),
+        cart.shippingFee(),
+        cart.paymentFee(),
+      );
+
+      const discountResult = CouponDiscountService.applyCoupon(
+        coupon,
+        purchaseInfo,
+      );
+      cart.applyCoupon(coupon, discountResult);
+
+      return undefined;
+    } catch (error) {
+      if (error instanceof Error) {
+        return new CouponErrorDto(couponCode, error.message);
+      }
+      return new CouponErrorDto(couponCode, 'クーポンの適用に失敗しました');
+    }
+  }
+
+  private createResultDto(
+    cart: Cart,
+    couponError?: CouponErrorDto,
+  ): CalculateCartResultDto {
     const items = cart
       .getAllItems()
       .map(
@@ -197,16 +248,29 @@ export class CalculateCartHandler
           ),
       );
 
+    const appliedCoupon =
+      cart.getCoupon() && cart.getDiscountResult()
+        ? new AppliedCouponDto(
+            cart.getCoupon()!.getCode().getValue(),
+            cart.getCoupon()!.getName(),
+            cart.getDiscountResult()!.discountAmount.yen(),
+            cart.getDiscountResult()!.message,
+          )
+        : undefined;
+
     return new CalculateCartResultDto(
       items,
       cart.totalQuantity(),
       cart.itemCount(),
       cart.subtotal().yen(),
       cart.taxAmount().yen(),
+      cart.subtotalWithDiscount().yen(),
       cart.total().yen(),
       cart.isEmpty(),
       cart.shippingFee().yen(),
       cart.paymentFee().yen(),
+      appliedCoupon,
+      couponError,
     );
   }
 }
