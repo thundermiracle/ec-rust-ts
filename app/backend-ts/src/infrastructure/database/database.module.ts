@@ -48,7 +48,7 @@ const repositories = [
     useClass: ColorRepository,
   },
   {
-    provide: 'CouponRepositoryInterface',
+    provide: 'ICouponRepository',
     useClass: CouponRepository,
   },
   {
