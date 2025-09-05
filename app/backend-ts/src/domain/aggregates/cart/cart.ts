@@ -1,7 +1,10 @@
 import { Coupon, PaymentMethod, ShippingMethod } from '$domain/entities';
 import { DomainError } from '$domain/errors/domain.error';
-import { DiscountResult } from '$domain/services/coupon-discount.service';
-import { Money, SKUId } from '$domain/value-objects';
+import {
+  CouponDiscountService,
+  DiscountResult,
+} from '$domain/services/coupon-discount.service';
+import { Money, PurchaseInfo, SKUId } from '$domain/value-objects';
 
 import { CartItem } from './cart-item';
 
@@ -106,7 +109,20 @@ export class Cart {
   }
 
   // Coupon methods
-  applyCoupon(coupon: Coupon, discountResult: DiscountResult): void {
+  applyCoupon(coupon: Coupon): void {
+    // Create PurchaseInfo from current cart state
+    const purchaseInfo = new PurchaseInfo(
+      this.getAllItems(),
+      this.subtotal(),
+      this.shippingFee(),
+      this.paymentFee(),
+    );
+
+    // Use domain service to calculate discount
+    const discountResult = CouponDiscountService.applyCoupon(
+      coupon,
+      purchaseInfo,
+    );
     this.appliedCoupon = coupon;
     this.discountResult = discountResult;
   }

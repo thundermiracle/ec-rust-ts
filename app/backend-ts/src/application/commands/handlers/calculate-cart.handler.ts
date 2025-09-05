@@ -22,13 +22,11 @@ import {
   IShippingMethodRepository,
 } from '$application/repositories';
 import { Cart, CartItem } from '$domain/aggregates';
-import { CouponDiscountService } from '$domain/services/coupon-discount.service';
 import {
   CouponCode,
   Money,
   PaymentMethodId,
   ProductId,
-  PurchaseInfo,
   ShippingMethodId,
   SKUId,
 } from '$domain/value-objects';
@@ -208,18 +206,7 @@ export class CalculateCartHandler
         return new CouponErrorDto(couponCode, 'クーポンが見つかりません');
       }
 
-      const purchaseInfo = new PurchaseInfo(
-        cart.getAllItems(),
-        cart.subtotal(),
-        cart.shippingFee(),
-        cart.paymentFee(),
-      );
-
-      const discountResult = CouponDiscountService.applyCoupon(
-        coupon,
-        purchaseInfo,
-      );
-      cart.applyCoupon(coupon, discountResult);
+      cart.applyCoupon(coupon);
 
       return undefined;
     } catch (error) {
