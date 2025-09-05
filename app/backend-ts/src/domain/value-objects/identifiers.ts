@@ -194,3 +194,17 @@ export class PaymentMethodId {
     return this.id === other.value();
   }
 }
+
+export class CouponId extends UuidIdentifier {
+  private constructor(id: string) {
+    super(id);
+  }
+
+  static new(): CouponId {
+    return new CouponId(uuidv4());
+  }
+
+  static fromUuid(uuid: string): CouponId {
+    return new CouponId(uuid);
+  }
+}

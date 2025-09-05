@@ -10,5 +10,6 @@ export class CalculateCartCommand {
     public readonly items: CalculateCartCommandItem[],
     public readonly shippingMethodId: string,
     public readonly paymentMethodId: string,
+    public readonly couponCode?: string,
   ) {}
 }

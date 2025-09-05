@@ -1,5 +1,6 @@
 export { Category } from './category';
 export { Color, ColorName } from './color';
+export { Coupon } from './coupon';
 export { PaymentMethod } from './payment-method';
 export { Product } from './product';
 export { ProductImage } from './product-image';

@@ -1,3 +1,4 @@
+export { AppliedCouponDto, CouponErrorDto } from './applied-coupon.dto';
 export {
   CalculateCartResultDto,
   CalculatedCartItemDto,
