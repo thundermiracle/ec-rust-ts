@@ -27,6 +27,10 @@ pub async fn run_seeds() -> Result<()> {
     seed_sample_products().await?;
     println!("🛍️  Sample products seeded");
 
+    // サンプルクーポンを挿入
+    seed_sample_coupons().await?;
+    println!("🎫 Sample coupons seeded");
+
     println!("✅ All seed data inserted successfully!");
     Ok(())
 }
@@ -805,5 +809,80 @@ pub async fn seed_sample_products() -> Result<()> {
     }
 
     println!("✅ Sample products seeded successfully!");
+    Ok(())
+}
+
+/// サンプルクーポンを挿入
+pub async fn seed_sample_coupons() -> Result<()> {
+    let db = get_db().await?;
+    let pool = db.get_pool();
+
+    println!("🎫 Seeding sample coupons...");
+
+    let coupons = [
+        (
+            "550e8400-e29b-41d4-a716-446655440001",
+            "WELCOME10",
+            "新規顧客10%オフ",
+            Some("初回購入時に10%割引"),
+            "percentage",
+            10,
+            Some(5000),
+            Some(100),
+            "2024-01-01",
+            "2044-12-31",
+        ),
+        (
+            "550e8400-e29b-41d4-a716-446655440002",
+            "SAVE20",
+            "20%オフクーポン",
+            Some("全商品20%割引"),
+            "percentage",
+            20,
+            Some(10000),
+            Some(50),
+            "2024-01-01",
+            "2044-12-31",
+        ),
+        (
+            "550e8400-e29b-41d4-a716-446655440003",
+            "FLAT1000",
+            "1000円割引",
+            Some("1000円固定割引"),
+            "fixed_amount",
+            1000,
+            Some(3000),
+            Some(200),
+            "2024-01-01",
+            "2044-12-31",
+        ),
+    ];
+
+    for (id, code, name, description, discount_type, discount_value, minimum_amount, usage_limit, valid_from, valid_until) in coupons {
+        sqlx::query(
+            r#"
+            INSERT OR IGNORE INTO coupons (
+                id, code, name, description, discount_type, discount_value, 
+                minimum_amount, usage_limit, valid_from, valid_until
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(id)
+        .bind(code)
+        .bind(name)
+        .bind(description)
+        .bind(discount_type)
+        .bind(discount_value)
+        .bind(minimum_amount)
+        .bind(usage_limit)
+        .bind(valid_from)
+        .bind(valid_until)
+        .execute(pool)
+        .await?;
+
+        println!("  ✓ Coupon created: {}", code);
+    }
+
+    println!("✅ Sample coupons seeded successfully!");
     Ok(())
 }
