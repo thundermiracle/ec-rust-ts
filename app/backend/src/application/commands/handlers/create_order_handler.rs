@@ -65,6 +65,7 @@ impl CreateOrderHandler {
             order_items,
             shipping_info,
             payment_info,
+            None, // TODO: クーポン機能を実装する際に更新
         )
         .map_err(ApplicationError::Domain)?;
 

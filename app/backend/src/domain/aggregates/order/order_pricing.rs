@@ -5,6 +5,7 @@ pub struct OrderPricing {
     pub subtotal: Money,
     pub shipping_fee: Money,
     pub payment_fee: Money,
+    pub discount_amount: Money,
     pub tax_amount: Money,
     pub total: Money,
 }
@@ -14,6 +15,7 @@ impl OrderPricing {
         subtotal: Money,
         shipping_fee: Money,
         payment_fee: Money,
+        discount_amount: Money,
         tax_amount: Money,
         total: Money,
     ) -> Self {
@@ -21,6 +23,7 @@ impl OrderPricing {
             subtotal,
             shipping_fee,
             payment_fee,
+            discount_amount,
             tax_amount,
             total,
         }
@@ -38,6 +41,10 @@ impl OrderPricing {
         self.payment_fee.amount_in_yen()
     }
 
+    pub fn discount_amount_yen(&self) -> u32 {
+        self.discount_amount.amount_in_yen()
+    }
+
     pub fn tax_amount_yen(&self) -> u32 {
         self.tax_amount.amount_in_yen()
     }
@@ -47,7 +54,10 @@ impl OrderPricing {
     }
 
     pub fn total_before_tax(&self) -> Result<Money, crate::domain::error::DomainError> {
-        self.subtotal.add(self.shipping_fee)?.add(self.payment_fee)
+        self.subtotal
+            .add(self.shipping_fee)?
+            .add(self.payment_fee)?
+            .subtract(self.discount_amount)
     }
 
     pub fn verify_calculations(&self) -> bool {
@@ -75,20 +85,24 @@ mod tests {
         let subtotal = Money::from_yen(2000);
         let shipping_fee = Money::from_yen(500);
         let payment_fee = Money::from_yen(100);
+        let discount_amount = Money::from_yen(200);
         let total_before_tax = subtotal
             .add(shipping_fee)
             .unwrap()
             .add(payment_fee)
+            .unwrap()
+            .subtract(discount_amount)
             .unwrap();
         let tax_amount = total_before_tax.tax_amount();
         let total = total_before_tax.add(tax_amount).unwrap();
 
-        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, tax_amount, total);
+        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, discount_amount, tax_amount, total);
 
         assert_eq!(pricing.subtotal_yen(), 2000);
         assert_eq!(pricing.shipping_fee_yen(), 500);
         assert_eq!(pricing.payment_fee_yen(), 100);
-        assert_eq!(pricing.total_before_tax().unwrap(), Money::from_yen(2600));
+        assert_eq!(pricing.discount_amount_yen(), 200);
+        assert_eq!(pricing.total_before_tax().unwrap(), Money::from_yen(2400));
         assert!(pricing.verify_calculations());
     }
 
@@ -97,10 +111,11 @@ mod tests {
         let subtotal = Money::from_yen(1000);
         let shipping_fee = Money::from_yen(500);
         let payment_fee = Money::from_yen(100);
+        let discount_amount = Money::from_yen(0);
         let tax_amount = Money::from_yen(50); // Incorrect tax amount
         let total = Money::from_yen(1650); // Incorrect total
 
-        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, tax_amount, total);
+        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, discount_amount, tax_amount, total);
 
         assert!(!pricing.verify_calculations());
     }
@@ -110,20 +125,49 @@ mod tests {
         let subtotal = Money::from_yen(1000);
         let shipping_fee = Money::from_yen(500);
         let payment_fee = Money::from_yen(0);
+        let discount_amount = Money::from_yen(0);
         let total_before_tax = subtotal
             .add(shipping_fee)
             .unwrap()
             .add(payment_fee)
+            .unwrap()
+            .subtract(discount_amount)
             .unwrap();
         let tax_amount = total_before_tax.tax_amount();
         let total = total_before_tax.add(tax_amount).unwrap();
 
-        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, tax_amount, total);
+        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, discount_amount, tax_amount, total);
 
         // 1500 yen before tax, 10% tax = 150 yen tax, total = 1650 yen
         assert_eq!(pricing.total_before_tax().unwrap(), Money::from_yen(1500));
         assert_eq!(pricing.tax_amount_yen(), 150);
         assert_eq!(pricing.total_yen(), 1650);
+        assert!(pricing.verify_calculations());
+    }
+
+    #[test]
+    fn test_pricing_with_discount() {
+        let subtotal = Money::from_yen(1000);
+        let shipping_fee = Money::from_yen(500);
+        let payment_fee = Money::from_yen(0);
+        let discount_amount = Money::from_yen(100);
+        let total_before_tax = subtotal
+            .add(shipping_fee)
+            .unwrap()
+            .add(payment_fee)
+            .unwrap()
+            .subtract(discount_amount)
+            .unwrap();
+        let tax_amount = total_before_tax.tax_amount();
+        let total = total_before_tax.add(tax_amount).unwrap();
+
+        let pricing = OrderPricing::new(subtotal, shipping_fee, payment_fee, discount_amount, tax_amount, total);
+
+        // 1400 yen before tax (1500 - 100 discount), 10% tax = 140 yen tax, total = 1540 yen
+        assert_eq!(pricing.total_before_tax().unwrap(), Money::from_yen(1400));
+        assert_eq!(pricing.discount_amount_yen(), 100);
+        assert_eq!(pricing.tax_amount_yen(), 140);
+        assert_eq!(pricing.total_yen(), 1540);
         assert!(pricing.verify_calculations());
     }
 }

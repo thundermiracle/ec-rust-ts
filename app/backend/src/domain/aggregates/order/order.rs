@@ -1,4 +1,4 @@
-use super::{CustomerInfo, OrderItem, OrderPricing, PaymentInfo, ShippingInfo};
+use super::{CustomerInfo, DiscountInfo, OrderItem, OrderPricing, PaymentInfo, ShippingInfo};
 use crate::domain::entities::DeliveryInfo;
 use crate::domain::error::DomainError;
 use crate::domain::value_objects::*;
@@ -67,6 +67,7 @@ pub struct Order {
     pub shipping_info: ShippingInfo,
     pub payment_info: PaymentInfo,
     pub pricing: OrderPricing,
+    pub discount_info: Option<DiscountInfo>,
     pub status: OrderStatus,
     pub timestamps: OrderTimestamps,
     pub delivery_info: Option<DeliveryInfo>,
@@ -80,6 +81,7 @@ impl Order {
         items: Vec<OrderItem>,
         shipping_info: ShippingInfo,
         payment_info: PaymentInfo,
+        discount_info: Option<DiscountInfo>,
     ) -> Result<Self, DomainError> {
         if items.is_empty() {
             return Err(DomainError::InvalidProductData(
@@ -87,7 +89,8 @@ impl Order {
             ));
         }
 
-        let pricing = Self::calculate_pricing(&items, &shipping_info, &payment_info)?;
+        let pricing =
+            Self::calculate_pricing(&items, &shipping_info, &payment_info, &discount_info)?;
         let now = Utc::now();
 
         Ok(Order {
@@ -98,6 +101,7 @@ impl Order {
             shipping_info,
             payment_info,
             pricing,
+            discount_info,
             status: OrderStatus::Pending,
             timestamps: OrderTimestamps {
                 created_at: now,
@@ -204,13 +208,22 @@ impl Order {
         items: &[OrderItem],
         shipping_info: &ShippingInfo,
         payment_info: &PaymentInfo,
+        discount_info: &Option<DiscountInfo>,
     ) -> Result<OrderPricing, DomainError> {
         let mut subtotal = Money::zero();
         for item in items {
             subtotal = subtotal.add(item.subtotal()?)?;
         }
 
-        let total_before_tax = subtotal.add(shipping_info.fee)?.add(payment_info.fee)?;
+        let discount_amount = discount_info
+            .as_ref()
+            .map(|d| d.total_discount_amount())
+            .unwrap_or_else(Money::zero);
+
+        let total_before_tax = subtotal
+            .add(shipping_info.fee)?
+            .add(payment_info.fee)?
+            .subtract(discount_amount)?;
         let tax_amount = total_before_tax.tax_amount();
         let total = total_before_tax.add(tax_amount)?;
 
@@ -218,6 +231,7 @@ impl Order {
             subtotal,
             shipping_fee: shipping_info.fee,
             payment_fee: payment_info.fee,
+            discount_amount,
             tax_amount,
             total,
         })
@@ -237,12 +251,30 @@ impl Order {
     pub fn total_item_count(&self) -> i32 {
         self.items.iter().map(|item| item.quantity).sum()
     }
+
+    pub fn has_discount(&self) -> bool {
+        self.discount_info.is_some() && self.discount_info.as_ref().unwrap().has_coupons()
+    }
+
+    pub fn total_discount_amount(&self) -> Money {
+        self.discount_info
+            .as_ref()
+            .map(|d| d.total_discount_amount())
+            .unwrap_or_else(Money::zero)
+    }
+
+    pub fn applied_coupon_count(&self) -> usize {
+        self.discount_info
+            .as_ref()
+            .map(|d| d.coupon_count())
+            .unwrap_or(0)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::value_objects::*;
+    use crate::domain::value_objects::{FirstName, LastName, PersonalInfo};
 
     fn create_test_order() -> Order {
         let order_number = OrderNumber::generate(2024, 1);
@@ -294,6 +326,7 @@ mod tests {
             items,
             shipping_info,
             payment_info,
+            None,
         )
         .unwrap()
     }
@@ -400,7 +433,192 @@ mod tests {
             items,
             shipping_info,
             payment_info,
+            None,
         );
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_order_with_discount() {
+        use super::super::{CouponInfo, DiscountInfo};
+        use crate::domain::value_objects::DiscountType;
+
+        let order_number = OrderNumber::generate(2024, 1);
+        let customer_info = CustomerInfo::new(
+            PersonalInfo::new(
+                FirstName::new("太郎".to_string()).unwrap(),
+                LastName::new("田中".to_string()).unwrap(),
+            ),
+            Email::new("test@example.com".to_string()).unwrap(),
+            PhoneNumber::new("090-1234-5678".to_string()).unwrap(),
+        );
+
+        let items = vec![
+            OrderItem::new(
+                SKUId::new(),
+                SKUCode::new("TEST-001".to_string()).unwrap(),
+                ProductName::new("Test Product".to_string()).unwrap(),
+                SKUName::new("Test SKU".to_string()).unwrap(),
+                Money::from_yen(1000),
+                2,
+            )
+            .unwrap(),
+        ];
+
+        let shipping_info = ShippingInfo::new(
+            ShippingMethodId::new("standard".to_string()).unwrap(),
+            "Standard Shipping".to_string(),
+            Money::from_yen(500),
+            Address::new(
+                "123-4567".to_string(),
+                "Tokyo".to_string(),
+                "Shibuya".to_string(),
+                "1-2-3".to_string(),
+                None,
+            )
+            .unwrap(),
+        );
+
+        let payment_info = PaymentInfo::new(
+            PaymentMethodId::new("credit_card".to_string()).unwrap(),
+            "Credit Card".to_string(),
+            Money::from_yen(100),
+            None,
+        );
+
+        // Create coupon info
+        let coupon_info = CouponInfo::new(
+            CouponId::new(),
+            CouponCode::from_string("SAVE200".to_string()).unwrap(),
+            "Save 200 yen".to_string(),
+            DiscountPolicy::unconditional(DiscountType::FixedAmount(Money::from_yen(200))),
+            Money::from_yen(200),
+        );
+
+        let discount_info = DiscountInfo::new(vec![coupon_info]);
+
+        let order = Order::new(
+            order_number,
+            customer_info,
+            items,
+            shipping_info,
+            payment_info,
+            Some(discount_info),
+        )
+        .unwrap();
+
+        assert_eq!(order.status, OrderStatus::Pending);
+        assert!(order.has_discount());
+        assert_eq!(order.total_discount_amount(), Money::from_yen(200));
+        assert_eq!(order.applied_coupon_count(), 1);
+        assert_eq!(order.pricing.discount_amount, Money::from_yen(200));
+
+        // Subtotal: 2000 yen (1000 * 2)
+        // Shipping: 500 yen
+        // Payment fee: 100 yen
+        // Discount: -200 yen
+        // Before tax: 2400 yen
+        // Tax (10%): 240 yen
+        // Total: 2640 yen
+        assert_eq!(order.pricing.subtotal, Money::from_yen(2000));
+        assert_eq!(
+            order.pricing.total_before_tax().unwrap(),
+            Money::from_yen(2400)
+        );
+        assert_eq!(order.pricing.tax_amount, Money::from_yen(240));
+        assert_eq!(order.pricing.total, Money::from_yen(2640));
+    }
+
+    #[test]
+    fn test_order_with_multiple_coupons() {
+        use super::super::{CouponInfo, DiscountInfo};
+        use crate::domain::value_objects::DiscountType;
+
+        let order_number = OrderNumber::generate(2024, 1);
+        let customer_info = CustomerInfo::new(
+            PersonalInfo::new(
+                FirstName::new("太郎".to_string()).unwrap(),
+                LastName::new("田中".to_string()).unwrap(),
+            ),
+            Email::new("test@example.com".to_string()).unwrap(),
+            PhoneNumber::new("090-1234-5678".to_string()).unwrap(),
+        );
+
+        let items = vec![
+            OrderItem::new(
+                SKUId::new(),
+                SKUCode::new("TEST-001".to_string()).unwrap(),
+                ProductName::new("Test Product".to_string()).unwrap(),
+                SKUName::new("Test SKU".to_string()).unwrap(),
+                Money::from_yen(1000),
+                3,
+            )
+            .unwrap(),
+        ];
+
+        let shipping_info = ShippingInfo::new(
+            ShippingMethodId::new("standard".to_string()).unwrap(),
+            "Standard Shipping".to_string(),
+            Money::from_yen(500),
+            Address::new(
+                "123-4567".to_string(),
+                "Tokyo".to_string(),
+                "Shibuya".to_string(),
+                "1-2-3".to_string(),
+                None,
+            )
+            .unwrap(),
+        );
+
+        let payment_info = PaymentInfo::new(
+            PaymentMethodId::new("credit_card".to_string()).unwrap(),
+            "Credit Card".to_string(),
+            Money::from_yen(100),
+            None,
+        );
+
+        // Create multiple coupon infos
+        let coupon1 = CouponInfo::new(
+            CouponId::new(),
+            CouponCode::from_string("FIXED100".to_string()).unwrap(),
+            "Fixed 100 yen off".to_string(),
+            DiscountPolicy::unconditional(DiscountType::FixedAmount(Money::from_yen(100))),
+            Money::from_yen(100),
+        );
+
+        let coupon2 = CouponInfo::new(
+            CouponId::new(),
+            CouponCode::from_string("PERCENT5".to_string()).unwrap(),
+            "5% off".to_string(),
+            DiscountPolicy::unconditional(DiscountType::Percentage(5)),
+            Money::from_yen(150),
+        );
+
+        let discount_info = DiscountInfo::new(vec![coupon1, coupon2]);
+
+        let order = Order::new(
+            order_number,
+            customer_info,
+            items,
+            shipping_info,
+            payment_info,
+            Some(discount_info),
+        )
+        .unwrap();
+
+        assert!(order.has_discount());
+        assert_eq!(order.total_discount_amount(), Money::from_yen(250)); // 100 + 150
+        assert_eq!(order.applied_coupon_count(), 2);
+        assert_eq!(order.pricing.discount_amount, Money::from_yen(250));
+    }
+
+    #[test]
+    fn test_order_without_discount() {
+        let order = create_test_order();
+
+        assert!(!order.has_discount());
+        assert_eq!(order.total_discount_amount(), Money::zero());
+        assert_eq!(order.applied_coupon_count(), 0);
+        assert_eq!(order.pricing.discount_amount, Money::zero());
     }
 }
