@@ -54,6 +54,7 @@ impl ProductRepository for SqliteProductRepository {
             r#"
             SELECT 
                 s.id,
+                s.product_id,
                 s.sku_code,
                 s.name,
                 s.dimensions,
