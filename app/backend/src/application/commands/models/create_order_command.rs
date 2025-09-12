@@ -34,6 +34,7 @@ pub struct CreateOrderCommand {
     pub shipping_method_id: String,
     pub payment_method_id: String,
     pub shipping_address: CreateOrderCommandShippingAddress,
+    pub coupon_code: Option<String>,
 }
 
 impl CreateOrderCommand {
@@ -43,6 +44,7 @@ impl CreateOrderCommand {
         shipping_method_id: String,
         payment_method_id: String,
         shipping_address: CreateOrderCommandShippingAddress,
+        coupon_code: Option<String>,
     ) -> Self {
         Self {
             customer_info,
@@ -50,6 +52,7 @@ impl CreateOrderCommand {
             shipping_method_id,
             payment_method_id,
             shipping_address,
+            coupon_code,
         }
     }
 }

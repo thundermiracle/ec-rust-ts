@@ -1,21 +1,24 @@
 use crate::application::commands::models::CreateOrderCommand;
-use crate::application::dto::CreateOrderResultDTO;
+use crate::application::dto::{CreateOrderResultDTO, VariantDTO};
 use crate::application::error::ApplicationError;
 use crate::application::repositories::{
-    OrderRepository, PaymentMethodRepository, ProductRepository, ShippingMethodRepository,
+    CouponRepository, OrderRepository, PaymentMethodRepository, ProductRepository,
+    ShippingMethodRepository,
 };
+use crate::application::services::{ItemFactory, ItemValidationService};
 use crate::domain::aggregates::order::{CustomerInfo, Order, OrderItem, PaymentInfo, ShippingInfo};
-use crate::domain::value_objects::*;
+use crate::domain::order::{CouponInfo, DiscountInfo};
+use crate::domain::{CouponDiscountService, value_objects::*};
 use chrono::Datelike;
 use std::sync::Arc;
-use uuid::Uuid;
 
 /// 注文作成ハンドラ（ユースケース）
 pub struct CreateOrderHandler {
-    product_repository: Arc<dyn ProductRepository>,
+    item_validation_service: ItemValidationService,
     shipping_method_repository: Arc<dyn ShippingMethodRepository>,
     payment_method_repository: Arc<dyn PaymentMethodRepository>,
     order_repository: Arc<dyn OrderRepository>,
+    coupon_repository: Arc<dyn CouponRepository>,
 }
 
 impl CreateOrderHandler {
@@ -24,12 +27,15 @@ impl CreateOrderHandler {
         shipping_method_repository: Arc<dyn ShippingMethodRepository>,
         payment_method_repository: Arc<dyn PaymentMethodRepository>,
         order_repository: Arc<dyn OrderRepository>,
+        coupon_repository: Arc<dyn CouponRepository>,
     ) -> Self {
+        let item_validation_service = ItemValidationService::new(product_repository);
         Self {
-            product_repository,
+            item_validation_service,
             shipping_method_repository,
             payment_method_repository,
             order_repository,
+            coupon_repository,
         }
     }
 
@@ -41,41 +47,45 @@ impl CreateOrderHandler {
         // 1. 顧客情報の作成
         let customer_info = self.create_customer_info(&command)?;
 
-        // 2. 注文アイテムの作成
-        let order_items = self.create_order_items(&command).await?;
+        // 2. 一度だけ在庫チェックを実行して結果を共有
+        let validated_items = self.validate_items_once(&command).await?;
 
-        // 3. 配送情報の作成
+        // 3. バリデーション済みアイテムから注文アイテムを作成
+        let order_items = self.create_order_items_from_validated(&command, &validated_items)?;
+
+        // 4. 配送情報の作成
         let shipping_info = self.create_shipping_info(&command).await?;
 
-        // 4. 支払い情報の作成
+        // 5. 支払い情報の作成
         let payment_info = self.create_payment_info(&command).await?;
 
-        // 5. 注文番号の生成
+        // 6. バリデーション済みアイテムからクーポン情報を作成
+        let discount_info = self
+            .create_discount_info_from_validated(&command, &validated_items)
+            .await?;
+
+        // 7. 注文番号の生成
         let current_year = chrono::Utc::now().year();
-        let sequence_number = self.order_repository
+        let sequence_number = self
+            .order_repository
             .get_next_sequence_number(current_year)
-            .await
-            .map_err(ApplicationError::Repository)?;
+            .await?;
         let order_number = OrderNumber::generate(current_year, sequence_number);
 
-        // 6. 注文の作成
+        // 8. 注文の作成
         let order = Order::new(
             order_number,
             customer_info,
             order_items,
             shipping_info,
             payment_info,
-            None, // TODO: クーポン機能を実装する際に更新
-        )
-        .map_err(ApplicationError::Domain)?;
+            discount_info,
+        )?;
 
-        // 7. 注文の保存
-        self.order_repository
-            .save(&order)
-            .await
-            .map_err(ApplicationError::Repository)?;
+        // 9. 注文の保存
+        self.order_repository.save(&order).await?;
 
-        // 8. 結果DTOの作成
+        // 10. 結果DTOの作成
         Ok(CreateOrderResultDTO::from_order(&order))
     }
 
@@ -85,119 +95,57 @@ impl CreateOrderHandler {
     ) -> Result<CustomerInfo, ApplicationError> {
         let first_name = FirstName::new(command.customer_info.first_name.clone())
             .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
-
         let last_name = LastName::new(command.customer_info.last_name.clone())
             .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
-
         let personal_info = PersonalInfo::new(first_name, last_name);
 
         let email = Email::new(command.customer_info.email.clone())
             .map_err(|e| ApplicationError::InvalidInput(format!("{:?}", e)))?;
-
         let phone = PhoneNumber::new(command.customer_info.phone.clone())
             .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
 
         Ok(CustomerInfo::new(personal_info, email, phone))
     }
 
-    async fn create_order_items(
+    /// 一度だけ在庫チェックを実行（重複を避ける）
+    async fn validate_items_once(
         &self,
         command: &CreateOrderCommand,
-    ) -> Result<Vec<OrderItem>, ApplicationError> {
+    ) -> Result<Vec<VariantDTO>, ApplicationError> {
         if command.items.is_empty() {
             return Err(ApplicationError::InvalidInput(
                 "Order must have at least one item".to_string(),
             ));
         }
 
-        // SKU IDの抽出
-        let sku_ids: Result<Vec<SKUId>, ApplicationError> = command
+        // リクエストデータを準備
+        let items: Vec<(String, u32)> = command
             .items
             .iter()
-            .map(|item| {
-                Uuid::parse_str(&item.sku_id)
-                    .map(SKUId::from_uuid)
-                    .map_err(|_| {
-                        ApplicationError::InvalidInput(format!(
-                            "Invalid SKU ID format: {}",
-                            item.sku_id
-                        ))
-                    })
-            })
+            .map(|item| (item.sku_id.clone(), item.quantity))
             .collect();
 
-        let sku_ids = sku_ids?;
-
-        // SKU情報の取得
-        let variants = self
-            .product_repository
-            .find_variants_by_ids(&sku_ids)
+        // 共通サービスを使用して検証とバリアント取得
+        self.item_validation_service
+            .validate_items_with_stock(&items)
             .await
-            .map_err(ApplicationError::Repository)?;
+    }
 
-        // 注文アイテムの作成
-        let mut order_items = Vec::new();
-        for item_request in &command.items {
-            if item_request.quantity == 0 {
-                return Err(ApplicationError::InvalidInput(
-                    "Item quantity must be greater than zero".to_string(),
-                ));
-            }
+    /// バリデーション済みアイテムから注文アイテムを作成
+    fn create_order_items_from_validated(
+        &self,
+        command: &CreateOrderCommand,
+        variants: &[VariantDTO],
+    ) -> Result<Vec<OrderItem>, ApplicationError> {
+        // 元のコマンドから正しいquantityを取得
+        let items: Vec<(String, u32)> = command
+            .items
+            .iter()
+            .map(|item| (item.sku_id.clone(), item.quantity))
+            .collect();
 
-            // 対応するバリアント情報を見つける
-            let variant = variants
-                .iter()
-                .find(|v| v.id == item_request.sku_id)
-                .ok_or_else(|| {
-                    ApplicationError::NotFound(format!("SKU not found: {}", item_request.sku_id))
-                })?;
-
-            // 在庫チェック
-            if variant.is_sold_out {
-                return Err(ApplicationError::InvalidInput(format!(
-                    "SKU {} is sold out",
-                    variant.sku_code
-                )));
-            }
-
-            if variant.stock_quantity < item_request.quantity {
-                return Err(ApplicationError::InvalidInput(format!(
-                    "Insufficient stock for SKU {}: requested {}, available {}",
-                    variant.sku_code, item_request.quantity, variant.stock_quantity
-                )));
-            }
-
-            // OrderItemの作成
-            let sku_id =
-                SKUId::from_uuid(Uuid::parse_str(&variant.id).map_err(|_| {
-                    ApplicationError::InvalidInput("Invalid variant ID".to_string())
-                })?);
-
-            let sku_code = SKUCode::new(variant.sku_code.clone())
-                .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
-
-            let product_name = ProductName::new(variant.name.clone())
-                .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
-
-            let sku_name = SKUName::new(variant.name.clone())
-                .map_err(|e| ApplicationError::InvalidInput(format!("{:?}", e)))?;
-
-            let unit_price = Money::from_yen(variant.sale_price.unwrap_or(variant.price));
-
-            let order_item = OrderItem::new(
-                sku_id,
-                sku_code,
-                product_name,
-                sku_name,
-                unit_price,
-                item_request.quantity as i32,
-            )
-            .map_err(|e| ApplicationError::InvalidInput(e.to_string()))?;
-
-            order_items.push(order_item);
-        }
-
-        Ok(order_items)
+        // 共通ファクトリーを使用してOrderItem作成
+        ItemFactory::create_order_items(&items, variants)
     }
 
     async fn create_shipping_info(
@@ -268,5 +216,69 @@ impl CreateOrderHandler {
             payment_fee,
             None,
         ))
+    }
+
+    /// バリデーション済みアイテムからクーポン情報を作成（重複チェックを避ける）
+    async fn create_discount_info_from_validated(
+        &self,
+        command: &CreateOrderCommand,
+        variants: &[VariantDTO],
+    ) -> Result<Option<DiscountInfo>, ApplicationError> {
+        // クーポンコードがない場合は、None を返す
+        if command.coupon_code.is_none() {
+            return Ok(None);
+        }
+
+        // クーポンを取得
+        let coupon_code = CouponCode::from_string(command.coupon_code.clone().unwrap())?;
+        let coupon = match self.coupon_repository.find_by_code(&coupon_code).await {
+            Ok(Some(coupon)) => coupon,
+            Ok(None) => {
+                return Ok(None);
+            }
+            Err(e) => {
+                return Err(ApplicationError::Domain(e));
+            }
+        };
+
+        // 元のコマンドから正しいquantityを取得
+        let items: Vec<(String, u32)> = command
+            .items
+            .iter()
+            .map(|item| (item.sku_id.clone(), item.quantity))
+            .collect();
+
+        // 既に検証済みのバリアントを使用してCartItem作成
+        let cart_items = ItemFactory::create_cart_items(&items, variants)?;
+
+        // 小計を計算
+        let subtotal = cart_items.iter().fold(Money::zero(), |acc, item| {
+            acc.add(item.subtotal().unwrap_or(Money::zero()))
+                .unwrap_or(acc)
+        });
+
+        let purchase_info = PurchaseInfo::new(cart_items, subtotal, None, None);
+
+        // クーポンを適用して割引計算
+        match CouponDiscountService::apply_coupon(&coupon, &purchase_info) {
+            Ok(discount_result) => {
+                // CouponInfoを作成
+                let coupon_info = CouponInfo::new(
+                    coupon.id().clone(),
+                    coupon.code().clone(),
+                    coupon.name().to_string(),
+                    coupon.discount_policy().clone(),
+                    discount_result.discount_amount,
+                );
+
+                // DiscountInfoを生成して返す
+                Ok(Some(DiscountInfo::new(vec![coupon_info])))
+            }
+            Err(domain_error) => {
+                // クーポンが適用できない場合はNoneを返す（エラーにしない）
+                println!("Coupon application failed: {:?}", domain_error);
+                Ok(None)
+            }
+        }
     }
 }

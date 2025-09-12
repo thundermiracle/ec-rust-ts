@@ -98,6 +98,7 @@ impl Container {
             shipping_method_repository.clone(),
             payment_method_repository.clone(),
             order_repository.clone(),
+            coupon_repository.clone(),
         ));
 
         // ディスパッチャを作成

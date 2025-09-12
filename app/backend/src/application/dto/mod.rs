@@ -9,7 +9,7 @@ mod shipping_method_list_dto;
 mod variant_summary_dto;
 
 pub use self::calculate_cart_result_dto::{
-    AppliedCouponDto, CalculateCartResultDto, CalculatedCartItemDto, CouponErrorDto,
+    CalculateCartResultDto, CouponErrorDto,
 };
 pub use self::category_list_dto::{CategoryDTO, CategoryListDTO};
 pub use self::color_list_dto::{ColorDTO, ColorListDTO};

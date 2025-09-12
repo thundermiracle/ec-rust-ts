@@ -17,6 +17,7 @@ pub struct ProductDTO {
 #[derive(Debug, Clone)]
 pub struct VariantDTO {
     pub id: String,
+    pub product_id: String,
     pub sku_code: String,
     pub name: String,
     pub color: String,
@@ -38,6 +39,7 @@ impl VariantDTO {
     /// Infrastructure層から直接構築用
     pub fn new(
         id: String,
+        product_id: String,
         sku_code: String,
         name: String,
         color: String,
@@ -55,6 +57,7 @@ impl VariantDTO {
 
         Self {
             id,
+            product_id,
             sku_code,
             name,
             color,

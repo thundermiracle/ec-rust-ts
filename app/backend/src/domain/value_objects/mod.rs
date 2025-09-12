@@ -26,7 +26,7 @@ pub use self::discount_policy::DiscountPolicy;
 pub use self::discount_type::DiscountType;
 pub use self::email::Email;
 pub use self::identifiers::{
-    CategoryId, ColorId, CouponId, CustomerId, DeliveryInfoId, OrderId, PaymentMethodId, ProductId,
+    CategoryId, ColorId, CouponId, DeliveryInfoId, OrderId, PaymentMethodId, ProductId,
     SKUId, ShippingMethodId,
 };
 pub use self::money::Money;

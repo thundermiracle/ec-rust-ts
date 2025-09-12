@@ -120,6 +120,9 @@ impl ProductRepository for SqliteProductRepository {
             let sku_id: String = sku_row
                 .try_get("id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let product_id: String = sku_row
+                .try_get("product_id")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let sku_code: String = sku_row
                 .try_get("sku_code")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
@@ -154,9 +157,10 @@ impl ProductRepository for SqliteProductRepository {
                 .try_get("material")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
 
-            // バリアント作成 - VariantDTOの構造体フィールドに直接設定
+            // バリアント作成 - product_idを追加
             variants.push(VariantDTO::new(
                 sku_id,
+                product_id,
                 sku_code,
                 sku_name,
                 color_name,
@@ -395,6 +399,7 @@ impl ProductRepository for SqliteProductRepository {
             r#"
             SELECT 
                 s.id,
+                s.product_id,
                 s.sku_code,
                 s.name,
                 s.dimensions,
@@ -429,6 +434,9 @@ impl ProductRepository for SqliteProductRepository {
         for sku_row in sku_rows {
             let sku_id: String = sku_row
                 .try_get("id")
+                .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
+            let product_id: String = sku_row
+                .try_get("product_id")
                 .map_err(|e| RepositoryError::DataConversionError(e.to_string()))?;
             let sku_code: String = sku_row
                 .try_get("sku_code")
@@ -467,6 +475,7 @@ impl ProductRepository for SqliteProductRepository {
             // バリアント作成
             variants.push(VariantDTO::new(
                 sku_id,
+                product_id,
                 sku_code,
                 sku_name,
                 color_name,

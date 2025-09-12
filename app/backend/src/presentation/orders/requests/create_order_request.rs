@@ -87,6 +87,9 @@ pub struct CreateOrderRequest {
     /// 配送先住所
     #[validate(nested)]
     pub shipping_address: CreateOrderRequestShippingAddress,
+    /// クーポンコード（オプション）
+    #[schema(example = "SAVE20")]
+    pub coupon_code: Option<String>,
 }
 
 impl CreateOrderRequest {
@@ -115,6 +118,7 @@ impl CreateOrderRequest {
                 street_address: self.shipping_address.street_address.clone(),
                 building: self.shipping_address.building.clone(),
             },
+            self.coupon_code.clone(),
         )
     }
 }

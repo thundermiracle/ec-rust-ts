@@ -4,6 +4,7 @@ pub mod dto;
 pub mod error;
 pub mod queries;
 pub mod repositories;
+pub mod services;
 
 pub use dispatcher::Dispatcher;
 pub use error::ApplicationError;
