@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useCalculateCartMutation } from '@/store/api';
 import { useAppSelector } from '@/store/hooks';
 import { selectCartItems } from '@/store/cartSlice';
@@ -41,11 +41,17 @@ export function useCartCalculation(options: UseCartCalculationOptions = {}) {
     }
   }, [cartItems, shippingMethod, paymentMethod, calculateCart, enabled]);
 
+  // 自動計算実行
+  useEffect(() => {
+    if (enabled && cartItems.length > 0 && shippingMethod && paymentMethod) {
+      triggerCalculation(couponCode);
+    }
+  }, [triggerCalculation, couponCode, enabled, cartItems.length, shippingMethod, paymentMethod]);
+
   // クーポン適用
   const applyCoupon = useCallback((code: string) => {
     setCouponCode(code);
-    triggerCalculation(code);
-  }, [triggerCalculation]);
+  }, []);
 
   // クーポン削除
   const removeCoupon = useCallback(() => {

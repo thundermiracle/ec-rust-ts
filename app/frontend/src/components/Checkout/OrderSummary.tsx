@@ -11,7 +11,6 @@ import {
 } from '@/store/api';
 import { enhanceCartItemsWithVariantAPI } from '@/components/Cart/CartDrawer/helper';
 import { useFormContext } from 'react-hook-form';
-import { useCartCalculation } from '@/hooks/useCartCalculation';
 import type { CheckoutFormData } from '@/lib/validators/checkout';
 
 // 表示用アイテム型（内部用）
@@ -36,7 +35,6 @@ export function OrderSummary({ cartCalculationData }: OrderSummaryProps) {
 
   // react-hook-form から配送方法と支払い方法を取得
   const { watch } = useFormContext<CheckoutFormData>();
-  const shippingMethod = watch('shippingMethod');
   const paymentMethod = watch('paymentMethod');
 
   // 商品リスト取得
@@ -45,26 +43,12 @@ export function OrderSummary({ cartCalculationData }: OrderSummaryProps) {
   // バリアント詳細取得
   const [findVariants, { data: variantsData, isLoading: isVariantsLoading }] = useFindVariantsMutation();
 
-  // フォールバック用カート計算フック
-  const { 
-    subtotal: fallbackSubtotal, 
-    tax: fallbackTax, 
-    shippingFee: fallbackShippingFee, 
-    paymentFee: fallbackPaymentFee, 
-    total: fallbackTotal, 
-    isCartCalculationLoading 
-  } = useCartCalculation({
-    shippingMethod,
-    paymentMethod,
-    enabled: !cartCalculationData, // データがない場合のみ実行
-  });
-
-  // 表示用データの決定
-  const subtotal = cartCalculationData?.subtotal ?? fallbackSubtotal;
-  const tax = cartCalculationData?.taxAmount ?? fallbackTax;
-  const shippingFee = cartCalculationData?.shippingFee ?? fallbackShippingFee;
-  const paymentFee = cartCalculationData?.paymentFee ?? fallbackPaymentFee;
-  const total = cartCalculationData?.total ?? fallbackTotal;
+  // 表示用データの決定（親から受け取ったデータのみ使用）
+  const subtotal = cartCalculationData?.subtotal ?? 0;
+  const tax = cartCalculationData?.taxAmount ?? 0;
+  const shippingFee = cartCalculationData?.shippingFee ?? 0;
+  const paymentFee = cartCalculationData?.paymentFee ?? 0;
+  const total = cartCalculationData?.total ?? 0;
   const appliedCoupon = cartCalculationData?.appliedCoupon;
 
   // SKU ID 一意キー
@@ -103,7 +87,7 @@ export function OrderSummary({ cartCalculationData }: OrderSummaryProps) {
   const isConvenienceStore = paymentMethod === 'convenience_store';
 
   // ローディング状態
-  const isLoading = isProductListLoading || isVariantsLoading || isCartCalculationLoading;
+  const isLoading = isProductListLoading || isVariantsLoading;
 
   if (isLoading) {
     return (
